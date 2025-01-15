@@ -13,6 +13,14 @@ export default defineConfig({
       presets: [vercelPreset],
     }),
   ],
+  build: {
+    target: 'esnext', // Ensures compatibility with modern JavaScript features
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'esnext', // Allows features like top-level await
+    },
+  },
   ssr: {
     noExternal: ["remix-i18next"],
   },
