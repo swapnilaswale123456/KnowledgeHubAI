@@ -39,6 +39,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const tenantId = params.tenant!;
   const fileUploadService = getFileUploadService();
 
+  if (intent === "delete") {
+    const sourceId = formData.get("sourceId") as string;
+    const result = await fileUploadService.deleteDataSource(parseInt(sourceId));
+    return json(result);
+  }
+
   if (intent === "train") {
     const sourceId = formData.get("sourceId") as string;
     const file = formData.get("file") as File;
@@ -62,6 +68,7 @@ export default function FileUploadRoute() {
   const navigate = useNavigate();
   const fetcher = useFetcher<UploadResponse>();
   const [isUploading, setIsUploading] = useState(false);
+  const [isTraining, setIsTraining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<{
     name: string;
@@ -82,6 +89,7 @@ export default function FileUploadRoute() {
         file: fileRef.current || undefined
       });
       setIsUploading(false);
+      setIsTraining(false);
       
       if (fetcher.data.data?.isTrain) {
         successModal.current?.show("Trained Files", "Files Trained successfully.");
@@ -91,6 +99,7 @@ export default function FileUploadRoute() {
       setError(fetcher.data?.message || "");
       setUploadedFile(null);
       setIsUploading(false);
+      setIsTraining(false);
     }
   }, [fetcher.state, fetcher.data]);
 
@@ -114,6 +123,7 @@ export default function FileUploadRoute() {
 
   const handleTrain = async () => {
     if (!uploadedFile?.sourceId || !uploadedFile.file) return;
+    setIsTraining(true);
 
     try {
       const formData = new FormData();
@@ -127,7 +137,23 @@ export default function FileUploadRoute() {
       });
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Training failed');
+      setIsTraining(false);
     }
+  };
+
+  const handleCancel = async () => {
+    if (!uploadedFile?.sourceId) return;
+    
+    const formData = new FormData();
+    formData.append('intent', 'delete');
+    formData.append('sourceId', uploadedFile.sourceId.toString());
+    
+    fetcher.submit(formData, { method: 'POST' });
+    navigate('../create');
+  };
+
+  const handleSuccessModalClose = () => {
+    navigate(`/app/${params.tenant}/chatbot`);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -213,21 +239,32 @@ export default function FileUploadRoute() {
         {uploadedFile && (
           <CardFooter className="flex justify-end space-x-4 pt-6">
             <button
-              onClick={() => navigate('../create')}
+              onClick={handleCancel}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
             >
               Cancel
             </button>
             <button
               onClick={handleTrain}
-              className="px-4 py-2 text-white bg-black rounded-md hover:bg-gray-800"
+              disabled={isTraining}
+              className="px-4 py-2 text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Train File
+              {isTraining ? (
+                <div className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Training...
+                </div>
+              ) : (
+                'Train File'
+              )}
             </button>
           </CardFooter>
         )}
       </Card>
-      <SuccessModal ref={successModal} />
+      <SuccessModal ref={successModal} onClosed={handleSuccessModalClose} />
       <ErrorModal ref={errorModal} />
     </div>
   );

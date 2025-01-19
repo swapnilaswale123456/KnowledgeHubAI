@@ -38,7 +38,7 @@ export class FileUploadService {
           method: 'POST',
           body: formData,
           headers: {
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzI5MDc0MSwianRpIjoiYzBiZDE1NjctZWFmZi00YjY1LTk1YjktMjQ2NGY1MmViMmY1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzI5MDc0MSwiY3NyZiI6ImJlODRiMTYzLTNkYjktNGZmZi05YWM0LTcyNmJlOGI5M2QwNSIsImV4cCI6MTczNzI5MTY0MSwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1NmNQWWZUSVl0eGlfOWlLQ3hGRllKV1ZmTXZTcjRUa3BFc19PYnJ1TXJNYWJQYWtMUG9NZ0FNQm0xLWdsUHptNDFnUHpia212Mmp4RkhfUmZDVzB5bHJsV0dwZlNNSWRwLU1SSkFOT1VlRGRLU1R2ejJoSGN6c09fWlQ3VEEzeXhVRVdHTlVMSEZBekFkTkRLclJPRGJEenlELU1LOGFDZ1lLQVRjU0FSQVNGUUhHWDJNaXdsV0x0QnNKN3lPZVZUUVpiX1ZOT0EwMTcxIiwiIl19.XYa_U1scl8eIhDiZ0XpT8r_xbP9BDCI46RtGY5EjGHE`
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzI5MjA5NywianRpIjoiZDk4ZTAxYjktZDBjNy00Y2RiLWFjMDItMmJjMmVmNGJkYWRmIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzI5MjA5NywiY3NyZiI6IjdmNzE3ZDY4LTM2MGMtNGZiZi04OWE4LTBkYjExMGIyMGUxYiIsImV4cCI6MTczNzI5Mjk5NywiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1Y2tadno1a3hVZW9tb3M2d0VqY3duSFFyRmdDZlV0M3E5NVNlR0k4elFCWVpUWmM0X3c2RDVrSENxV2dPMUxMNVE2SDktN2ZkYm1RbGE0ZFNJZ0djc3VTaThXNkNybkhycTN6bXJFTTlsU0NXdXd3a3UwZ3RZbEFMVll1dHdrNkVKZjNmM0Q0RV9oMUVXVmczMXVoVUN0d2tEMVZ5YmFDZ1lLQWRjU0FSQVNGUUhHWDJNaUxoa29xWlBGMzJqQ3hmWUFKM1VDNFEwMTcxIiwiIl19.1gJTl8N6ZhEQweubZKhsWgHPxGvhGtWciBkyx3nwE18`
           }
           
         });
@@ -88,33 +88,13 @@ export class FileUploadService {
         message: error instanceof Error ? error.message : 'Upload failed'
       };
     }
-  }
-
-  async deleteFile(filePath: string, tenantId: string) {
-    const response = await fetch(`${this.baseUrl}/delete-file`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        filePath,
-        tenantId
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to delete file');
-    }
-
-    return await response.json();
-  }
+  }  
 
   async trainFile(sourceId: number, tenantId: string) {
     const response = await fetch(`${this.baseUrl}/file/train`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzI5MDc0MSwianRpIjoiYzBiZDE1NjctZWFmZi00YjY1LTk1YjktMjQ2NGY1MmViMmY1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzI5MDc0MSwiY3NyZiI6ImJlODRiMTYzLTNkYjktNGZmZi05YWM0LTcyNmJlOGI5M2QwNSIsImV4cCI6MTczNzI5MTY0MSwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1NmNQWWZUSVl0eGlfOWlLQ3hGRllKV1ZmTXZTcjRUa3BFc19PYnJ1TXJNYWJQYWtMUG9NZ0FNQm0xLWdsUHptNDFnUHpia212Mmp4RkhfUmZDVzB5bHJsV0dwZlNNSWRwLU1SSkFOT1VlRGRLU1R2ejJoSGN6c09fWlQ3VEEzeXhVRVdHTlVMSEZBekFkTkRLclJPRGJEenlELU1LOGFDZ1lLQVRjU0FSQVNGUUhHWDJNaXdsV0x0QnNKN3lPZVZUUVpiX1ZOT0EwMTcxIiwiIl19.XYa_U1scl8eIhDiZ0XpT8r_xbP9BDCI46RtGY5EjGHE`,
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzI5MjA5NywianRpIjoiZDk4ZTAxYjktZDBjNy00Y2RiLWFjMDItMmJjMmVmNGJkYWRmIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzI5MjA5NywiY3NyZiI6IjdmNzE3ZDY4LTM2MGMtNGZiZi04OWE4LTBkYjExMGIyMGUxYiIsImV4cCI6MTczNzI5Mjk5NywiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1Y2tadno1a3hVZW9tb3M2d0VqY3duSFFyRmdDZlV0M3E5NVNlR0k4elFCWVpUWmM0X3c2RDVrSENxV2dPMUxMNVE2SDktN2ZkYm1RbGE0ZFNJZ0djc3VTaThXNkNybkhycTN6bXJFTTlsU0NXdXd3a3UwZ3RZbEFMVll1dHdrNkVKZjNmM0Q0RV9oMUVXVmczMXVoVUN0d2tEMVZ5YmFDZ1lLQWRjU0FSQVNGUUhHWDJNaUxoa29xWlBGMzJqQ3hmWUFKM1VDNFEwMTcxIiwiIl19.1gJTl8N6ZhEQweubZKhsWgHPxGvhGtWciBkyx3nwE18`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -135,6 +115,25 @@ export class FileUploadService {
       success: true,
       message: 'Training started successfully'
     };
+  }
+
+  async deleteDataSource(sourceId: number) {
+    try {
+      await db.$queryRaw`
+        DELETE FROM "DataSources" 
+        WHERE "sourceId" = ${sourceId}
+      `;
+      return {
+        success: true,
+        message: 'File deleted successfully'
+      };
+    } catch (error) {
+      console.error('Delete error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Delete failed'
+      };
+    }
   }
 }
 
