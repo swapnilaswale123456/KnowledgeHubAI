@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // uses connection pooling
+  url      = env("DATABASE_URL")
 }
 
 model AppConfiguration {
@@ -12,7 +12,6 @@ model AppConfiguration {
   updatedAt                              DateTime @updatedAt
   name                                   String
   url                                    String
-  theme                                  String?
   authRequireEmailVerification           Boolean  @default(false)
   authRequireOrganization                Boolean  @default(true)
   authRequireName                        Boolean  @default(true)
@@ -25,17 +24,18 @@ model AppConfiguration {
   subscriptionAllowSubscribeBeforeSignUp Boolean  @default(true)
   subscriptionAllowSignUpBeforeSubscribe Boolean  @default(true)
   cookiesEnabled                         Boolean  @default(false)
-  metricsEnabled                         Boolean  @default(false)
-  metricsLogToConsole                    Boolean  @default(false)
-  metricsSaveToDatabase                  Boolean  @default(false)
-  metricsIgnoreUrls                      String?
-  brandingLogo                           String?
-  brandingLogoDarkMode                   String?
+  brandingFavicon                        String?
   brandingIcon                           String?
   brandingIconDarkMode                   String?
-  brandingFavicon                        String?
-  headScripts                            String?
+  brandingLogo                           String?
+  brandingLogoDarkMode                   String?
+  metricsEnabled                         Boolean  @default(false)
+  metricsIgnoreUrls                      String?
+  metricsLogToConsole                    Boolean  @default(false)
+  metricsSaveToDatabase                  Boolean  @default(false)
+  theme                                  String?
   bodyScripts                            String?
+  headScripts                            String?
 }
 
 model AppCookie {
@@ -62,51 +62,50 @@ model User {
   phone                      String?
   defaultTenantId            String?
   verifyToken                String?
+  active                     Boolean                  @default(false)
   githubId                   String?                  @unique
   googleId                   String?                  @unique
   locale                     String?
-  active                     Boolean                  @default(false)
-  admin                      AdminUser? // Has access to the admin panel
+  admin                      AdminUser?
+  analyticsUniqueSessions    AnalyticsUniqueVisitor[]
   createdApiKeys             ApiKey[]
+  blogArticles               BlogPost[]
+  credits                    Credit[]
+  readEmails                 EmailRead[]
+  createdEntityViews         EntityView[]             @relation("createdByUser")
+  entityViews                EntityView[]
+  events                     Event[]
+  feedback                   Feedback[]
+  formulaLogs                FormulaLog[]
   createdGroups              Group[]
   groups                     GroupUser[]
+  knowledgeBaseArticles      KnowledgeBaseArticle[]
   createdLinkedAccounts      LinkedAccount[]
   logs                       Log[]
+  metricLogs                 MetricLog[]
+  onboardingSessions         OnboardingSession[]
+  portals                    Portal[]
+  promptFlowExecutions       PromptFlowExecution[]
   createdRows                Row[]
   createdRowComments         RowComment[]
   createdRowCommentReactions RowCommentReaction[]
-  createdEntityViews         EntityView[]             @relation("createdByUser")
   rowPermissions             RowPermission[]
   assignedTasks              RowTask[]                @relation("assignedToUser")
   completedTasks             RowTask[]                @relation("completedByUser")
   createdRowTasks            RowTask[]                @relation("createdByUser")
+  tags                       TagUser[]
+  tenantIpAddresses          TenantIpAddress[]
+  createdTenantRelationships TenantRelationship[]
   tenants                    TenantUser[]
   invitation                 TenantUserInvitation?    @relation("createdUser")
   sentInvitations            TenantUserInvitation[]   @relation("fromUser")
   roles                      UserRole[]
-  readEmails                 EmailRead[]
-  entityViews                EntityView[]
-  onboardingSessions         OnboardingSession[]
-  tags                       TagUser[]
-  tenantIpAddresses          TenantIpAddress[]
-  promptFlowExecutions       PromptFlowExecution[]
-  analyticsUniqueSessions    AnalyticsUniqueVisitor[]
-  metricLogs                 MetricLog[]
-  formulaLogs                FormulaLog[]
-  createdTenantRelationships TenantRelationship[]
-  blogArticles               BlogPost[]
-  knowledgeBaseArticles      KnowledgeBaseArticle[]
-  events                     Event[]
   workflowsCreated           Workflow[]               @relation("createdByUser")
+  workflowCredentialsCreated WorkflowCredential[]
   workflowsExecuted          WorkflowExecution[]      @relation("executedByUser")
   workflowVariablesCreated   WorkflowVariable[]
-  workflowCredentialsCreated WorkflowCredential[]
-  feedback                   Feedback[]
-  credits                    Credit[]
-  portals                    Portal[]
 }
 
-// Has access to the admin panel
 model AdminUser {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -124,49 +123,49 @@ model Tenant {
   deactivatedReason         String?
   apiKeys                   ApiKey[]
   apiKeyLogs                ApiKeyLog[]
+  blogCategories            BlogCategory[]
+  blogPosts                 BlogPost[]
+  blogTags                  BlogTag[]
+  campaigns                 Campaign[]
+  credits                   Credit[]
+  emailSenders              EmailSender[]
+  entityGroupConfigurations EntityGroupConfiguration[]
+  entityTemplates           EntityTemplate[]
+  entityViews               EntityView[]
+  events                    Event[]
+  feedback                  Feedback[]
+  formulaLogs               FormulaLog[]
   groups                    Group[]
   asClientLinkedAccounts    LinkedAccount[]            @relation("clientTenant")
   createdLinkedAccounts     LinkedAccount[]            @relation("createdByTenant")
   asProviderLinkedAccounts  LinkedAccount[]            @relation("providerTenant")
   logs                      Log[]
+  metricLogs                MetricLog[]
+  onboardingSessions        OnboardingSession[]
+  outboundEmails            OutboundEmail[]
+  portals                   Portal[]
+  portalsUsers              PortalUser[]
+  promptFlowExecutions      PromptFlowExecution[]
+  entityProperties          Property[]
+  fromRegistration          Registration?
   rows                      Row[]
   rowPermissions            RowPermission[]
+  tags                      TagTenant[]
+  inboundAddresses          TenantInboundAddress[]
+  ipAddresses               TenantIpAddress[]
+  fromTenants               TenantRelationship[]       @relation("fromTenant")
+  toTenants                 TenantRelationship[]       @relation("toTenant")
+  tenantSettingsRow         TenantSettingsRow?
   subscription              TenantSubscription?
   users                     TenantUser[]
   invitations               TenantUserInvitation[]
   userRoles                 UserRole[]
-  inboundAddresses          TenantInboundAddress[]
-  events                    Event[]
-  fromRegistration          Registration?
-  entityViews               EntityView[]
-  emailSenders              EmailSender[]
-  campaigns                 Campaign[]
-  outboundEmails            OutboundEmail[]
-  tags                      TagTenant[]
-  onboardingSessions        OnboardingSession[]
-  ipAddresses               TenantIpAddress[]
-  tenantSettingsRow         TenantSettingsRow?
-  promptFlowExecutions      PromptFlowExecution[]
-  metricLogs                MetricLog[]
-  formulaLogs               FormulaLog[]
-  types                     TenantType[]
-  fromTenants               TenantRelationship[]       @relation("fromTenant")
-  toTenants                 TenantRelationship[]       @relation("toTenant")
-  entityProperties          Property[]
-  blogPosts                 BlogPost[]
-  blogTags                  BlogTag[]
-  blogCategories            BlogCategory[]
-  entityGroupConfigurations EntityGroupConfiguration[]
-  entityTemplates           EntityTemplate[]
+  widgets                   Widget[]
   workflows                 Workflow[]
+  workflowCredentials       WorkflowCredential[]
   workflowExecutions        WorkflowExecution[]
   workflowVariables         WorkflowVariable[]
-  workflowCredentials       WorkflowCredential[]
-  feedback                  Feedback[]
-  credits                   Credit[]
-  portals                   Portal[]
-  portalsUsers              PortalUser[]
-  widgets                   Widget[]
+  types                     TenantType[]               @relation("TenantToTenantType")
 
   @@index([slug])
 }
@@ -177,28 +176,28 @@ model Registration {
   email                       String   @unique
   firstName                   String
   lastName                    String
-  slug                        String?
   token                       String   @unique
-  ipAddress                   String?
   company                     String?
   selectedSubscriptionPriceId String?
   createdTenantId             String?  @unique
+  ipAddress                   String?
+  slug                        String?
   createdTenant               Tenant?  @relation(fields: [createdTenantId], references: [id], onDelete: Cascade)
 }
 
 model Blacklist {
   id               String   @id @default(cuid())
   createdAt        DateTime @default(now())
-  type             String // email, domain, ip
+  type             String
   value            String
   active           Boolean  @default(true)
   registerAttempts Int      @default(0)
 }
 
 model TenantSubscription {
-  id               String                      @id @default(cuid())
   tenantId         String                      @unique
   stripeCustomerId String?
+  id               String                      @id @default(cuid())
   tenant           Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   products         TenantSubscriptionProduct[]
 }
@@ -213,38 +212,38 @@ model TenantSubscriptionProduct {
   stripeSubscriptionId  String?
   quantity              Int?
   fromCheckoutSessionId String?
-  currentPeriodStart    DateTime?
   currentPeriodEnd      DateTime?
-  tenantSubscription    TenantSubscription               @relation(fields: [tenantSubscriptionId], references: [id], onDelete: Cascade)
+  currentPeriodStart    DateTime?
   subscriptionProduct   SubscriptionProduct              @relation(fields: [subscriptionProductId], references: [id])
+  tenantSubscription    TenantSubscription               @relation(fields: [tenantSubscriptionId], references: [id], onDelete: Cascade)
   prices                TenantSubscriptionProductPrice[]
 }
 
 model TenantSubscriptionProductPrice {
   id                            String                          @id @default(cuid())
   tenantSubscriptionProductId   String
-  tenantSubscriptionProduct     TenantSubscriptionProduct       @relation(fields: [tenantSubscriptionProductId], references: [id], onDelete: Cascade)
   subscriptionPriceId           String?
-  subscriptionPrice             SubscriptionPrice?              @relation(fields: [subscriptionPriceId], references: [id])
   subscriptionUsageBasedPriceId String?
+  subscriptionPrice             SubscriptionPrice?              @relation(fields: [subscriptionPriceId], references: [id])
   subscriptionUsageBasedPrice   SubscriptionUsageBasedPrice?    @relation(fields: [subscriptionUsageBasedPriceId], references: [id])
+  tenantSubscriptionProduct     TenantSubscriptionProduct       @relation(fields: [tenantSubscriptionProductId], references: [id], onDelete: Cascade)
   usageRecords                  TenantSubscriptionUsageRecord[]
 }
 
 model TenantSubscriptionUsageRecord {
   id                               String                         @id @default(cuid())
   tenantSubscriptionProductPriceId String
-  tenantSubscriptionProductPrice   TenantSubscriptionProductPrice @relation(fields: [tenantSubscriptionProductPriceId], references: [id], onDelete: Cascade)
   timestamp                        Int
   quantity                         Int
   stripeSubscriptionItemId         String?
+  tenantSubscriptionProductPrice   TenantSubscriptionProductPrice @relation(fields: [tenantSubscriptionProductPriceId], references: [id], onDelete: Cascade)
 }
 
 model CheckoutSessionStatus {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   id              String   @unique
-  pending         Boolean  @default(true) // has not added products to tenant
+  pending         Boolean  @default(true)
   email           String
   fromUrl         String
   fromUserId      String?
@@ -290,10 +289,10 @@ model Permission {
   type                      String
   isDefault                 Boolean
   order                     Int
-  inRoles                   RolePermission[]
   entityId                  String?
   entity                    Entity?                  @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  inTenantTypeRelationships TenantTypeRelationship[]
+  inRoles                   RolePermission[]
+  inTenantTypeRelationships TenantTypeRelationship[] @relation("PermissionToTenantTypeRelationship")
 }
 
 model RolePermission {
@@ -328,7 +327,7 @@ model Group {
   users           GroupUser[]
   rowPermissions  RowPermission[]
 
-  @@index([createdByUserId], name: "group_createdByUserId")
+  @@index([createdByUserId], map: "group_createdByUserId")
 }
 
 model GroupUser {
@@ -357,8 +356,8 @@ model TenantUserInvitation {
   pending       Boolean
   createdUserId String? @unique
   fromUserId    String?
-  fromUser      User?   @relation(name: "fromUser", fields: [fromUserId], references: [id])
-  user          User?   @relation(name: "createdUser", fields: [createdUserId], references: [id])
+  user          User?   @relation("createdUser", fields: [createdUserId], references: [id])
+  fromUser      User?   @relation("fromUser", fields: [fromUserId], references: [id])
   tenant        Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
@@ -421,33 +420,33 @@ model Log {
   action      String
   details     String?
   commentId   String?
+  webhookLogs EntityWebhookLog[]
   apiKey      ApiKey?            @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
   comment     RowComment?        @relation(fields: [commentId], references: [id])
   row         Row?               @relation(fields: [rowId], references: [id])
   tenant      Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user        User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  webhookLogs EntityWebhookLog[]
 }
 
 model ApiKeyLog {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   apiKeyId  String?
-  apiKey    ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
-  tenantId  String?
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   ip        String
   endpoint  String
   method    String
   params    String
   status    Int?
-  duration  Int?
   error     String?
+  duration  Int?
+  tenantId  String?
   type      String?
+  apiKey    ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@index([tenantId], name: "api_key_log_tenant")
-  @@index([tenantId, createdAt], name: "api_key_log_tenant_created_at")
-  @@index([tenantId, type], name: "api_key_log_tenant_type")
+  @@index([tenantId], map: "api_key_log_tenant")
+  @@index([tenantId, createdAt], map: "api_key_log_tenant_created_at")
+  @@index([tenantId, type], map: "api_key_log_tenant_type")
 }
 
 model SubscriptionProduct {
@@ -458,24 +457,23 @@ model SubscriptionProduct {
   active                   Boolean
   model                    Int
   public                   Boolean
-  groupTitle               String?
-  groupDescription         String?
   description              String?
   badge                    String?
+  groupDescription         String?
+  groupTitle               String?
   billingAddressCollection String                        @default("auto")
-  hasQuantity              Boolean                       @default(false)
   canBuyAgain              Boolean                       @default(false)
-  prices                   SubscriptionPrice[]
+  hasQuantity              Boolean                       @default(false)
   features                 SubscriptionFeature[]
-  tenantProducts           TenantSubscriptionProduct[]
+  prices                   SubscriptionPrice[]
   usageBasedPrices         SubscriptionUsageBasedPrice[]
-  assignsTenantTypes       TenantType[]
+  tenantProducts           TenantSubscriptionProduct[]
+  assignsTenantTypes       TenantType[]                  @relation("SubscriptionProductToTenantType")
 }
 
 model SubscriptionPrice {
   id                    String                           @id @default(cuid())
   subscriptionProductId String
-  subscriptionProduct   SubscriptionProduct              @relation(fields: [subscriptionProductId], references: [id], onDelete: Cascade)
   stripeId              String
   type                  Int
   billingPeriod         Int
@@ -483,13 +481,13 @@ model SubscriptionPrice {
   currency              String
   trialDays             Int
   active                Boolean
+  subscriptionProduct   SubscriptionProduct              @relation(fields: [subscriptionProductId], references: [id], onDelete: Cascade)
   tenantProductPrices   TenantSubscriptionProductPrice[]
 }
 
 model SubscriptionUsageBasedPrice {
   id                    String                           @id @default(cuid())
   subscriptionProductId String
-  subscriptionProduct   SubscriptionProduct              @relation(fields: [subscriptionProductId], references: [id], onDelete: Cascade)
   stripeId              String
   billingPeriod         Int
   currency              String
@@ -500,6 +498,7 @@ model SubscriptionUsageBasedPrice {
   aggregateUsage        String
   tiersMode             String
   billingScheme         String
+  subscriptionProduct   SubscriptionProduct              @relation(fields: [subscriptionProductId], references: [id], onDelete: Cascade)
   tiers                 SubscriptionUsageBasedTier[]
   tenantProductPrices   TenantSubscriptionProductPrice[]
 }
@@ -507,11 +506,11 @@ model SubscriptionUsageBasedPrice {
 model SubscriptionUsageBasedTier {
   id                            String                      @id @default(cuid())
   subscriptionUsageBasedPriceId String
-  subscriptionUsageBasedPrice   SubscriptionUsageBasedPrice @relation(fields: [subscriptionUsageBasedPriceId], references: [id], onDelete: Cascade)
   from                          Int
   to                            Int?
   perUnitPrice                  Decimal?
   flatFeePrice                  Decimal?
+  subscriptionUsageBasedPrice   SubscriptionUsageBasedPrice @relation(fields: [subscriptionUsageBasedPriceId], references: [id], onDelete: Cascade)
 }
 
 model SubscriptionFeature {
@@ -531,10 +530,10 @@ model SubscriptionFeature {
 model BlogCategory {
   id        String     @id @default(cuid())
   createdAt DateTime   @default(now())
-  tenantId  String?
-  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
   color     Int
+  tenantId  String?
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   posts     BlogPost[]
 
   @@unique([tenantId, name])
@@ -543,11 +542,11 @@ model BlogCategory {
 model BlogTag {
   id        String        @id @default(cuid())
   createdAt DateTime      @default(now())
-  tenantId  String?
-  tenant    Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String        @unique
   color     Int
+  tenantId  String?
   posts     BlogPostTag[]
+  tenant    Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model BlogPostTag {
@@ -561,9 +560,6 @@ model BlogPostTag {
 model BlogPost {
   id          String        @id @default(cuid())
   createdAt   DateTime      @default(now())
-  updatedAt   DateTime?     @updatedAt
-  tenantId    String?
-  tenant      Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   slug        String
   title       String
   description String
@@ -575,19 +571,19 @@ model BlogPost {
   authorId    String?
   categoryId  String?
   contentType String        @default("markdown")
+  tenantId    String?
+  updatedAt   DateTime?     @updatedAt
   author      User?         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   category    BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tenant      Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tags        BlogPostTag[]
 
   @@unique([tenantId, slug])
 }
 
-// <--- START: Entities --->
-
-// TODO: Wrap entities in modules (e.g. CRM, HelpDesk...)
 model Module {
   id          String   @id @default(cuid())
-  type        String   @default("app") // app, admin, all
+  type        String   @default("app")
   order       Int
   name        String   @unique
   title       String
@@ -600,49 +596,49 @@ model Entity {
   id                  String                       @id @default(cuid())
   createdAt           DateTime                     @default(now())
   updatedAt           DateTime                     @updatedAt
-  moduleId            String?
   name                String                       @unique
   slug                String                       @unique
   order               Int
   prefix              String                       @unique
-  type                String                       @default("app") // app, admin, all
   title               String
   titlePlural         String
   isAutogenerated     Boolean
   hasApi              Boolean
   icon                String
   active              Boolean
-  showInSidebar       Boolean                      @default(true)
   hasTags             Boolean                      @default(true)
   hasComments         Boolean                      @default(true)
   hasTasks            Boolean                      @default(true)
+  defaultVisibility   String                       @default("private")
+  moduleId            String?
+  showInSidebar       Boolean                      @default(true)
+  type                String                       @default("app")
+  onCreated           String?                      @default("redirectToOverview")
+  promptFlowGroupId   String?
+  onEdit              String?                      @default("editRoute")
   hasActivity         Boolean                      @default(true)
   hasBulkDelete       Boolean                      @default(false)
   hasViews            Boolean                      @default(true)
-  defaultVisibility   String                       @default("private")
-  onCreated           String?                      @default("redirectToOverview") // redirectToOverview, redirectToNew, redirectToList, redirectToEdit, addAnother
-  onEdit              String?                      @default("editRoute") // editRoute, overviewRoute, overviewAlwaysEditable
-  promptFlowGroupId   String?
-  createdPermissions  Permission[]
   apiKeys             ApiKeyEntity[]
-  tags                EntityTag[]
-  permissions         EntityTenantUserPermission[]
-  webhooks            EntityWebhook[]
-  properties          Property[]
-  rows                Row[]
-  views               EntityView[]
-  parentEntities      EntityRelationship[]         @relation(name: "childEntities")
-  childEntities       EntityRelationship[]         @relation(name: "parentEntities")
   module              Module?                      @relation(fields: [moduleId], references: [id])
   groups              EntityGroupEntity[]
-  promptFlowGroup     PromptFlowGroupEntity[]
-  inTenantTypes       TenantTypeEntity[]
-  promptFlows         PromptFlow[]
-  inPromptFlowOutputs PromptFlowOutput[]
+  parentEntities      EntityRelationship[]         @relation("childEntities")
+  childEntities       EntityRelationship[]         @relation("parentEntities")
+  tags                EntityTag[]
   templates           EntityTemplate[]
+  permissions         EntityTenantUserPermission[]
+  views               EntityView[]
+  webhooks            EntityWebhook[]
+  createdPermissions  Permission[]
+  promptFlows         PromptFlow[]
+  promptFlowGroup     PromptFlowGroupEntity[]
+  inPromptFlowOutputs PromptFlowOutput[]
+  properties          Property[]
+  rows                Row[]
+  inTenantTypes       TenantTypeEntity[]
 
-  @@index([name], name: "entity_name")
-  @@index([slug], name: "entity_slug")
+  @@index([name], map: "entity_name")
+  @@index([slug], map: "entity_slug")
 }
 
 model Property {
@@ -652,120 +648,120 @@ model Property {
   name                 String
   title                String
   type                 Int
-  subtype              String?
   isDefault            Boolean                   @default(false)
   isRequired           Boolean                   @default(false)
   isHidden             Boolean                   @default(false)
   isDisplay            Boolean                   @default(false)
-  isUnique             Boolean                   @default(false) // TODO: Validate uniqueness
-  isReadOnly           Boolean                   @default(false)
+  isUnique             Boolean                   @default(false)
   showInCreate         Boolean                   @default(true)
-  canUpdate            Boolean                   @default(true)
+  isReadOnly           Boolean                   @default(false)
+  subtype              String?
   formulaId            String?
-  formula              Formula?                  @relation(fields: [formulaId], references: [id], onDelete: Cascade)
   tenantId             String?
+  canUpdate            Boolean                   @default(true)
+  inViewGroupBy        EntityView[]
+  inViewProperties     EntityViewProperty[]
+  inPromptFlowMappings PromptFlowOutputMapping[]
+  entity               Entity                    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  formula              Formula?                  @relation(fields: [formulaId], references: [id], onDelete: Cascade)
   tenant               Tenant?                   @relation(fields: [tenantId], references: [id])
   attributes           PropertyAttribute[]
-  entity               Entity                    @relation(fields: [entityId], references: [id], onDelete: Cascade)
   options              PropertyOption[]
   values               RowValue[]
-  inViewProperties     EntityViewProperty[]
-  inViewGroupBy        EntityView[]
-  inPromptFlowMappings PromptFlowOutputMapping[]
 
   @@unique([entityId, name, tenantId])
   @@unique([entityId, title, tenantId])
-  @@index([entityId], name: "entity_property")
-  @@index([entityId, name], name: "entity_property_name")
+  @@index([entityId], map: "entity_property")
+  @@index([entityId, name], map: "entity_property_name")
 }
 
 model EntityView {
   id                    String               @id @default(cuid())
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
-  createdByUserId       String?
-  createdByUser         User?                @relation(name: "createdByUser", fields: [createdByUserId], references: [id])
   entityId              String
-  entity                Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  tenantId              String?
-  tenant                Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId                String?
-  user                  User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  layout                String               @default("table") // table, board, calendar, list, gallery...
+  layout                String               @default("table")
   order                 Int
   name                  String
   title                 String
   pageSize              Int
   isDefault             Boolean
-  isSystem              Boolean              @default(false)
-  gridColumns           Int?                 @default(5)
-  gridColumnsSm         Int?                 @default(2)
-  gridColumnsMd         Int?                 @default(3)
-  gridColumnsLg         Int?                 @default(4)
-  gridColumnsXl         Int?                 @default(5)
-  gridColumns2xl        Int?                 @default(6)
-  gridGap               String?              @default("sm")
-  properties            EntityViewProperty[]
-  filters               EntityViewFilter[]
-  sort                  EntityViewSort[]
   groupByPropertyId     String?
-  groupByProperty       Property?            @relation(fields: [groupByPropertyId], references: [id], onDelete: Cascade)
+  tenantId              String?
+  userId                String?
+  createdAt             DateTime             @default(now())
+  createdByUserId       String?
+  updatedAt             DateTime             @updatedAt
+  gridColumns           Int?                 @default(5)
+  gridColumns2xl        Int?                 @default(6)
+  gridColumnsLg         Int?                 @default(4)
+  gridColumnsMd         Int?                 @default(3)
+  gridColumnsSm         Int?                 @default(2)
+  gridColumnsXl         Int?                 @default(5)
+  gridGap               String?              @default("sm")
+  isSystem              Boolean              @default(false)
   inGroups              EntityGroupEntity[]
-  inChildRelationships  EntityRelationship[] @relation(name: "childEntityView")
-  inParentRelationships EntityRelationship[] @relation(name: "parentEntityView")
+  inChildRelationships  EntityRelationship[] @relation("childEntityView")
+  inParentRelationships EntityRelationship[] @relation("parentEntityView")
+  createdByUser         User?                @relation("createdByUser", fields: [createdByUserId], references: [id])
+  entity                Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  groupByProperty       Property?            @relation(fields: [groupByPropertyId], references: [id], onDelete: Cascade)
+  tenant                Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                  User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filters               EntityViewFilter[]
+  properties            EntityViewProperty[]
+  sort                  EntityViewSort[]
 
-  @@index([entityId], name: "entity_view")
-  @@index([entityId, name], name: "entity_view_name")
+  @@index([entityId], map: "entity_view")
+  @@index([entityId, name], map: "entity_view_name")
 }
 
 model EntityViewProperty {
   id           String     @id @default(cuid())
   entityViewId String
-  entityView   EntityView @relation(fields: [entityViewId], references: [id], onDelete: Cascade)
   propertyId   String?
-  property     Property?  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  name         String? // if not a property, e.g. "default.folio"
   order        Int
+  name         String?
+  entityView   EntityView @relation(fields: [entityViewId], references: [id], onDelete: Cascade)
+  property     Property?  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  @@index([entityViewId], name: "entity_view_property")
-  @@index([entityViewId, name], name: "entity_view_property_name")
+  @@index([entityViewId], map: "entity_view_property")
+  @@index([entityViewId, name], map: "entity_view_property_name")
 }
 
 model EntityViewFilter {
   id           String     @id @default(cuid())
   entityViewId String
-  entityView   EntityView @relation(fields: [entityViewId], references: [id], onDelete: Cascade)
-  match        String     @default("and") // and, or
   name         String
-  condition    String // is, isNot, contains, doesNotContain...
+  condition    String
   value        String
+  match        String     @default("and")
+  entityView   EntityView @relation(fields: [entityViewId], references: [id], onDelete: Cascade)
 
-  @@index([entityViewId], name: "entity_view_filter")
-  @@index([entityViewId, name], name: "entity_view_filter_name")
+  @@index([entityViewId], map: "entity_view_filter")
+  @@index([entityViewId, name], map: "entity_view_filter_name")
 }
 
 model EntityViewSort {
   id           String     @id @default(cuid())
   entityViewId String
-  entityView   EntityView @relation(fields: [entityViewId], references: [id], onDelete: Cascade)
   name         String
   asc          Boolean
   order        Int
+  entityView   EntityView @relation(fields: [entityViewId], references: [id], onDelete: Cascade)
 
-  @@index([entityViewId], name: "entity_view_sort")
-  @@index([entityViewId, name], name: "entity_view_sort_name")
+  @@index([entityViewId], map: "entity_view_sort")
+  @@index([entityViewId, name], map: "entity_view_sort_name")
 }
 
 model PropertyAttribute {
   id         String   @id @default(cuid())
   propertyId String
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  name       String // pattern, min, max, step, rows, defaultValue, maxSize, acceptFileTypes, uppercase...
+  name       String
   value      String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@unique([propertyId, name])
-  @@index([propertyId], name: "property_attribute")
-  @@index([propertyId, name], name: "property_attribute_name")
+  @@index([propertyId], map: "property_attribute")
+  @@index([propertyId, name], map: "property_attribute_name")
 }
 
 model PropertyOption {
@@ -776,23 +772,22 @@ model PropertyOption {
   name       String?
   color      Int      @default(0)
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  // values     RowValueSelection[]
 
-  @@index([propertyId], name: "property_option")
-  @@index([propertyId, name], name: "property_option_name")
+  @@index([propertyId], map: "property_option")
+  @@index([propertyId, name], map: "property_option_name")
 }
 
 model EntityTag {
   id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
   entityId  String
   value     String
   color     Int
+  createdAt DateTime @default(now())
   entity    Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
   rowTags   RowTag[]
 
-  @@index([entityId], name: "entity_tag")
-  @@index([entityId, value], name: "entity_tag_value")
+  @@index([entityId], map: "entity_tag")
+  @@index([entityId, value], map: "entity_tag_value")
 }
 
 model EntityTenantUserPermission {
@@ -825,112 +820,111 @@ model EntityWebhookLog {
 model EntityRelationship {
   id                 String            @id @default(cuid())
   parentId           String
-  parent             Entity            @relation(name: "parentEntities", fields: [parentId], references: [id], onDelete: Cascade)
   childId            String
-  child              Entity            @relation(name: "childEntities", fields: [childId], references: [id], onDelete: Cascade)
+  required           Boolean           @default(false)
+  cascade            Boolean           @default(false)
   order              Int?
   title              String?
   type               String            @default("one-to-many")
-  required           Boolean           @default(false)
-  cascade            Boolean           @default(false)
   readOnly           Boolean           @default(false)
-  hiddenIfEmpty      Boolean           @default(false)
   childEntityViewId  String?
-  childEntityView    EntityView?       @relation(name: "childEntityView", fields: [childEntityViewId], references: [id], onDelete: Cascade)
   parentEntityViewId String?
-  parentEntityView   EntityView?       @relation(name: "parentEntityView", fields: [parentEntityViewId], references: [id], onDelete: Cascade)
+  hiddenIfEmpty      Boolean           @default(false)
+  childEntityView    EntityView?       @relation("childEntityView", fields: [childEntityViewId], references: [id], onDelete: Cascade)
+  child              Entity            @relation("childEntities", fields: [childId], references: [id], onDelete: Cascade)
+  parentEntityView   EntityView?       @relation("parentEntityView", fields: [parentEntityViewId], references: [id], onDelete: Cascade)
+  parent             Entity            @relation("parentEntities", fields: [parentId], references: [id], onDelete: Cascade)
   rows               RowRelationship[]
 
   @@unique([parentId, childId, title])
-  @@index([parentId], name: "parent_entity_relationship")
-  @@index([childId], name: "child_entity_relationship")
-  @@index([parentId, childId], name: "parent_child_entity_relationship")
-  @@index([parentId, childId, order], name: "parent_child_entity_relationship_order")
+  @@index([parentId], map: "parent_entity_relationship")
+  @@index([childId], map: "child_entity_relationship")
+  @@index([parentId, childId], map: "parent_child_entity_relationship")
+  @@index([parentId, childId, order], map: "parent_child_entity_relationship_order")
 }
 
 model SampleCustomEntity {
   rowId         String   @unique
-  row           Row      @relation(fields: [rowId], references: [id], onDelete: Cascade)
   customText    String
   customNumber  Decimal
   customDate    DateTime
   customBoolean Boolean
   customSelect  String
+  row           Row      @relation(fields: [rowId], references: [id], onDelete: Cascade)
 }
 
 model RowRelationship {
   id             String             @id @default(cuid())
-  createdAt      DateTime           @default(now())
   relationshipId String
-  relationship   EntityRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
   parentId       String
-  parent         Row                @relation(name: "parentRow", fields: [parentId], references: [id], onDelete: Cascade)
   childId        String
-  child          Row                @relation(name: "childRow", fields: [childId], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
   metadata       String?
+  child          Row                @relation("childRow", fields: [childId], references: [id], onDelete: Cascade)
+  parent         Row                @relation("parentRow", fields: [parentId], references: [id], onDelete: Cascade)
+  relationship   EntityRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
 
   @@unique([parentId, childId])
-  @@index([parentId], name: "parent_row_relationship")
-  @@index([childId], name: "child_row_relationship")
-  @@index([parentId, childId], name: "parent_child_row_relationship")
+  @@index([parentId], map: "parent_row_relationship")
+  @@index([childId], map: "child_row_relationship")
+  @@index([parentId, childId], map: "parent_child_row_relationship")
 }
 
 model Row {
   id                             String                        @id @default(cuid())
   createdAt                      DateTime                      @default(now())
   updatedAt                      DateTime                      @updatedAt
-  deletedAt                      DateTime?
   entityId                       String
   tenantId                       String?
   folio                          Int
   createdByUserId                String?
   createdByApiKeyId              String?
   order                          Int                           @default(0)
+  deletedAt                      DateTime?
+  inEntityGroupConfigurationRows EntityGroupConfigurationRow[]
+  formulaCalculationLogs         FormulaComponentLog[]
+  logs                           Log[]
+  outboundEmails                 OutboundEmail[]
   createdByApiKey                ApiKey?                       @relation(fields: [createdByApiKeyId], references: [id])
   createdByUser                  User?                         @relation(fields: [createdByUserId], references: [id])
   entity                         Entity                        @relation(fields: [entityId], references: [id])
   tenant                         Tenant?                       @relation(fields: [tenantId], references: [id])
-  logs                           Log[]
   comments                       RowComment[]
   permissions                    RowPermission[]
+  parentRows                     RowRelationship[]             @relation("childRow")
+  childRows                      RowRelationship[]             @relation("parentRow")
   tags                           RowTag[]
   tasks                          RowTask[]
   values                         RowValue[]
-  childRows                      RowRelationship[]             @relation("parentRow")
-  parentRows                     RowRelationship[]             @relation("childRow")
   sampleCustomEntity             SampleCustomEntity?
-  outboundEmails                 OutboundEmail[]
   tenantSettingsRow              TenantSettingsRow[]
-  formulaCalculationLogs         FormulaComponentLog[]
-  inEntityGroupConfigurationRows EntityGroupConfigurationRow[]
 
-  @@index([deletedAt], name: "row_deletedAt")
-  @@index([entityId], name: "row_entity")
-  @@index([entityId, tenantId], name: "row_entity_tenant")
-  @@index([entityId, tenantId, createdAt], name: "row_entity_tenant_created_at")
-  @@index([tenantId], name: "row_tenant")
-  @@index([createdByUserId], name: "row_createdByUserId")
+  @@index([deletedAt], map: "row_deletedAt")
+  @@index([entityId], map: "row_entity")
+  @@index([entityId, tenantId], map: "row_entity_tenant")
+  @@index([entityId, tenantId, createdAt], map: "row_entity_tenant_created_at")
+  @@index([tenantId], map: "row_tenant")
+  @@index([createdByUserId], map: "row_createdByUserId")
 }
 
 model RowValue {
   id           String             @id @default(cuid())
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime?          @updatedAt
   rowId        String
   propertyId   String
   textValue    String?
   numberValue  Decimal?
   dateValue    DateTime?
   booleanValue Boolean?
-  // selection    RowValueSelection[] // TODO: MULTI SELECT
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime?          @updatedAt
+  media        RowMedia[]
   property     Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   row          Row                @relation(fields: [rowId], references: [id], onDelete: Cascade)
-  media        RowMedia[]
   multiple     RowValueMultiple[]
   range        RowValueRange?
 
-  @@index([rowId], name: "row_value_row")
-  @@index([rowId, propertyId], name: "row_value_row_property")
+  @@index([rowId], map: "row_value_row")
+  @@index([rowId, propertyId], map: "row_value_row_property")
 }
 
 model RowValueMultiple {
@@ -940,7 +934,7 @@ model RowValueMultiple {
   value      String
   rowValue   RowValue @relation(fields: [rowValueId], references: [id], onDelete: Cascade)
 
-  @@index([rowValueId], name: "row_value_multiple_row_value")
+  @@index([rowValueId], map: "row_value_multiple_row_value")
 }
 
 model RowValueRange {
@@ -951,7 +945,7 @@ model RowValueRange {
   dateMax    DateTime?
   rowValue   RowValue  @relation(fields: [rowValueId], references: [id], onDelete: Cascade)
 
-  @@index([rowValueId], name: "row_value_range_row_value")
+  @@index([rowValueId], map: "row_value_range_row_value")
 }
 
 model RowPermission {
@@ -961,20 +955,20 @@ model RowPermission {
   roleId   String?
   groupId  String?
   userId   String?
-  public   Boolean?
   access   String   @default("view")
+  public   Boolean?
   group    Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
   role     Role?    @relation(fields: [roleId], references: [id], onDelete: Cascade)
   row      Row      @relation(fields: [rowId], references: [id], onDelete: Cascade)
   tenant   Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([rowId], name: "row_permission_row")
-  @@index([rowId, tenantId], name: "row_permission_row_tenant")
-  @@index([rowId, roleId], name: "row_permission_row_role")
-  @@index([rowId, groupId], name: "row_permission_row_group")
-  @@index([rowId, userId], name: "row_permission_row_user")
-  @@index([public], name: "row_permission_public")
+  @@index([rowId], map: "row_permission_row")
+  @@index([rowId, tenantId], map: "row_permission_row_tenant")
+  @@index([rowId, roleId], map: "row_permission_row_role")
+  @@index([rowId, groupId], map: "row_permission_row_group")
+  @@index([rowId, userId], map: "row_permission_row_user")
+  @@index([public], map: "row_permission_public")
 }
 
 model RowMedia {
@@ -989,20 +983,20 @@ model RowMedia {
   storageProvider String?
   rowValue        RowValue @relation(fields: [rowValueId], references: [id], onDelete: Cascade)
 
-  @@index([rowValueId], name: "row_media_row_value")
-  @@index([rowValueId, name], name: "row_media_row_value_name")
+  @@index([rowValueId], map: "row_media_row_value")
+  @@index([rowValueId, name], map: "row_media_row_value_name")
 }
 
 model RowTag {
   id        String    @id @default(cuid())
-  createdAt DateTime  @default(now())
   rowId     String
   tagId     String
+  createdAt DateTime  @default(now())
   row       Row       @relation(fields: [rowId], references: [id], onDelete: Cascade)
   tag       EntityTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-  @@index([rowId], name: "row_tag_row")
-  @@index([rowId, tagId], name: "row_tag_row_tag")
+  @@index([rowId], map: "row_tag_row")
+  @@index([rowId, tagId], map: "row_tag_row_tag")
 }
 
 model RowComment {
@@ -1012,12 +1006,12 @@ model RowComment {
   rowId           String
   value           String
   isDeleted       Boolean?
+  logs            Log[]
   createdByUser   User                 @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
   row             Row                  @relation(fields: [rowId], references: [id], onDelete: Cascade)
-  logs            Log[]
   reactions       RowCommentReaction[]
 
-  @@index([rowId], name: "row_comment_row")
+  @@index([rowId], map: "row_comment_row")
 }
 
 model RowCommentReaction {
@@ -1052,33 +1046,28 @@ model EntityTemplate {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   tenantId  String?
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   entityId  String
-  entity    Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
   title     String
   config    String
+  entity    Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, entityId, title])
 }
 
-// <--- END: Entities --->
-
-// <--- START: Inbound Emails --->
-
 model TenantInboundAddress {
   id       String  @id @default(cuid())
   tenantId String
-  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   address  String  @unique
   email    Email[]
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Email {
   id                     String                @id @default(cuid())
   tenantInboundAddressId String?
-  tenantInboundAddress   TenantInboundAddress? @relation(fields: [tenantInboundAddressId], references: [id], onDelete: Cascade)
   messageId              String                @unique
-  type                   String // inbound, outbound
+  type                   String
   date                   DateTime
   subject                String
   fromEmail              String
@@ -1087,17 +1076,18 @@ model Email {
   toName                 String?
   textBody               String
   htmlBody               String
-  reads                  EmailRead[]
+  tenantInboundAddress   TenantInboundAddress? @relation(fields: [tenantInboundAddressId], references: [id], onDelete: Cascade)
   attachments            EmailAttachment[]
   cc                     EmailCc[]
+  reads                  EmailRead[]
 }
 
 model EmailRead {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   emailId   String
-  email     Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
   userId    String
+  email     Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -1122,21 +1112,17 @@ model EmailAttachment {
   email           Email   @relation(fields: [emailId], references: [id], onDelete: Cascade)
 }
 
-// <--- END: Inbound Emails --->
-
-// <--- START: Events --->
-
 model Event {
   id          String                @id @default(cuid())
   createdAt   DateTime              @default(now())
   tenantId    String?
-  tenant      Tenant?               @relation(fields: [tenantId], references: [id])
-  userId      String?
-  user        User?                 @relation(fields: [userId], references: [id])
   name        String
   data        String
   resource    String?
   description String?
+  userId      String?
+  tenant      Tenant?               @relation(fields: [tenantId], references: [id])
+  user        User?                 @relation(fields: [userId], references: [id])
   attempts    EventWebhookAttempt[]
 }
 
@@ -1146,17 +1132,13 @@ model EventWebhookAttempt {
   startedAt  DateTime?
   finishedAt DateTime?
   eventId    String
-  event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   endpoint   String
   success    Boolean?
   status     Int?
   message    String?
   body       String?
+  event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
-
-// <--- END: Events --->
-
-// <!--- Analytics --->
 
 model AnalyticsSettings {
   id          String  @id @default(cuid())
@@ -1169,7 +1151,6 @@ model AnalyticsUniqueVisitor {
   id             String              @id @default(cuid())
   createdAt      DateTime            @default(now())
   cookie         String              @unique
-  via            String?
   httpReferrer   String?
   browser        String?
   browserVersion String?
@@ -1185,34 +1166,34 @@ model AnalyticsUniqueVisitor {
   city           String?
   fromUrl        String?
   fromRoute      String?
-  pageViews      AnalyticsPageView[]
-  events         AnalyticsEvent[]
+  via            String?
   userId         String?
-  user           User?               @relation(fields: [userId], references: [id])
   portalId       String?
-  portal         Portal?             @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUserId   String?
+  events         AnalyticsEvent[]
+  pageViews      AnalyticsPageView[]
+  portal         Portal?             @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUser     PortalUser?         @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
+  user           User?               @relation(fields: [userId], references: [id])
 }
 
 model AnalyticsPageView {
   id              String                 @id @default(cuid())
   createdAt       DateTime               @default(now())
   uniqueVisitorId String
-  uniqueVisitor   AnalyticsUniqueVisitor @relation(fields: [uniqueVisitorId], references: [id], onDelete: Cascade)
   url             String
   route           String?
   portalId        String?
-  portal          Portal?                @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUserId    String?
+  portal          Portal?                @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUser      PortalUser?            @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
+  uniqueVisitor   AnalyticsUniqueVisitor @relation(fields: [uniqueVisitorId], references: [id], onDelete: Cascade)
 }
 
 model AnalyticsEvent {
   id              String                 @id @default(cuid())
   createdAt       DateTime               @default(now())
   uniqueVisitorId String
-  uniqueVisitor   AnalyticsUniqueVisitor @relation(fields: [uniqueVisitorId], references: [id], onDelete: Cascade)
   action          String
   category        String?
   label           String?
@@ -1220,14 +1201,13 @@ model AnalyticsEvent {
   url             String?
   route           String?
   featureFlagId   String?
-  featureFlag     FeatureFlag?           @relation(fields: [featureFlagId], references: [id])
   portalId        String?
-  portal          Portal?                @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUserId    String?
+  featureFlag     FeatureFlag?           @relation(fields: [featureFlagId], references: [id])
+  portal          Portal?                @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUser      PortalUser?            @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
+  uniqueVisitor   AnalyticsUniqueVisitor @relation(fields: [uniqueVisitorId], references: [id], onDelete: Cascade)
 }
-
-// <!--- Email marketing --->
 
 model EmailSender {
   id             String          @id @default(cuid())
@@ -1238,8 +1218,8 @@ model EmailSender {
   fromEmail      String
   fromName       String?
   replyToEmail   String?
-  tenant         Tenant?         @relation(fields: [tenantId], references: [id])
   campaigns      Campaign[]
+  tenant         Tenant?         @relation(fields: [tenantId], references: [id])
   outboundEmails OutboundEmail[]
 }
 
@@ -1255,19 +1235,16 @@ model Campaign {
   track         Boolean
   sentAt        DateTime?
   emailSender   EmailSender     @relation(fields: [emailSenderId], references: [id])
-  recipients    OutboundEmail[]
   tenant        Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recipients    OutboundEmail[]
 }
 
 model OutboundEmail {
   id               String               @id @default(cuid())
   createdAt        DateTime             @default(now())
   tenantId         String?
-  tenant           Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   campaignId       String?
-  campaign         Campaign?            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   contactRowId     String?
-  contactRow       Row?                 @relation(fields: [contactRowId], references: [id])
   email            String
   fromSenderId     String
   isPreview        Boolean?
@@ -1277,9 +1254,12 @@ model OutboundEmail {
   bouncedAt        DateTime?
   spamComplainedAt DateTime?
   unsubscribedAt   DateTime?
+  campaign         Campaign?            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactRow       Row?                 @relation(fields: [contactRowId], references: [id])
   fromSender       EmailSender          @relation(fields: [fromSenderId], references: [id])
-  opens            OutboundEmailOpen[]
+  tenant           Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   clicks           OutboundEmailClick[]
+  opens            OutboundEmailOpen[]
 }
 
 model OutboundEmailOpen {
@@ -1302,57 +1282,55 @@ model Page {
   id          String        @id @default(cuid())
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  slug        String
+  slug        String        @unique
   isPublished Boolean       @default(false)
   isPublic    Boolean       @default(false)
-  metaTags    PageMetaTag[]
   blocks      PageBlock[]
-
-  @@unique([slug])
+  metaTags    PageMetaTag[]
 }
 
 model PageMetaTag {
   id     String  @id @default(cuid())
   pageId String?
-  page   Page?   @relation(fields: [pageId], references: [id], onDelete: Cascade)
   order  Int?
   name   String
   value  String
+  page   Page?   @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@unique([pageId, name, value])
 }
 
 model PageBlock {
   id     String @id @default(cuid())
+  order  Int
+  type   String
+  value  String
   pageId String
   page   Page   @relation(fields: [pageId], references: [id])
-  order  Int
-  type   String // hero, gallery, logoClouds, video...
-  value  String
 }
 
 model Tag {
   id      String      @id @default(cuid())
   name    String      @unique
   color   Int?
-  users   TagUser[]
   tenants TagTenant[]
+  users   TagUser[]
 }
 
 model TagUser {
   id     String @id @default(cuid())
   userId String
-  user   User   @relation(fields: [userId], references: [id])
   tagId  String
   tag    Tag    @relation(fields: [tagId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model TagTenant {
   id       String @id @default(cuid())
   tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id])
   tagId    String
   tag      Tag    @relation(fields: [tagId], references: [id])
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 }
 
 model Onboarding {
@@ -1360,33 +1338,33 @@ model Onboarding {
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   title          String
-  type           String // modal, page
+  type           String
   realtime       Boolean             @default(false)
   active         Boolean             @default(false)
   canBeDismissed Boolean             @default(true)
   height         String?
   filters        OnboardingFilter[]
-  steps          OnboardingStep[]
   sessions       OnboardingSession[]
+  steps          OnboardingStep[]
 }
 
 model OnboardingFilter {
   id           String                         @id @default(cuid())
   createdAt    DateTime                       @default(now())
   onboardingId String
-  onboarding   Onboarding                     @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
   type         String
   value        String?
+  onboarding   Onboarding                     @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
   matches      OnboardingSessionFilterMatch[]
 }
 
 model OnboardingStep {
   id           String                  @id @default(cuid())
   onboardingId String
-  onboarding   Onboarding              @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
   order        Int
   block        String
   sessionSteps OnboardingSessionStep[]
+  onboarding   Onboarding              @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
 }
 
 model OnboardingSession {
@@ -1394,19 +1372,19 @@ model OnboardingSession {
   createdAt       DateTime                       @default(now())
   updatedAt       DateTime                       @updatedAt
   onboardingId    String
-  onboarding      Onboarding                     @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
   userId          String
-  user            User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenantId        String?
-  tenant          Tenant?                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  status          String // active, completed, dismissed
+  status          String
   startedAt       DateTime?
   completedAt     DateTime?
   dismissedAt     DateTime?
   createdRealtime Boolean                        @default(false)
+  onboarding      Onboarding                     @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  tenant          Tenant?                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user            User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actions         OnboardingSessionAction[]
   matches         OnboardingSessionFilterMatch[]
   sessionSteps    OnboardingSessionStep[]
-  actions         OnboardingSessionAction[]
 
   @@unique([onboardingId, userId, tenantId])
 }
@@ -1415,41 +1393,41 @@ model OnboardingSessionAction {
   id                  String            @id @default(cuid())
   createdAt           DateTime          @default(now())
   onboardingSessionId String
-  onboardingSession   OnboardingSession @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
   type                String
   name                String
   value               String
+  onboardingSession   OnboardingSession @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
 }
 
 model OnboardingSessionFilterMatch {
   id                  String            @id @default(cuid())
   onboardingFilterId  String
-  onboardingFilter    OnboardingFilter  @relation(fields: [onboardingFilterId], references: [id], onDelete: Cascade)
   onboardingSessionId String
+  onboardingFilter    OnboardingFilter  @relation(fields: [onboardingFilterId], references: [id], onDelete: Cascade)
   onboardingSession   OnboardingSession @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
 }
 
 model OnboardingSessionStep {
   id                  String            @id @default(cuid())
   onboardingSessionId String
-  onboardingSession   OnboardingSession @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
   stepId              String
-  step                OnboardingStep    @relation(fields: [stepId], references: [id], onDelete: Cascade)
   seenAt              DateTime?
   completedAt         DateTime?
+  onboardingSession   OnboardingSession @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
+  step                OnboardingStep    @relation(fields: [stepId], references: [id], onDelete: Cascade)
 }
 
 model TenantIpAddress {
   id        String   @id @default(cuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   apiKeyId  String?
-  apiKey    ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
   ip        String
   fromUrl   String
   createdAt DateTime @default(now())
+  apiKey    ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, ip, userId, apiKeyId])
 }
@@ -1471,17 +1449,17 @@ model FeatureFlagFilter {
   id            String      @id @default(cuid())
   createdAt     DateTime    @default(now())
   featureFlagId String
-  featureFlag   FeatureFlag @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
-  type          String // [FeatureFlagsFilterType] percentage, darkMode, language.is, page.is, analytics.browser.is...
-  value         String? // 0-100, true, false, en, de, fr, ...
+  type          String
+  value         String?
   action        String?
+  featureFlag   FeatureFlag @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
 }
 
 model TenantSettingsRow {
   tenantId String @unique
   rowId    String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   row      Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model PromptFlowGroup {
@@ -1490,9 +1468,9 @@ model PromptFlowGroup {
   order       Int
   title       String
   description String
-  templates   PromptFlowGroupTemplate[]
   promptFlows PromptFlow[]
   entities    PromptFlowGroupEntity[]
+  templates   PromptFlowGroupTemplate[]
 }
 
 model PromptFlowGroupTemplate {
@@ -1506,8 +1484,8 @@ model PromptFlowGroupTemplate {
 
 model PromptFlowGroupEntity {
   entityId          String
-  entity            Entity          @relation(fields: [entityId], references: [id], onDelete: Cascade)
   promptFlowGroupId String
+  entity            Entity          @relation(fields: [entityId], references: [id], onDelete: Cascade)
   promptFlowGroup   PromptFlowGroup @relation(fields: [promptFlowGroupId], references: [id], onDelete: Cascade)
 
   @@id([entityId, promptFlowGroupId])
@@ -1517,64 +1495,64 @@ model PromptFlow {
   id                String                    @id @default(cuid())
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
-  model             String // gpt-3.5-turbo, gpt-4...
+  model             String
   title             String
   description       String
   actionTitle       String?
-  executionType     String                    @default("sequential") // sequential, parallel
+  executionType     String                    @default("sequential")
   promptFlowGroupId String?
   stream            Boolean                   @default(false)
-  public            Boolean                   @default(true)
-  inputVariables    PromptFlowInputVariable[]
   inputEntityId     String?
+  public            Boolean                   @default(true)
   inputEntity       Entity?                   @relation(fields: [inputEntityId], references: [id], onDelete: Cascade)
   promptFlowGroup   PromptFlowGroup?          @relation(fields: [promptFlowGroupId], references: [id], onDelete: Cascade)
-  templates         PromptTemplate[]
   executions        PromptFlowExecution[]
+  inputVariables    PromptFlowInputVariable[]
   outputs           PromptFlowOutput[]
+  templates         PromptTemplate[]
 }
 
 model PromptFlowInputVariable {
   id           String     @id @default(cuid())
   promptFlowId String
-  promptFlow   PromptFlow @relation(fields: [promptFlowId], references: [id], onDelete: Cascade)
   type         String
   name         String
   title        String
   isRequired   Boolean
+  promptFlow   PromptFlow @relation(fields: [promptFlowId], references: [id], onDelete: Cascade)
 }
 
 model PromptTemplate {
   id                   String                    @id @default(cuid())
   flowId               String
-  flow                 PromptFlow                @relation(fields: [flowId], references: [id], onDelete: Cascade)
   order                Int
   title                String
   template             String
   temperature          Decimal
-  maxTokens            Int?
   generations          Int?
-  results              PromptTemplateResult[]
+  maxTokens            Int?
   inPromptFlowMappings PromptFlowOutputMapping[]
+  flow                 PromptFlow                @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  results              PromptTemplateResult[]
 }
 
 model PromptFlowOutput {
   id           String                    @id @default(cuid())
   promptFlowId String
-  promptFlow   PromptFlow                @relation(fields: [promptFlowId], references: [id], onDelete: Cascade)
   type         String
   entityId     String
   entity       Entity                    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  promptFlow   PromptFlow                @relation(fields: [promptFlowId], references: [id], onDelete: Cascade)
   mappings     PromptFlowOutputMapping[]
 }
 
 model PromptFlowOutputMapping {
   id                 String           @id @default(cuid())
   promptFlowOutputId String
-  promptFlowOutput   PromptFlowOutput @relation(fields: [promptFlowOutputId], references: [id], onDelete: Cascade)
   promptTemplateId   String
-  promptTemplate     PromptTemplate   @relation(fields: [promptTemplateId], references: [id], onDelete: Cascade)
   propertyId         String
+  promptFlowOutput   PromptFlowOutput @relation(fields: [promptFlowOutputId], references: [id], onDelete: Cascade)
+  promptTemplate     PromptTemplate   @relation(fields: [promptTemplateId], references: [id], onDelete: Cascade)
   property           Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@unique([promptFlowOutputId, promptTemplateId, propertyId])
@@ -1585,17 +1563,17 @@ model PromptFlowExecution {
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
   flowId      String
-  flow        PromptFlow             @relation(fields: [flowId], references: [id], onDelete: Cascade)
-  model       String?
   userId      String?
-  user        User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenantId    String?
-  tenant      Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  status      String // pending, running, success, error
+  status      String
   error       String?
   startedAt   DateTime?
   completedAt DateTime?
   duration    Int?
+  model       String?
+  flow        PromptFlow             @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  tenant      Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   results     PromptTemplateResult[]
 }
 
@@ -1604,31 +1582,31 @@ model PromptTemplateResult {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   flowExecutionId String
-  flowExecution   PromptFlowExecution @relation(fields: [flowExecutionId], references: [id])
   templateId      String?
-  template        PromptTemplate?     @relation(fields: [templateId], references: [id])
   order           Int
-  status          String // pending, running, success, error
+  status          String
   prompt          String
   response        String?
   error           String?
   startedAt       DateTime?
   completedAt     DateTime?
+  flowExecution   PromptFlowExecution @relation(fields: [flowExecutionId], references: [id])
+  template        PromptTemplate?     @relation(fields: [templateId], references: [id])
 }
 
 model MetricLog {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   env       String
-  type      String // loader, action
+  type      String
   route     String
   url       String
   function  String
   duration  Int
   userId    String?
   tenantId  String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Formula {
@@ -1636,21 +1614,21 @@ model Formula {
   createdAt          DateTime           @default(now())
   name               String
   description        String?
-  resultAs           String // string, number, boolean, date
-  calculationTrigger String // one or many: always, onList, onCreated, onOverview, onEdit, custom, manual
+  resultAs           String
+  calculationTrigger String
   withLogs           Boolean            @default(false)
   components         FormulaComponent[]
-  inProperties       Property[]
   logs               FormulaLog[]
+  inProperties       Property[]
 }
 
 model FormulaComponent {
   id        String  @id @default(cuid())
   formulaId String
-  formula   Formula @relation(fields: [formulaId], references: [id], onDelete: Cascade)
   order     Int
-  type      String //name, operator, parenthesis, value
   value     String
+  type      String
+  formula   Formula @relation(fields: [formulaId], references: [id], onDelete: Cascade)
 }
 
 model FormulaLog {
@@ -1666,48 +1644,46 @@ model FormulaLog {
   duration        Int                   @default(0)
   error           String?
   rowValueId      String?
-  formula         Formula               @relation(fields: [formulaId], references: [id], onDelete: Cascade)
-  user            User?                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant          Tenant?               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   components      FormulaComponentLog[]
+  formula         Formula               @relation(fields: [formulaId], references: [id], onDelete: Cascade)
+  tenant          Tenant?               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user            User?                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model FormulaComponentLog {
   id           String     @id @default(cuid())
   order        Int
-  type         String //name, operator, parenthesis, value
   value        String
   rowId        String?
-  row          Row?       @relation(fields: [rowId], references: [id], onDelete: Cascade)
   formulaLogId String
+  type         String
   formulaLog   FormulaLog @relation(fields: [formulaLogId], references: [id], onDelete: Cascade)
+  row          Row?       @relation(fields: [rowId], references: [id], onDelete: Cascade)
 }
 
 model EntityGroup {
   id                String                     @id @default(cuid())
   createdAt         DateTime                   @default(now())
   order             Int
-  slug              String
+  slug              String                     @unique
   title             String
   icon              String
   collapsible       Boolean
   section           String?
-  entities          EntityGroupEntity[]
   configurationRows EntityGroupConfiguration[]
-
-  @@unique([slug])
+  entities          EntityGroupEntity[]
 }
 
 model EntityGroupEntity {
   id            String      @id @default(cuid())
   entityGroupId String
-  entityGroup   EntityGroup @relation(fields: [entityGroupId], references: [id], onDelete: Cascade)
   entityId      String
-  entity        Entity      @relation(fields: [entityId], references: [id], onDelete: Cascade)
   allViewId     String?
-  allView       EntityView? @relation(fields: [allViewId], references: [id], onDelete: Cascade)
-  selectMin     Int?
   selectMax     Int?
+  selectMin     Int?
+  allView       EntityView? @relation(fields: [allViewId], references: [id], onDelete: Cascade)
+  entityGroup   EntityGroup @relation(fields: [entityGroupId], references: [id], onDelete: Cascade)
+  entity        Entity      @relation(fields: [entityId], references: [id], onDelete: Cascade)
 }
 
 model TenantType {
@@ -1718,20 +1694,20 @@ model TenantType {
   titlePlural          String
   description          String?
   isDefault            Boolean                  @default(false)
-  tenants              Tenant[]
+  entities             TenantTypeEntity[]
   fromTypes            TenantTypeRelationship[] @relation("fromType")
   toTypes              TenantTypeRelationship[] @relation("toType")
-  subscriptionProducts SubscriptionProduct[]
-  entities             TenantTypeEntity[]
+  subscriptionProducts SubscriptionProduct[]    @relation("SubscriptionProductToTenantType")
+  tenants              Tenant[]                 @relation("TenantToTenantType")
 }
 
 model TenantTypeEntity {
   id           String      @id @default(cuid())
   tenantTypeId String?
-  tenantType   TenantType? @relation(fields: [tenantTypeId], references: [id], onDelete: Cascade)
   entityId     String
-  entity       Entity      @relation(fields: [entityId], references: [id], onDelete: Cascade)
   enabled      Boolean
+  entity       Entity      @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  tenantType   TenantType? @relation(fields: [tenantTypeId], references: [id], onDelete: Cascade)
 }
 
 model TenantTypeRelationship {
@@ -1741,10 +1717,10 @@ model TenantTypeRelationship {
   canCreate     Boolean              @default(false)
   fromTypeId    String?
   toTypeId      String?
-  fromType      TenantType?          @relation(name: "fromType", fields: [fromTypeId], references: [id], onDelete: Cascade)
-  toType        TenantType?          @relation(name: "toType", fields: [toTypeId], references: [id], onDelete: Cascade)
-  permissions   Permission[]
   relationships TenantRelationship[]
+  fromType      TenantType?          @relation("fromType", fields: [fromTypeId], references: [id], onDelete: Cascade)
+  toType        TenantType?          @relation("toType", fields: [toTypeId], references: [id], onDelete: Cascade)
+  permissions   Permission[]         @relation("PermissionToTenantTypeRelationship")
 
   @@unique([fromTypeId, toTypeId])
 }
@@ -1757,10 +1733,10 @@ model TenantRelationship {
   fromTenantId             String
   toTenantId               String
   createdByUserId          String?
-  tenantTypeRelationship   TenantTypeRelationship @relation(fields: [tenantTypeRelationshipId], references: [id], onDelete: Cascade)
-  fromTenant               Tenant                 @relation(name: "fromTenant", fields: [fromTenantId], references: [id], onDelete: Cascade)
-  toTenant                 Tenant                 @relation(name: "toTenant", fields: [toTenantId], references: [id], onDelete: Cascade)
   createdByUser            User?                  @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  fromTenant               Tenant                 @relation("fromTenant", fields: [fromTenantId], references: [id], onDelete: Cascade)
+  tenantTypeRelationship   TenantTypeRelationship @relation(fields: [tenantTypeRelationshipId], references: [id], onDelete: Cascade)
+  toTenant                 Tenant                 @relation("toTenant", fields: [toTenantId], references: [id], onDelete: Cascade)
 
   @@unique([fromTenantId, toTenantId])
 }
@@ -1769,8 +1745,7 @@ model KnowledgeBase {
   id              String                  @id @default(cuid())
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
-  basePath        String
-  slug            String
+  slug            String                  @unique
   title           String
   description     String
   defaultLanguage String
@@ -1781,17 +1756,15 @@ model KnowledgeBase {
   links           String
   logo            String
   seoImage        String
-  categories      KnowledgeBaseCategory[]
+  basePath        String
   articles        KnowledgeBaseArticle[]
+  categories      KnowledgeBaseCategory[]
   views           KnowledgeBaseViews[]
-
-  @@unique([slug])
 }
 
 model KnowledgeBaseCategory {
   id              String                         @id @default(cuid())
   knowledgeBaseId String
-  knowledgeBase   KnowledgeBase                  @relation(fields: [knowledgeBaseId], references: [id])
   slug            String
   order           Int
   title           String
@@ -1799,8 +1772,9 @@ model KnowledgeBaseCategory {
   icon            String
   language        String
   seoImage        String
-  sections        KnowledgeBaseCategorySection[]
   articles        KnowledgeBaseArticle[]
+  knowledgeBase   KnowledgeBase                  @relation(fields: [knowledgeBaseId], references: [id])
+  sections        KnowledgeBaseCategorySection[]
 
   @@unique([knowledgeBaseId, slug])
 }
@@ -1808,11 +1782,11 @@ model KnowledgeBaseCategory {
 model KnowledgeBaseCategorySection {
   id          String                 @id @default(cuid())
   categoryId  String
-  category    KnowledgeBaseCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   order       Int
   title       String
   description String
   articles    KnowledgeBaseArticle[]
+  category    KnowledgeBaseCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 model KnowledgeBaseArticle {
@@ -1820,18 +1794,14 @@ model KnowledgeBaseArticle {
   createdAt              DateTime                        @default(now())
   updatedAt              DateTime?                       @updatedAt
   knowledgeBaseId        String
-  knowledgeBase          KnowledgeBase                   @relation(fields: [knowledgeBaseId], references: [id])
   categoryId             String?
-  category               KnowledgeBaseCategory?          @relation(fields: [categoryId], references: [id])
   sectionId              String?
-  section                KnowledgeBaseCategorySection?   @relation(fields: [sectionId], references: [id])
   slug                   String
   title                  String
   description            String
   order                  Int
   contentDraft           String
   contentPublished       String                          @default("")
-  contentPublishedAsText String                          @default("")
   contentType            String
   language               String
   featuredOrder          Int?
@@ -1839,12 +1809,16 @@ model KnowledgeBaseArticle {
   publishedAt            DateTime?
   relatedInArticleId     String?
   createdByUserId        String?
+  contentPublishedAsText String                          @default("")
+  category               KnowledgeBaseCategory?          @relation(fields: [categoryId], references: [id])
   createdByUser          User?                           @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
-  views                  KnowledgeBaseArticleViews[]
-  upvotes                KnowledgeBaseArticleUpvotes[]
+  knowledgeBase          KnowledgeBase                   @relation(fields: [knowledgeBaseId], references: [id])
+  section                KnowledgeBaseCategorySection?   @relation(fields: [sectionId], references: [id])
   downvotes              KnowledgeBaseArticleDownvotes[]
-  relatedArticles        KnowledgeBaseRelatedArticle[]   @relation(name: "relatedArticles")
-  relatedInArticles      KnowledgeBaseRelatedArticle[]   @relation(name: "relatedInArticles")
+  upvotes                KnowledgeBaseArticleUpvotes[]
+  views                  KnowledgeBaseArticleViews[]
+  relatedArticles        KnowledgeBaseRelatedArticle[]   @relation("relatedArticles")
+  relatedInArticles      KnowledgeBaseRelatedArticle[]   @relation("relatedInArticles")
 
   @@unique([knowledgeBaseId, slug])
 }
@@ -1852,25 +1826,25 @@ model KnowledgeBaseArticle {
 model KnowledgeBaseRelatedArticle {
   id               String               @id @default(cuid())
   articleId        String
-  article          KnowledgeBaseArticle @relation(name: "relatedArticles", fields: [articleId], references: [id], onDelete: Cascade)
-  relatedArticle   KnowledgeBaseArticle @relation(name: "relatedInArticles", fields: [relatedArticleId], references: [id], onDelete: Cascade)
   relatedArticleId String
+  article          KnowledgeBaseArticle @relation("relatedArticles", fields: [articleId], references: [id], onDelete: Cascade)
+  relatedArticle   KnowledgeBaseArticle @relation("relatedInArticles", fields: [relatedArticleId], references: [id], onDelete: Cascade)
 }
 
 model KnowledgeBaseViews {
   id              String        @id @default(cuid())
   createdAt       DateTime      @default(now())
   knowledgeBaseId String
-  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
   userAnalyticsId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
 
   @@unique([knowledgeBaseId, userAnalyticsId])
 }
 
 model KnowledgeBaseArticleViews {
   knowledgeBaseArticleId String
-  knowledgeBaseArticle   KnowledgeBaseArticle @relation(fields: [knowledgeBaseArticleId], references: [id], onDelete: Cascade)
   userAnalyticsId        String
+  knowledgeBaseArticle   KnowledgeBaseArticle @relation(fields: [knowledgeBaseArticleId], references: [id], onDelete: Cascade)
 
   @@unique([knowledgeBaseArticleId, userAnalyticsId])
 }
@@ -1878,8 +1852,8 @@ model KnowledgeBaseArticleViews {
 model KnowledgeBaseArticleUpvotes {
   createdAt              DateTime             @default(now())
   knowledgeBaseArticleId String
-  knowledgeBaseArticle   KnowledgeBaseArticle @relation(fields: [knowledgeBaseArticleId], references: [id], onDelete: Cascade)
   userAnalyticsId        String
+  knowledgeBaseArticle   KnowledgeBaseArticle @relation(fields: [knowledgeBaseArticleId], references: [id], onDelete: Cascade)
 
   @@unique([knowledgeBaseArticleId, userAnalyticsId])
 }
@@ -1887,8 +1861,8 @@ model KnowledgeBaseArticleUpvotes {
 model KnowledgeBaseArticleDownvotes {
   createdAt              DateTime             @default(now())
   knowledgeBaseArticleId String
-  knowledgeBaseArticle   KnowledgeBaseArticle @relation(fields: [knowledgeBaseArticleId], references: [id], onDelete: Cascade)
   userAnalyticsId        String
+  knowledgeBaseArticle   KnowledgeBaseArticle @relation(fields: [knowledgeBaseArticleId], references: [id], onDelete: Cascade)
 
   @@unique([knowledgeBaseArticleId, userAnalyticsId])
 }
@@ -1898,18 +1872,18 @@ model EntityGroupConfiguration {
   createdAt     DateTime                      @default(now())
   updatedAt     DateTime                      @updatedAt
   tenantId      String?
-  tenant        Tenant?                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   entityGroupId String
-  entityGroup   EntityGroup                   @relation(fields: [entityGroupId], references: [id], onDelete: Cascade)
   title         String
+  entityGroup   EntityGroup                   @relation(fields: [entityGroupId], references: [id], onDelete: Cascade)
+  tenant        Tenant?                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   rows          EntityGroupConfigurationRow[]
 }
 
 model EntityGroupConfigurationRow {
   id                         String                   @id @default(cuid())
   entityGroupConfigurationId String
-  entityGroupConfiguration   EntityGroupConfiguration @relation(fields: [entityGroupConfigurationId], references: [id], onDelete: Cascade)
   rowId                      String
+  entityGroupConfiguration   EntityGroupConfiguration @relation(fields: [entityGroupConfigurationId], references: [id], onDelete: Cascade)
   row                        Row                      @relation(fields: [rowId], references: [id], onDelete: Cascade)
 
   @@unique([entityGroupConfigurationId, rowId])
@@ -1928,9 +1902,9 @@ model FileUploadProgress {
 model FileChunk {
   id           Int                @id @default(autoincrement())
   fileUploadId String
-  fileUpload   FileUploadProgress @relation(fields: [fileUploadId], references: [id], onDelete: Cascade)
   index        Int
   data         Bytes
+  fileUpload   FileUploadProgress @relation(fields: [fileUploadId], references: [id], onDelete: Cascade)
 }
 
 model Workflow {
@@ -1941,60 +1915,60 @@ model Workflow {
   description         String
   status              String                 @default("draft")
   tenantId            String?
-  tenant              Tenant?                @relation(fields: [tenantId], references: [id])
   createdByUserId     String?
-  createdByUser       User?                  @relation(name: "createdByUser", fields: [createdByUserId], references: [id])
   appliesToAllTenants Boolean                @default(false)
+  createdByUser       User?                  @relation("createdByUser", fields: [createdByUserId], references: [id])
+  tenant              Tenant?                @relation(fields: [tenantId], references: [id])
   blocks              WorkflowBlock[]
-  inputExamples       WorkflowInputExample[]
   executions          WorkflowExecution[]
+  inputExamples       WorkflowInputExample[]
 }
 
 model WorkflowBlock {
   id                  String                        @id @default(cuid())
-  workflowId          String // Foreign key to the Workflow
-  workflow            Workflow                      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId          String
   createdAt           DateTime                      @default(now())
   updatedAt           DateTime                      @updatedAt
   type                String
   description         String
   isTrigger           Boolean                       @default(false)
   isBlock             Boolean                       @default(false)
-  fromBlocks          WorkflowBlockToBlock[]        @relation(name: "toBlock")
-  toBlocks            WorkflowBlockToBlock[]        @relation(name: "fromBlock")
   input               String
-  executions          WorkflowBlockExecution[]      @relation(name: "executions")
-  fromExecutions      WorkflowBlockExecution[]      @relation(name: "fromExecutions")
+  workflow            Workflow                      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   conditionsGroups    WorkflowBlockConditionGroup[]
+  fromExecutions      WorkflowBlockExecution[]      @relation("fromExecutions")
+  executions          WorkflowBlockExecution[]      @relation("executions")
+  toBlocks            WorkflowBlockToBlock[]        @relation("fromBlock")
+  fromBlocks          WorkflowBlockToBlock[]        @relation("toBlock")
   waitingInExecutions WorkflowExecution[]
 }
 
 model WorkflowBlockConditionGroup {
   id              String                   @id @default(cuid())
   workflowBlockId String
-  workflowBlock   WorkflowBlock            @relation(fields: [workflowBlockId], references: [id], onDelete: Cascade)
   index           Int
-  type            String // AND or OR
+  type            String
   conditions      WorkflowBlockCondition[]
+  workflowBlock   WorkflowBlock            @relation(fields: [workflowBlockId], references: [id], onDelete: Cascade)
 }
 
 model WorkflowBlockCondition {
   id                            String                      @id @default(cuid())
   workflowBlockConditionGroupId String
-  workflowBlockConditionGroup   WorkflowBlockConditionGroup @relation(fields: [workflowBlockConditionGroupId], references: [id], onDelete: Cascade)
   index                         Int
   variable                      String
   operator                      String
   value                         String
+  workflowBlockConditionGroup   WorkflowBlockConditionGroup @relation(fields: [workflowBlockConditionGroupId], references: [id], onDelete: Cascade)
 }
 
 model WorkflowBlockToBlock {
   id          String        @id @default(cuid())
   fromBlockId String
-  fromBlock   WorkflowBlock @relation(name: "fromBlock", fields: [fromBlockId], references: [id], onDelete: Cascade)
   toBlockId   String
-  toBlock     WorkflowBlock @relation(name: "toBlock", fields: [toBlockId], references: [id], onDelete: Cascade)
   condition   String?
+  fromBlock   WorkflowBlock @relation("fromBlock", fields: [fromBlockId], references: [id], onDelete: Cascade)
+  toBlock     WorkflowBlock @relation("toBlock", fields: [toBlockId], references: [id], onDelete: Cascade)
 
   @@unique([fromBlockId, toBlockId])
 }
@@ -2004,10 +1978,8 @@ model WorkflowExecution {
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
   workflowId          String
-  workflow            Workflow                 @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   tenantId            String?
-  tenant              Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  type                String // manual, api, stream
+  type                String
   status              String
   input               String
   output              String?
@@ -2015,20 +1987,22 @@ model WorkflowExecution {
   endedAt             DateTime?
   error               String?
   waitingBlockId      String?
-  waitingBlock        WorkflowBlock?           @relation(fields: [waitingBlockId], references: [id])
-  createdByUserId     String?
-  createdByUser       User?                    @relation(name: "executedByUser", fields: [createdByUserId], references: [id])
   appliesToAllTenants Boolean                  @default(false)
+  createdByUserId     String?
   blockRuns           WorkflowBlockExecution[]
+  createdByUser       User?                    @relation("executedByUser", fields: [createdByUserId], references: [id])
+  tenant              Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  waitingBlock        WorkflowBlock?           @relation(fields: [waitingBlockId], references: [id])
+  workflow            Workflow                 @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 }
 
 model WorkflowInputExample {
   id         String   @id @default(cuid())
   createdAt  DateTime @default(now())
   workflowId String
-  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   title      String
   input      String?
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@unique([workflowId, title])
 }
@@ -2036,11 +2010,8 @@ model WorkflowInputExample {
 model WorkflowBlockExecution {
   id                  String            @id @default(cuid())
   workflowExecutionId String
-  workflowExecution   WorkflowExecution @relation(fields: [workflowExecutionId], references: [id], onDelete: Cascade)
   workflowBlockId     String
-  workflowBlock       WorkflowBlock     @relation(name: "executions", fields: [workflowBlockId], references: [id], onDelete: Cascade)
   fromWorkflowBlockId String?
-  fromWorkflowBlock   WorkflowBlock?    @relation(name: "fromExecutions", fields: [fromWorkflowBlockId], references: [id])
   status              String
   startedAt           DateTime
   input               String?
@@ -2048,6 +2019,9 @@ model WorkflowBlockExecution {
   duration            Int?
   endedAt             DateTime?
   error               String?
+  fromWorkflowBlock   WorkflowBlock?    @relation("fromExecutions", fields: [fromWorkflowBlockId], references: [id])
+  workflowBlock       WorkflowBlock     @relation("executions", fields: [workflowBlockId], references: [id], onDelete: Cascade)
+  workflowExecution   WorkflowExecution @relation(fields: [workflowExecutionId], references: [id], onDelete: Cascade)
 }
 
 model WorkflowVariable {
@@ -2055,12 +2029,12 @@ model WorkflowVariable {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   tenantId        String?
-  tenant          Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name            String
   value           String
   createdByUserId String?
-  createdByUser   User?    @relation(fields: [userId], references: [id])
   userId          String?
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdByUser   User?    @relation(fields: [userId], references: [id])
 
   @@unique([tenantId, name])
 }
@@ -2070,12 +2044,12 @@ model WorkflowCredential {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   tenantId        String?
-  tenant          Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name            String
   value           String
   createdByUserId String?
-  createdByUser   User?    @relation(fields: [userId], references: [id])
   userId          String?
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdByUser   User?    @relation(fields: [userId], references: [id])
 
   @@unique([tenantId, name])
 }
@@ -2117,12 +2091,12 @@ model Credit {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
   amount    Int
   type      String
   objectId  String?
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([tenantId, userId])
   @@index([tenantId, createdAt])
@@ -2132,11 +2106,11 @@ model Feedback {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   tenantId  String?
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   message   String
   fromUrl   String
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Portal {
@@ -2144,9 +2118,7 @@ model Portal {
   createdAt                          DateTime                             @default(now())
   updatedAt                          DateTime                             @updatedAt
   tenantId                           String?
-  tenant                             Tenant?                              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdByUserId                    String?
-  createdByUser                      User?                                @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
   subdomain                          String                               @unique
   domain                             String?                              @unique
   title                              String
@@ -2175,19 +2147,21 @@ model Portal {
   affiliatesRewardfulApiKey          String?
   affiliatesRewardfulUrl             String?
   metadata                           Json?
-  users                              PortalUser[]
+  analyticsEvents                    AnalyticsEvent[]
+  analyticsPageViews                 AnalyticsPageView[]
+  analyticsUniqueVisitors            AnalyticsUniqueVisitor[]
+  createdByUser                      User?                                @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  tenant                             Tenant?                              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  checkoutSessionStatus              PortalCheckoutSessionStatus[]
   pages                              PortalPage[]
-  registrations                      PortalUserRegistration[]
-  subscriptionProducts               PortalSubscriptionProduct[]
-  subscriptionPrices                 PortalSubscriptionPrice[]
   subscriptionFeatures               PortalSubscriptionFeature[]
+  subscriptionPrices                 PortalSubscriptionPrice[]
+  subscriptionProducts               PortalSubscriptionProduct[]
+  users                              PortalUser[]
+  registrations                      PortalUserRegistration[]
   userSubscriptions                  PortalUserSubscription[]
   userSubscriptionProducts           PortalUserSubscriptionProduct[]
   userSubscriptionProductPrices      PortalUserSubscriptionProductPrice[]
-  checkoutSessionStatus              PortalCheckoutSessionStatus[]
-  analyticsUniqueVisitors            AnalyticsUniqueVisitor[]
-  analyticsPageViews                 AnalyticsPageView[]
-  analyticsEvents                    AnalyticsEvent[]
 }
 
 model PortalUser {
@@ -2195,9 +2169,7 @@ model PortalUser {
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   tenantId                String?
-  tenant                  Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   portalId                String
-  portal                  Portal                   @relation(fields: [portalId], references: [id], onDelete: Cascade)
   email                   String
   passwordHash            String
   firstName               String
@@ -2208,10 +2180,12 @@ model PortalUser {
   githubId                String?
   googleId                String?
   locale                  String?
-  fromRegistration        PortalUserRegistration?
-  analyticsUniqueVisitors AnalyticsUniqueVisitor[]
-  analyticsPageViews      AnalyticsPageView[]
   analyticsEvents         AnalyticsEvent[]
+  analyticsPageViews      AnalyticsPageView[]
+  analyticsUniqueVisitors AnalyticsUniqueVisitor[]
+  portal                  Portal                   @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  tenant                  Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fromRegistration        PortalUserRegistration?
   subscription            PortalUserSubscription?
 
   @@unique([portalId, email])
@@ -2225,9 +2199,9 @@ model PortalPage {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   portalId   String
-  portal     Portal   @relation(fields: [portalId], references: [id], onDelete: Cascade)
   name       String
   attributes Json?
+  portal     Portal   @relation(fields: [portalId], references: [id], onDelete: Cascade)
 
   @@unique([portalId, name])
 }
@@ -2236,7 +2210,6 @@ model PortalUserRegistration {
   id                          String      @id @default(cuid())
   createdAt                   DateTime    @default(now())
   portalId                    String
-  portal                      Portal      @relation(fields: [portalId], references: [id], onDelete: Cascade)
   email                       String
   firstName                   String
   lastName                    String
@@ -2247,6 +2220,7 @@ model PortalUserRegistration {
   selectedSubscriptionPriceId String?
   createdPortalUserId         String?     @unique
   createdPortalUser           PortalUser? @relation(fields: [createdPortalUserId], references: [id], onDelete: Cascade)
+  portal                      Portal      @relation(fields: [portalId], references: [id], onDelete: Cascade)
 
   @@unique([portalId, email])
 }
@@ -2254,7 +2228,6 @@ model PortalUserRegistration {
 model PortalSubscriptionProduct {
   id                       String                          @id @default(cuid())
   portalId                 String
-  portal                   Portal                          @relation(fields: [portalId], references: [id], onDelete: Cascade)
   stripeId                 String
   order                    Int
   title                    String
@@ -2268,17 +2241,16 @@ model PortalSubscriptionProduct {
   billingAddressCollection String                          @default("auto")
   hasQuantity              Boolean                         @default(false)
   canBuyAgain              Boolean                         @default(false)
-  prices                   PortalSubscriptionPrice[]
   features                 PortalSubscriptionFeature[]
+  prices                   PortalSubscriptionPrice[]
+  portal                   Portal                          @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUserProducts       PortalUserSubscriptionProduct[]
 }
 
 model PortalSubscriptionPrice {
   id                      String                               @id @default(cuid())
   portalId                String
-  portal                  Portal                               @relation(fields: [portalId], references: [id], onDelete: Cascade)
   subscriptionProductId   String
-  subscriptionProduct     PortalSubscriptionProduct            @relation(fields: [subscriptionProductId], references: [id], onDelete: Cascade)
   stripeId                String
   type                    Int
   billingPeriod           Int
@@ -2286,13 +2258,14 @@ model PortalSubscriptionPrice {
   currency                String
   trialDays               Int
   active                  Boolean
+  portal                  Portal                               @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  subscriptionProduct     PortalSubscriptionProduct            @relation(fields: [subscriptionProductId], references: [id], onDelete: Cascade)
   portalUserProductPrices PortalUserSubscriptionProductPrice[]
 }
 
 model PortalSubscriptionFeature {
   id                    String                    @id @default(cuid())
   portalId              String
-  portal                Portal                    @relation(fields: [portalId], references: [id], onDelete: Cascade)
   subscriptionProductId String
   order                 Int
   title                 String
@@ -2302,15 +2275,16 @@ model PortalSubscriptionFeature {
   href                  String?
   badge                 String?
   accumulate            Boolean                   @default(false)
+  portal                Portal                    @relation(fields: [portalId], references: [id], onDelete: Cascade)
   subscriptionProduct   PortalSubscriptionProduct @relation(fields: [subscriptionProductId], references: [id], onDelete: Cascade)
 }
 
 model PortalUserSubscription {
   id               String                          @id @default(cuid())
   portalId         String
-  portal           Portal                          @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUserId     String                          @unique
   stripeCustomerId String?
+  portal           Portal                          @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUser       PortalUser                      @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
   products         PortalUserSubscriptionProduct[]
 }
@@ -2318,7 +2292,6 @@ model PortalUserSubscription {
 model PortalUserSubscriptionProduct {
   id                       String                               @id @default(cuid())
   portalId                 String
-  portal                   Portal                               @relation(fields: [portalId], references: [id], onDelete: Cascade)
   createdAt                DateTime                             @default(now())
   portalUserSubscriptionId String
   subscriptionProductId    String
@@ -2329,6 +2302,7 @@ model PortalUserSubscriptionProduct {
   fromCheckoutSessionId    String?
   currentPeriodStart       DateTime?
   currentPeriodEnd         DateTime?
+  portal                   Portal                               @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUserSubscription   PortalUserSubscription               @relation(fields: [portalUserSubscriptionId], references: [id], onDelete: Cascade)
   subscriptionProduct      PortalSubscriptionProduct            @relation(fields: [subscriptionProductId], references: [id])
   prices                   PortalUserSubscriptionProductPrice[]
@@ -2337,24 +2311,24 @@ model PortalUserSubscriptionProduct {
 model PortalUserSubscriptionProductPrice {
   id                              String                        @id @default(cuid())
   portalId                        String
-  portal                          Portal                        @relation(fields: [portalId], references: [id], onDelete: Cascade)
   portalUserSubscriptionProductId String
-  portalUserSubscriptionProduct   PortalUserSubscriptionProduct @relation(fields: [portalUserSubscriptionProductId], references: [id], onDelete: Cascade)
   subscriptionPriceId             String?
+  portal                          Portal                        @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  portalUserSubscriptionProduct   PortalUserSubscriptionProduct @relation(fields: [portalUserSubscriptionProductId], references: [id], onDelete: Cascade)
   subscriptionPrice               PortalSubscriptionPrice?      @relation(fields: [subscriptionPriceId], references: [id])
 }
 
 model PortalCheckoutSessionStatus {
   id            String   @unique
   portalId      String
-  portal        Portal   @relation(fields: [portalId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  pending       Boolean  @default(true) // has not added products to tenant
+  pending       Boolean  @default(true)
   email         String
   fromUrl       String
   fromUserId    String?
   createdUserId String?
+  portal        Portal   @relation(fields: [portalId], references: [id], onDelete: Cascade)
 }
 
 model Widget {
@@ -2365,8 +2339,38 @@ model Widget {
   name       String
   appearance String
   metadata   String
-
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, name])
+}
+
+// Update the existing DataSourceType model
+model DataSourceType {
+  sourceTypeId Int          @id @default(autoincrement())
+  sourceKey    String       @db.VarChar(50) @unique
+  sourceName   String       @db.Text
+  dataSources  DataSources[] // Add this relation
+
+  @@map("DataSourceTypes")
+}
+
+// Add the new DataSources model
+model DataSources {
+  sourceId        Int           @id @default(autoincrement())
+  chatbotId       String        @db.Uuid
+  sourceTypeId    Int
+  tenantId        String
+  sourceDetails   Json?
+  uploadedFilePath String?
+  createdAt       DateTime      @default(now())
+  
+  sourceType      DataSourceType @relation(fields: [sourceTypeId], references: [sourceTypeId])
+
+  @@map("DataSources")
+}
+
+model Languages {
+  languageId   Int    @id @default(autoincrement()) // SERIAL PRIMARY KEY
+  languageKey  String @unique                      // VARCHAR(50) NOT NULL
+  languageName String                             // TEXT NOT NULL
 }

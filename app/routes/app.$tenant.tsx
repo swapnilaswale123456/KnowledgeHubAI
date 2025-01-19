@@ -65,29 +65,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export default function AppTenantRoute() {
-  const appData = useAppData();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const params = useParams();
-  const { appConfiguration } = useRootData();
-  // const [showChat, setShowChat] = useState(false);
-
-  useEffect(() => {
-    if (!appData.currentTenant) {
-      navigate("/app");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appData.currentTenant]);
-
-  useEffect(() => {
-    if (!UrlUtils.stripTrailingSlash(location.pathname).startsWith(`/app/${params.tenant}/settings`)) {
-      if (appConfiguration.subscription.required && appData.mySubscription?.products.length === 0) {
-        navigate(`/subscribe/${params.tenant}?error=subscription_required`);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <AppLayout layout="app">

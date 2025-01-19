@@ -31,6 +31,9 @@ async function seed() {
 
   // Permissions
   await seedRolesAndPermissions(ADMIN_EMAIL);
+
+  await createDataSourceTypes();
+  await createLanguages(); 
 }
 
 async function createUser(firstName: string, lastName: string, email: string, password: string, adminRole?: TenantUserType) {
@@ -63,7 +66,45 @@ async function createUser(firstName: string, lastName: string, email: string, pa
   }
   return user;
 }
+async function createDataSourceTypes() {
+  const dataSourceTypes = [
+    { sourceKey: "overview", sourceName: "Overview" },
+    { sourceKey: "file", sourceName: "File Upload" },
+    { sourceKey: "website", sourceName: "Website" },
+    { sourceKey: "text", sourceName: "Text Input" },
+    { sourceKey: "notion", sourceName: "Notion" },
+    { sourceKey: "youtube", sourceName: "YouTube" }
+  ];
 
+  for (const type of dataSourceTypes) {
+    const existing = await db.dataSourceType.findFirst({
+      where: { sourceKey: type.sourceKey }
+    });
+
+    if (!existing) {
+      await db.dataSourceType.create({ data: type });
+    }
+  }
+  console.log("Seeding completed: DataSourceTypes added or already exist");
+}
+async function createLanguages() {
+  const languages = [
+    { languageKey: "en", languageName: "English" },
+    { languageKey: "es", languageName: "Spanish" },
+    { languageKey: "fr", languageName: "French" }
+  ];
+
+  for (const lang of languages) {
+    const existing = await db.languages.findFirst({
+      where: { languageKey: lang.languageKey }
+    });
+
+    if (!existing) {
+      await db.languages.create({ data: lang });
+    }
+  }
+  console.log("Seeding completed: Languages added or already exist");
+}
 async function createTenant(slug: string, name: string, users: { id: string; type: TenantUserType }[]) {
   let tenant = await db.tenant.findUnique({
     where: { slug },
