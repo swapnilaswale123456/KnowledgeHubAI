@@ -7,7 +7,10 @@ interface FileUploadResponse {
   message: string;
   data?: {
     sourceId: number;
+    fileName: string;
+    fileSize: number;
     filePath?: string;
+    isTrain?: boolean;
   };
 }
 
@@ -24,64 +27,65 @@ export class FileUploadService {
     this.apiKey = process.env.PYTHON_API_KEY || '';
   }
 
-  async uploadFile(file: File, tenantId: string, request: Request): Promise<FileUploadResponse> {
+  async uploadFile(file: File, tenantId: string, request: Request, isTrain = false) {
     try {
       const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${this.baseUrl}/file/upload/v2/file`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzI3MjcyMSwianRpIjoiNjM4Y2RlYjctNWMxYS00MDYxLTgyY2MtOGJhMjc5ZmQ4ZTU5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzI3MjcyMSwiY3NyZiI6ImY0NzI2MDk2LTU0ODMtNDM3OC04NTRlLTI2MjhiMGYzZTJjYiIsImV4cCI6MTczNzI3MzYyMSwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc2YjQ3RGsyWm1YRWJaRnppT0RnbnZ4UWNCbHl0dXZmbjR6Y2pFOUItS3VRLXRxLTdIempZV3ZNcXllMlpRd3MwUEVOR2Y2TnBSMUFzUEh2QnI3TjFmcWh5Z3VHYUwyelQtNUlWTjcyelVna2ZwNjZYeWpHdXVONXVxRWIxMlVPOVFfUnB3YWFkZnRPaWNEWjBiaDVmRHJsX0xSOGZkcGFDZ1lLQWI4U0FSQVNGUUhHWDJNaXM5ZFBsbEhXdUIzRGoxbGpzdUdmYXcwMTcxIiwiIl19.KZVMOVC9uMa51SVb6oANiqWo1Wu2cdN_B3ZUVXXVcxc`
+      
+      formData.append('file', file);      
+      if (isTrain == true) {
+       
+        const response = await fetch(`${this.baseUrl}/file/upload/v2/file`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzI5MDc0MSwianRpIjoiYzBiZDE1NjctZWFmZi00YjY1LTk1YjktMjQ2NGY1MmViMmY1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzI5MDc0MSwiY3NyZiI6ImJlODRiMTYzLTNkYjktNGZmZi05YWM0LTcyNmJlOGI5M2QwNSIsImV4cCI6MTczNzI5MTY0MSwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1NmNQWWZUSVl0eGlfOWlLQ3hGRllKV1ZmTXZTcjRUa3BFc19PYnJ1TXJNYWJQYWtMUG9NZ0FNQm0xLWdsUHptNDFnUHpia212Mmp4RkhfUmZDVzB5bHJsV0dwZlNNSWRwLU1SSkFOT1VlRGRLU1R2ejJoSGN6c09fWlQ3VEEzeXhVRVdHTlVMSEZBekFkTkRLclJPRGJEenlELU1LOGFDZ1lLQVRjU0FSQVNGUUhHWDJNaXdsV0x0QnNKN3lPZVZUUVpiX1ZOT0EwMTcxIiwiIl19.XYa_U1scl8eIhDiZ0XpT8r_xbP9BDCI46RtGY5EjGHE`
+          }
+          
+        });
+        if (!response.ok) {
+          return {
+            success: false,
+            message: `Upload failed: ${response.statusText}`
+          };
         }
-      });
-
-      if (!response.ok) {
-        return {
-          success: false,
-          message: `Upload to Python API failed: ${response.statusText}`
-        };
+  
+        const result = await response.json();
       }
-
-      const uploadedFilePath = response.url;
-
-      // Create DataSource record using Prisma
+      else{
+        formData.append('action', 'train');
+      }  
+      
+      // Create DataSource record
       const dataSource = await db.$queryRaw<DataSourceResponse[]>`
         INSERT INTO "DataSources" (
-          "chatbotId",
-          "sourceTypeId",
-          "tenantId",
-          "sourceDetails",
-          "uploadedFilePath",
-          "createdAt"
+          "chatbotId", "sourceTypeId", "tenantId", "sourceDetails", "createdAt"
         ) VALUES (
-          ${uuidv4()}::uuid,
-          ${2},
-          ${tenantId},
+          ${uuidv4()}::uuid, ${2}, ${tenantId},
           ${JSON.stringify({
             fileName: file.name,
             fileSize: file.size,
             fileType: file.type
           })}::jsonb,
-          ${uploadedFilePath},
           CURRENT_TIMESTAMP
         ) RETURNING "sourceId"`;
 
       return {
         success: true,
-        message: 'File uploaded and metadata saved successfully',
+        message: 'File uploaded successfully',
         data: {
           sourceId: dataSource[0].sourceId,
-          filePath: uploadedFilePath
+          fileName: file.name,
+          fileSize: file.size,
+          isTrain: isTrain,
+          //filePath: result.filePath
         }
       };
 
     } catch (error) {
-      console.error('File upload error:', error);
+      console.error('Upload error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'File upload failed'
+        message: error instanceof Error ? error.message : 'Upload failed'
       };
     }
   }
@@ -104,6 +108,33 @@ export class FileUploadService {
     }
 
     return await response.json();
+  }
+
+  async trainFile(sourceId: number, tenantId: string) {
+    const response = await fetch(`${this.baseUrl}/file/train`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzI5MDc0MSwianRpIjoiYzBiZDE1NjctZWFmZi00YjY1LTk1YjktMjQ2NGY1MmViMmY1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzI5MDc0MSwiY3NyZiI6ImJlODRiMTYzLTNkYjktNGZmZi05YWM0LTcyNmJlOGI5M2QwNSIsImV4cCI6MTczNzI5MTY0MSwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1NmNQWWZUSVl0eGlfOWlLQ3hGRllKV1ZmTXZTcjRUa3BFc19PYnJ1TXJNYWJQYWtMUG9NZ0FNQm0xLWdsUHptNDFnUHpia212Mmp4RkhfUmZDVzB5bHJsV0dwZlNNSWRwLU1SSkFOT1VlRGRLU1R2ejJoSGN6c09fWlQ3VEEzeXhVRVdHTlVMSEZBekFkTkRLclJPRGJEenlELU1LOGFDZ1lLQVRjU0FSQVNGUUhHWDJNaXdsV0x0QnNKN3lPZVZUUVpiX1ZOT0EwMTcxIiwiIl19.XYa_U1scl8eIhDiZ0XpT8r_xbP9BDCI46RtGY5EjGHE`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        source_id: sourceId,
+        tenant_id: tenantId,
+        model_name: "gpt-3.5-turbo"
+      })
+    });
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: `Training failed: ${response.statusText}`
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Training started successfully'
+    };
   }
 }
 

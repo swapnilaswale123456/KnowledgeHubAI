@@ -1,18 +1,31 @@
 import { json, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { useParams, useFetcher, useNavigate } from "@remix-run/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "~/components/ui/card";
 import { Link } from "@remix-run/react";
 import { ChevronLeft } from "lucide-react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { getFileUploadService } from "~/utils/services/api/fileUploadService.server";
-
+import ErrorModal from "~/components/ui/modals/ErrorModal";
+import SuccessModal, { RefSuccessModal } from "~/components/ui/modals/SuccessModal";
 interface FileSource {
   sourceId: number;
   fileName: string;
   fileType: string;
   uploadedFilePath: string;
   createdAt: Date;
+}
+
+interface UploadResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    sourceId: number;
+    fileName: string;
+    fileSize: number;
+    filePath?: string;
+    isTrain?: boolean;
+  };
 }
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -22,50 +35,98 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  const file = formData.get("file") as File;
+  const intent = formData.get("intent");
   const tenantId = params.tenant!;
-
   const fileUploadService = getFileUploadService();
-  const result = await fileUploadService.uploadFile(file, tenantId, request);
 
+  if (intent === "train") {
+    const sourceId = formData.get("sourceId") as string;
+    const file = formData.get("file") as File;
+    if (!file) {
+      return json({ 
+        success: false, 
+        message: "No file provided for training" 
+      });
+    }
+    const result = await fileUploadService.uploadFile(file, tenantId, request, true);
+    return json(result);
+  }
+
+  const file = formData.get("file") as File;
+  const result = await fileUploadService.uploadFile(file, tenantId, request);
   return json(result);
 };
 
 export default function FileUploadRoute() {
   const params = useParams();
   const navigate = useNavigate();
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<UploadResponse>();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<{ name: string; size: number } | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{
+    name: string;
+    size: number;
+    sourceId?: number;
+    file?: File;
+  } | null>(null);
+  const fileRef = useRef<File | null>(null);
+  const successModal = useRef<RefSuccessModal>(null);
+  const errorModal = useRef<any>(null);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.success) {
+      setUploadedFile({
+        name: fetcher.data.data?.fileName || "",
+        size: fetcher.data.data?.fileSize || 0,
+        sourceId: fetcher.data.data?.sourceId,
+        file: fileRef.current || undefined
+      });
+      setIsUploading(false);
+      
+      if (fetcher.data.data?.isTrain) {
+        successModal.current?.show("Trained Files", "Files Trained successfully.");
+      }
+    } 
+    else if (fetcher.state === "idle" && !fetcher.data?.success) {
+      setError(fetcher.data?.message || "");
+      setUploadedFile(null);
+      setIsUploading(false);
+    }
+  }, [fetcher.state, fetcher.data]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    fileRef.current = file;
     setError(null);
     setUploadedFile(null);
     setIsUploading(true);
 
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetcher.submit(formData, {
+      method: 'POST',
+      encType: 'multipart/form-data'
+    });
+  };
+
+  const handleTrain = async () => {
+    if (!uploadedFile?.sourceId || !uploadedFile.file) return;
+
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('intent', 'train');
+      formData.append('sourceId', uploadedFile.sourceId.toString());
+      formData.append('file', uploadedFile.file);
 
       fetcher.submit(formData, {
         method: 'POST',
         encType: 'multipart/form-data'
       });
-
-      setUploadedFile({
-        name: file.name,
-        size: file.size
-      });
     } catch (error) {
-      console.error('Upload error:', error);
-      setError(error instanceof Error ? error.message : 'Upload failed');
-      setUploadedFile(null);
-    } finally {
-      setIsUploading(false);
+      setError(error instanceof Error ? error.message : 'Training failed');
     }
   };
 
@@ -158,7 +219,7 @@ export default function FileUploadRoute() {
               Cancel
             </button>
             <button
-              onClick={() => {/* Handle training */}}
+              onClick={handleTrain}
               className="px-4 py-2 text-white bg-black rounded-md hover:bg-gray-800"
             >
               Train File
@@ -166,6 +227,8 @@ export default function FileUploadRoute() {
           </CardFooter>
         )}
       </Card>
+      <SuccessModal ref={successModal} />
+      <ErrorModal ref={errorModal} />
     </div>
   );
 } 
