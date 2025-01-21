@@ -82,7 +82,7 @@ export default function DataSourcesRoute() {
 
     return data.dataSourceTypes.map((type): IconDto => ({
       name: type.sourceName,
-      href: UrlUtils.currentTenantUrl(params, `data-sources/${type.sourceKey}`),
+      href: UrlUtils.currentTenantUrl(params, `g/data-sources/${type.sourceKey}`),
       icon: iconMap[type.sourceKey]?.icon,
       iconSelected: iconMap[type.sourceKey]?.iconSelected
     }));
