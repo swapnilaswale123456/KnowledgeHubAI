@@ -27,6 +27,7 @@ import ScriptInjector from "./modules/shared/scripts/ScriptInjector";
 import ScriptRewardful from "./modules/shared/scripts/ScriptRewardful";
 import ScriptCrisp from "./modules/shared/scripts/ScriptCrisp";
 import ScriptAnalytics from "./modules/shared/scripts/ScriptAnalytics";
+import { ChatbotProvider } from "~/context/ChatbotContext";
 export { serverTimingHeaders as headers };
 
 export const handle = { i18n: "translations" };
@@ -204,12 +205,15 @@ export default function App() {
   const { i18n } = useTranslation();
   const rootData = useRootData();
   useChangeLanguage(locale);
+
   return (
     <Document lang={locale} dir={i18n.dir()}>
-      <Outlet />
-      <ReactHostToaster />
-      <SonnerToaster />
-      <ScriptInjector scripts={rootData.appConfiguration?.scripts} />
+      <ChatbotProvider>
+        <Outlet />
+        <ReactHostToaster />
+        <SonnerToaster />
+        <ScriptInjector scripts={rootData.appConfiguration?.scripts} />
+      </ChatbotProvider>
     </Document>
   );
 }

@@ -18,10 +18,19 @@ export default function AppLayout({ layout, children, type = "new" }: Props) {
   } else if (sidebarParam === "old") {
     type = "old";
   }
+
   return (
     <div>
       <CommandPalette key={layout} layout={layout}>
-        {type === "new" ? <NewSidebarLayout layout={layout}>{children}</NewSidebarLayout> : <SidebarLayout layout={layout}>{children}</SidebarLayout>}
+        {type === "new" ? (
+          <NewSidebarLayout layout={layout}>
+            {children}
+          </NewSidebarLayout>
+        ) : (
+          <SidebarLayout layout={layout}>
+            {children}
+          </SidebarLayout>
+        )}
       </CommandPalette>
       {/* {layout === "app" ? (
         <AppCommandPalette isOpen={showCommandPalette} onClosed={() => setShowCommandPalette(false)} />

@@ -17,7 +17,6 @@ import { getClientIPAddress } from "~/utils/server/IpUtils";
 import { createMetrics } from "~/modules/metrics/services/.server/MetricTracker";
 import { serverTimingHeaders } from "~/modules/metrics/utils/defaultHeaders.server";
 import { getTranslations } from "~/locale/i18next.server";
-import { ChatbotProvider } from "~/context/ChatbotContext";
 export { serverTimingHeaders as headers };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -67,13 +66,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 export default function AppTenantRoute() {
   return (
-    <ChatbotProvider>
-      <div className="min-h-screen bg-gray-50">
-        <AppLayout layout="app">
-          <Outlet />
-        </AppLayout>
-      </div>
-    </ChatbotProvider>
+    <div className="min-h-screen bg-gray-50">
+      <AppLayout layout="app">
+        <Outlet />
+      </AppLayout>
+    </div>
   );
 }
 

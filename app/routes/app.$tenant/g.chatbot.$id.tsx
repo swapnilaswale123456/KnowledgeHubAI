@@ -209,16 +209,14 @@ export default function ChatbotDetailRoute() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex-1 space-y-4 p-2 pt-2">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{chatbot.name}</h1>
+        <h3 className="text-x2 font-bold">{chatbot.name}</h3>
       </div>
-      <div className="flex flex-1 h-full w-full p-6 bg-gray-100">
+      <div className="flex flex-1 h-full w-full p-3 bg-gray-100">
         <div className={cn(
           "flex bg-white rounded-lg border transition-all duration-200 overflow-hidden w-full h-full",
-          isMaximized 
-            ? "w-full h-full"
-            : "max-w-[1000px] max-h-[700px] mx-auto"
+          
         )}>
           <ChatInterface 
             message={message}
