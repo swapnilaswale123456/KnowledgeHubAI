@@ -54,4 +54,21 @@ export class ChatbotService {
       orderBy: { createdAt: 'desc' }
     });
   }
+
+  static async getChatbotByUrl(uniqueUrl: string): Promise<ChatbotDetails | null> {
+    return await db.chatbot.findUnique({
+      where: { uniqueUrl },
+      select: {
+        id: true,
+        name: true,
+        uniqueUrl: true,
+        theme: true,
+        initialMessage: true,
+        businessName: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+  }
 } 

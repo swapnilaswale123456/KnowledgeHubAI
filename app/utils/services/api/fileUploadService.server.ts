@@ -21,16 +21,26 @@ interface DataSourceResponse {
 }
 
 async function createChatbot(tenantId: string, fileName: string) {
-  // Then create the chatbot
+  const uniqueIdentifier = uuidv4();
+  const sanitizedFileName = fileName.replace(/\.[^/.]+$/, ""); // Remove file extension
+
   const chatbot = await db.chatbot.create({
     data: {
-      id: uuidv4(),
-      name: `Chatbot for ${fileName}`,
-      uniqueUrl: `chat-${uuidv4().slice(0,8)}`,
+      id: uniqueIdentifier,
+      name: `${sanitizedFileName} Bot`,
+      uniqueUrl: `chat-${tenantId}-${uniqueIdentifier.slice(0,8)}`,
       tenantId,
       status: ChatbotStatus.ACTIVE,
       llmModelId: 1, // Default to GPT-3.5
       languageId: 1, // Default to English
+      theme: {
+        primaryColor: "#4F46E5",
+        secondaryColor: "#6366F1",
+        fontFamily: "Inter",
+        fontSize: "16px",
+        borderRadius: "8px",
+        backgroundColor: "#F9FAFB"
+      }
     }
   });
   return chatbot;
@@ -83,11 +93,15 @@ export class FileUploadService {
           INSERT INTO "DataSources" (
             "chatbotId", "sourceTypeId", "tenantId", "sourceDetails", "createdAt"
           ) VALUES (
-            ${chatbot.id}::uuid, ${2}, ${tenantId},
+            ${chatbot.id}::uuid, 
+            ${2}, 
+            ${tenantId},
             ${JSON.stringify({
               fileName: file.name,
               fileSize: file.size,
-              fileType: file.type
+              fileType: file.type,
+              uploadedBy: tenantId,
+              createdAt: new Date().toISOString()
             })}::jsonb,
             CURRENT_TIMESTAMP
           ) RETURNING "sourceId"`;

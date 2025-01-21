@@ -170,7 +170,7 @@ export default function DashboardRoute() {
                     {/* Card Footer */}
                     <div className="p-4 border-t border-gray-200 flex justify-around items-center">
                       <Link
-                        to={`/app/${params.tenant}/chatbot/${chatbot.id}/customize`}
+                        to={`/chatbot/${chatbot.id}/customize`}
                         title="Customize"
                         className="text-gray-500 hover:text-blue-600"
                       >
@@ -185,7 +185,7 @@ export default function DashboardRoute() {
                         </svg>
                       </Link>
                       <Link
-                        to={`/app/${params.tenant}/chatbot/${chatbot.id}/data-source`}
+                        to={`/chatbot/${chatbot.id}/data-source`}
                         title="Data Source"
                         className="text-gray-500 hover:text-blue-600"
                       >
@@ -200,7 +200,7 @@ export default function DashboardRoute() {
                         </svg>
                       </Link>
                       <Link
-                        to={`/app/${params.tenant}/chatbot/${chatbot.id}/inbox`}
+                        to={`/chatbot/${chatbot.id}/inbox`}
                         title="Inbox"
                         className="text-gray-500 hover:text-blue-600"
                       >
@@ -215,7 +215,7 @@ export default function DashboardRoute() {
                         </svg>
                       </Link>
                       <Link
-                        to={`/app/${params.tenant}/chatbot/${chatbot.id}/settings`}
+                        to={`/chatbot/${chatbot.id}/settings`}
                         title="Settings"
                         className="text-gray-500 hover:text-blue-600"
                       >
