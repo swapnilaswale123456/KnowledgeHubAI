@@ -90,8 +90,8 @@ export default function DataSourcesRoute() {
 
   // Redirect to the Overview tab if landing on the base data-source route
   useEffect(() => {
-    if (UrlUtils.stripTrailingSlash(location.pathname) === UrlUtils.currentTenantUrl(params, "data-sources")) {
-      navigate(UrlUtils.currentTenantUrl(params, "data-sources/overview"));
+    if (UrlUtils.stripTrailingSlash(location.pathname) === UrlUtils.currentTenantUrl(params, "g/data-sources")) {
+      navigate(UrlUtils.currentTenantUrl(params, "g/data-sources/overview"));
     }
   }, [location.pathname]);
 

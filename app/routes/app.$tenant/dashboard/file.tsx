@@ -98,7 +98,7 @@ export default function FileUploadRoute() {
         successModal.current?.show("Success!", "File trained successfully");
         setIsTraining(false);
         setTimeout(() => {
-         navigate(`/app/${params.tenant}/chatbot`);
+         navigate(`/app/${params.tenant}/g/chatbot`);
         }, 2000);
       }
     } else if (fetcher.state === "idle" && !fetcher.data?.success) {

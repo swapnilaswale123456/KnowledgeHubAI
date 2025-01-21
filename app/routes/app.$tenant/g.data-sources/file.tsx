@@ -114,7 +114,7 @@ export default function DataSourceFileRoute() {
 
       fetcher.submit(formData, {
         method: 'POST',
-        action: `/app/${params.tenant}/data-sources/file`,
+        action: `/app/${params.tenant}/g/data-sources/file`,
         encType: 'multipart/form-data'
       });
 
@@ -136,7 +136,7 @@ export default function DataSourceFileRoute() {
 
     fetcher.submit(formData, {
       method: "POST",
-      action: `/app/${params.tenant}/data-sources/file`,
+      action: `/app/${params.tenant}/g/data-sources/file`,
     });
   };
 
