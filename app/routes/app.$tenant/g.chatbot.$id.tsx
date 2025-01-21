@@ -1,5 +1,5 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
-import { useParams } from "@remix-run/react";
+import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
+import { useParams, useLoaderData } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { MessageSquare, Code, Upload, Settings } from "lucide-react";
@@ -7,11 +7,24 @@ import { cn } from "~/lib/utils";
 import { ChatInterface } from "~/components/chat/ChatInterface";
 import { QuickStartGuide } from "~/components/chat/QuickStartGuide";
 import { Message, ChatSettings, ChatContext } from "~/types/chat";
+import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
+import { useChatbot } from "~/context/ChatbotContext";
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export async function loader({ request, params }: LoaderFunctionArgs) {
   await requireAuth({ request, params });
-  return json({});
-};
+  
+  const chatbotId = params.id;
+  if (!chatbotId) {
+    return redirect(`/app/${params.tenant}/dashboard`);
+  }
+
+  const chatbot = await ChatbotService.getChatbotDetails(chatbotId);
+  if (!chatbot) {
+    throw new Response("Chatbot not found", { status: 404 });
+  }
+
+  return json({ chatbot });
+}
 
 interface QuickStartStep {
   id: number;
@@ -30,8 +43,10 @@ const DEFAULT_SETTINGS: ChatSettings = {
   soundEnabled: true
 };
 
-export default function ChatbotRoute() {
+export default function ChatbotDetailRoute() {
   const params = useParams();
+  const { chatbot } = useLoaderData<typeof loader>();
+  const { selectedChatbot, setSelectedChatbot } = useChatbot();
   const [showGuide, setShowGuide] = useState(true);
   const [message, setMessage] = useState("");
   const [isMaximized, setIsMaximized] = useState(false);
@@ -92,6 +107,13 @@ export default function ChatbotRoute() {
       link: `/app/${params.tenant}/settings/embed`
     }
   ]);
+
+  // Set selected chatbot if accessing the page directly
+  useEffect(() => {
+    if (!selectedChatbot || selectedChatbot.id !== chatbot.id) {
+      setSelectedChatbot(chatbot);
+    }
+  }, [chatbot, selectedChatbot, setSelectedChatbot]);
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
@@ -187,33 +209,38 @@ export default function ChatbotRoute() {
   };
 
   return (
-    <div className="flex flex-1 h-full w-full p-6 bg-gray-100">
-      <div className={cn(
-        "flex bg-white rounded-lg border transition-all duration-200 overflow-hidden w-full h-full",
-        isMaximized 
-          ? "w-full h-full"
-          : "max-w-[1000px] max-h-[700px] mx-auto"
-      )}>
-        <ChatInterface 
-          message={message}
-          isMaximized={isMaximized}
-          messages={messages}
-          settings={settings}
-          isTyping={isTyping}
-          onMessageChange={(e) => setMessage(e.target.value)}
-          onSendMessage={handleSendMessage}
-          onToggleMaximize={() => setIsMaximized(!isMaximized)}
-          onFileUpload={handleFileUpload}
-          onVoiceRecord={handleVoiceRecord}
-          onEmojiSelect={handleEmojiSelect}
-        />
-
-        {showGuide && (
-          <QuickStartGuide 
-            steps={steps}
-            onClose={() => setShowGuide(false)}
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{chatbot.name}</h1>
+      </div>
+      <div className="flex flex-1 h-full w-full p-6 bg-gray-100">
+        <div className={cn(
+          "flex bg-white rounded-lg border transition-all duration-200 overflow-hidden w-full h-full",
+          isMaximized 
+            ? "w-full h-full"
+            : "max-w-[1000px] max-h-[700px] mx-auto"
+        )}>
+          <ChatInterface 
+            message={message}
+            isMaximized={isMaximized}
+            messages={messages}
+            settings={settings}
+            isTyping={isTyping}
+            onMessageChange={(e) => setMessage(e.target.value)}
+            onSendMessage={handleSendMessage}
+            onToggleMaximize={() => setIsMaximized(!isMaximized)}
+            onFileUpload={handleFileUpload}
+            onVoiceRecord={handleVoiceRecord}
+            onEmojiSelect={handleEmojiSelect}
           />
-        )}
+
+          {showGuide && (
+            <QuickStartGuide 
+              steps={steps}
+              onClose={() => setShowGuide(false)}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

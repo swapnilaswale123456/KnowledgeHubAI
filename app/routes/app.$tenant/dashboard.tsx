@@ -1,5 +1,5 @@
 import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { useSearchParams, Link, useParams, Outlet, useLocation } from "@remix-run/react";
+import { useSearchParams, Link, useParams, Outlet, useLocation, useNavigate } from "@remix-run/react";
 import { useAppData } from "~/utils/data/useAppData";
 import { DashboardLoaderData, loadDashboardData } from "~/utils/data/useDashboardData";
 import { getTranslations } from "~/locale/i18next.server";
@@ -26,6 +26,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "~/components/ui/card"
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ChatbotService, ChatbotDetails } from "~/utils/services/chatbots/chatbotService.server";
+import { useChatbot } from "~/context/ChatbotContext";
 export { serverTimingHeaders as headers };
 
 type LoaderData = DashboardLoaderData & {
@@ -69,11 +70,18 @@ export default function DashboardRoute() {
   const params = useParams();
   const location = useLocation();
   const { chatbots } = useLoaderData<typeof loader>();
+  const { setSelectedChatbot } = useChatbot();
+  const navigate = useNavigate();
   const isChildRoute = location.pathname.includes('/create') || location.pathname.includes('/file');
 
   const handleDelete = async (chatbotId: string) => {
     // TODO: Implement delete functionality
     console.log('Delete chatbot:', chatbotId);
+  };
+
+  const handleChatbotClick = (chatbot: ChatbotDetails) => {
+    setSelectedChatbot(chatbot);
+    navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`);
   };
 
   return (
@@ -117,12 +125,12 @@ export default function DashboardRoute() {
                   >
                     {/* Card Header */}
                     <div className="p-4 flex justify-between items-center border-b border-gray-200">
-                      <Link
-                        to={`/app/${params.tenant}/g/chatbot/${chatbot.id}`}
-                        className="text-lg font-bold text-blue-600 hover:underline"
+                      <button
+                        className="text-lg font-bold text-blue-600 hover:underline text-left"
+                        onClick={() => handleChatbotClick(chatbot)}
                       >
                         {chatbot.name}
-                      </Link>
+                      </button>
                       <button
                         onClick={() => handleDelete(chatbot.id)}
                         className="text-gray-400 hover:text-red-500"

@@ -33,6 +33,7 @@ import LogoDark from "~/assets/img/logo-dark.png";
 import LogoLight from "~/assets/img/logo-light.png";
 import { Inbox } from "@novu/react";
 import NotificationsButton from "./buttons/NotificationsButton";
+import { useChatbot } from "~/context/ChatbotContext";
 
 function classNames(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -54,6 +55,7 @@ export default function NewSidebarMenu({ layout, children, onOpenCommandPalette,
   const location = useLocation();
   const params = useParams();
   const title = useTitleData() ?? "";
+  const { selectedChatbot } = useChatbot();
 
   const mainElement = useRef<HTMLElement>(null);
 
@@ -161,10 +163,25 @@ export default function NewSidebarMenu({ layout, children, onOpenCommandPalette,
   function checkFeatureFlags(item: SideBarItem) {
     return !item.featureFlag || rootData.featureFlags?.includes(item.featureFlag);
   }
+
+  // Add this helper function to filter chatbot-related items
+  const shouldShowMenuItem = (item: SideBarItem): boolean => {
+    const chatbotRelatedPaths = ['/g/chatbot', '/g/data-sources', '/g/inbox'];
+    const isChatbotRelated = chatbotRelatedPaths.some(path => item.path.includes(path));
+    return !isChatbotRelated || (isChatbotRelated && selectedChatbot !== null);
+  };
+
   const getMenu = (): SidebarGroup[] => {
     function filterItem(f: SideBarItem) {
-      return allowCurrentUserType(f) && allowCurrentTenantUserType(f) && checkUserRolePermissions(f) && checkFeatureFlags(f);
+      return (
+        allowCurrentUserType(f) && 
+        allowCurrentTenantUserType(f) && 
+        checkUserRolePermissions(f) && 
+        checkFeatureFlags(f) &&
+        shouldShowMenuItem(f)  // Add this condition
+      );
     }
+
     const _menu: SidebarGroup[] = [];
     getMenuItems()
       .filter((f) => filterItem(f))
@@ -177,6 +194,7 @@ export default function NewSidebarMenu({ layout, children, onOpenCommandPalette,
               .map((f) => {
                 return {
                   ...f,
+                  // Also filter nested items
                   items: f.items?.filter((f) => filterItem(f)),
                 };
               }) ?? [],
