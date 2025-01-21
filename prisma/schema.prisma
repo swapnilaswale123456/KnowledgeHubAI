@@ -166,8 +166,10 @@ model Tenant {
   workflowExecutions        WorkflowExecution[]
   workflowVariables         WorkflowVariable[]
   types                     TenantType[]               @relation("TenantToTenantType")
+  chatbots                  Chatbot[]
 
   @@index([slug])
+  @@map("Tenant")
 }
 
 model Registration {
@@ -2373,4 +2375,73 @@ model Languages {
   languageId   Int    @id @default(autoincrement()) // SERIAL PRIMARY KEY
   languageKey  String @unique                      // VARCHAR(50) NOT NULL
   languageName String                             // TEXT NOT NULL
+}
+
+enum ChatbotStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model Chatbot {
+  id              String        @id @default(cuid())
+  name            String        @db.VarChar(100)
+  uniqueUrl       String        @unique
+  theme           Json?         @default("{\"primaryColor\": null, \"secondaryColor\": null, \"fontFamily\": null, \"fontSize\": null, \"borderRadius\": null, \"backgroundColor\": null}")
+  languageId      Int?
+  initialMessage  String?       @default("Hello! How can I assist you?")
+  businessName    String?       @db.VarChar(100)
+  llmModelId      Int?
+  totalCharacters Int           @default(1000000)
+  status          ChatbotStatus @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  language        Language?     @relation(fields: [languageId], references: [id])
+  llmModel        LlmModel?     @relation(fields: [llmModelId], references: [id])
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  tenantId        String
+
+  @@index([tenantId])
+  @@map("chatbots")
+}
+
+enum LlmModelType {
+  GPT_3_5
+  GPT_4
+  CLAUDE
+  CUSTOM
+}
+
+model LlmModel {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(100)
+  type        LlmModelType
+  apiKey      String?
+  endpoint    String?
+  maxTokens   Int          @default(4096)
+  temperature Float        @default(0.7)
+  isEnabled   Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  chatbots    Chatbot[]
+
+  @@map("llm_models")
+}
+
+model Language {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  code        String    @unique @db.VarChar(10)  // e.g., "en", "es", "fr"
+  isEnabled   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  chatbots    Chatbot[]
+
+  @@map("languages")
 }

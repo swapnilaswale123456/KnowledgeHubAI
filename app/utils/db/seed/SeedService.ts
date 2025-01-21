@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, LlmModelType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { TenantUserJoined } from "~/application/enums/tenants/TenantUserJoined";
 import { TenantUserType } from "~/application/enums/tenants/TenantUserType";
@@ -33,7 +33,8 @@ async function seed() {
   await seedRolesAndPermissions(ADMIN_EMAIL);
 
   await createDataSourceTypes();
-  await createLanguages(); 
+  await seedLanguages();
+  await seedLlmModels();
 }
 
 async function createUser(firstName: string, lastName: string, email: string, password: string, adminRole?: TenantUserType) {
@@ -87,23 +88,62 @@ async function createDataSourceTypes() {
   }
   console.log("Seeding completed: DataSourceTypes added or already exist");
 }
-async function createLanguages() {
+async function seedLanguages() {
   const languages = [
-    { languageKey: "en", languageName: "English" },
-    { languageKey: "es", languageName: "Spanish" },
-    { languageKey: "fr", languageName: "French" }
+    { name: 'English', code: 'en' },
+    { name: 'Spanish', code: 'es' },
+    { name: 'French', code: 'fr' },
+    { name: 'German', code: 'de' },
+    { name: 'Chinese', code: 'zh' },
+    { name: 'Japanese', code: 'ja' }
   ];
 
   for (const lang of languages) {
-    const existing = await db.languages.findFirst({
-      where: { languageKey: lang.languageKey }
+    await db.language.upsert({
+      where: { code: lang.code },
+      update: {},
+      create: {
+        code: lang.code,
+        name: lang.name,
+        isEnabled: true
+      }
     });
-
-    if (!existing) {
-      await db.languages.create({ data: lang });
-    }
   }
-  console.log("Seeding completed: Languages added or already exist");
+  console.log("✅ Languages seeded");
+}
+async function seedLlmModels() {
+  const models = [
+    {
+      id: 1,
+      name: 'GPT-3.5 Turbo',
+      type: LlmModelType.GPT_3_5,
+      maxTokens: 4096,
+      temperature: 0.7
+    },
+    {
+      id: 2,
+      name: 'GPT-4',
+      type: LlmModelType.GPT_4,
+      maxTokens: 8192,
+      temperature: 0.7
+    },
+    {
+      id: 3,
+      name: 'Claude 2',
+      type: LlmModelType.CLAUDE,
+      maxTokens: 100000,
+      temperature: 0.7
+    }
+  ];
+
+  for (const model of models) {
+    await db.llmModel.upsert({
+      where: { id: model.id ?? 1 },
+      update: {},
+      create: model
+    });
+  }
+  console.log("✅ LLM Models seeded");
 }
 async function createTenant(slug: string, name: string, users: { id: string; type: TenantUserType }[]) {
   let tenant = await db.tenant.findUnique({

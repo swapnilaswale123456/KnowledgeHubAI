@@ -8,6 +8,8 @@ import { requireAuth } from "~/utils/loaders.middleware";
 import { getFileUploadService } from "~/utils/services/api/fileUploadService.server";
 import ErrorModal from "~/components/ui/modals/ErrorModal";
 import SuccessModal, { RefSuccessModal } from "~/components/ui/modals/SuccessModal";
+import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
+
 interface FileSource {
   sourceId: number;
   fileName: string;
@@ -36,7 +38,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
-  const tenantId = params.tenant!;
+  const tenantId = await getTenantIdFromUrl(params);
   const fileUploadService = getFileUploadService();
 
   if (intent === "delete") {
@@ -59,6 +61,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   }
 
   const file = formData.get("file") as File;
+  if (!file) {
+    return json({ success: false, message: "No file uploaded" });
+  }
+
   const result = await fileUploadService.uploadFile(file, tenantId, request);
   return json(result);
 };
@@ -88,68 +94,51 @@ export default function FileUploadRoute() {
         sourceId: fetcher.data.data?.sourceId,
         file: fileRef.current || undefined
       });
-      setIsUploading(false);
-      setIsTraining(false);
-      
-      if (fetcher.data.data?.isTrain) {
-        successModal.current?.show("Trained Files", "Files Trained successfully.");
+      if (isTraining) {
+        successModal.current?.show("Success!", "File trained successfully");
+        setIsTraining(false);
+        setTimeout(() => {
+         navigate(`/app/${params.tenant}/chatbot`);
+        }, 2000);
       }
-    } 
-    else if (fetcher.state === "idle" && !fetcher.data?.success) {
+    } else if (fetcher.state === "idle" && !fetcher.data?.success) {
       setError(fetcher.data?.message || "");
-      setUploadedFile(null);
-      setIsUploading(false);
-      setIsTraining(false);
     }
-  }, [fetcher.state, fetcher.data]);
+  }, [fetcher.state, fetcher.data, isTraining, navigate]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
-
+    
     fileRef.current = file;
-    setError(null);
-    setUploadedFile(null);
     setIsUploading(true);
-
+    
     const formData = new FormData();
-    formData.append('file', file);
-
+    formData.append("file", file);
+    
     fetcher.submit(formData, {
-      method: 'POST',
-      encType: 'multipart/form-data'
+      method: "post",
+      encType: "multipart/form-data",
     });
   };
 
-  const handleTrain = async () => {
-    if (!uploadedFile?.sourceId || !uploadedFile.file) return;
+  const handleTrain = () => {
+    if (!uploadedFile?.file) return;
+    
     setIsTraining(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('intent', 'train');
-      formData.append('sourceId', uploadedFile.sourceId.toString());
-      formData.append('file', uploadedFile.file);
-
-      fetcher.submit(formData, {
-        method: 'POST',
-        encType: 'multipart/form-data'
-      });
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Training failed');
-      setIsTraining(false);
-    }
+    const formData = new FormData();
+    formData.append("file", uploadedFile.file);
+    formData.append("intent", "train");
+    
+    fetcher.submit(formData, {
+      method: "post",
+      encType: "multipart/form-data"
+    });
   };
 
-  const handleCancel = async () => {
-    if (!uploadedFile?.sourceId) return;
-    
-    const formData = new FormData();
-    formData.append('intent', 'delete');
-    formData.append('sourceId', uploadedFile.sourceId.toString());
-    
-    fetcher.submit(formData, { method: 'POST' });
-    navigate('../create');
+  const handleCancel = () => {
+    setUploadedFile(null);
+    fileRef.current = null;
   };
 
   const handleSuccessModalClose = () => {

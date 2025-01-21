@@ -1,6 +1,7 @@
 import { json } from "@remix-run/node";
 import { db } from "~/utils/db.server";
 import { v4 as uuidv4 } from 'uuid';
+import { ChatbotStatus } from "@prisma/client";
 
 interface FileUploadResponse {
   success: boolean;
@@ -11,11 +12,28 @@ interface FileUploadResponse {
     fileSize: number;
     filePath?: string;
     isTrain?: boolean;
+    chatbotId?: string;
   };
 }
 
 interface DataSourceResponse {
   sourceId: number;
+}
+
+async function createChatbot(tenantId: string, fileName: string) {
+  // Then create the chatbot
+  const chatbot = await db.chatbot.create({
+    data: {
+      id: uuidv4(),
+      name: `Chatbot for ${fileName}`,
+      uniqueUrl: `chat-${uuidv4().slice(0,8)}`,
+      tenantId,
+      status: ChatbotStatus.ACTIVE,
+      llmModelId: 1, // Default to GPT-3.5
+      languageId: 1, // Default to English
+    }
+  });
+  return chatbot;
 }
 
 export class FileUploadService {
@@ -30,18 +48,17 @@ export class FileUploadService {
   async uploadFile(file: File, tenantId: string, request: Request, isTrain = false) {
     try {
       const formData = new FormData();
-      
       formData.append('file', file);      
+      
       if (isTrain == true) {
-       
         const response = await fetch(`${this.baseUrl}/file/upload/v2/file`, {
           method: 'POST',
           body: formData,
           headers: {
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzI5MjA5NywianRpIjoiZDk4ZTAxYjktZDBjNy00Y2RiLWFjMDItMmJjMmVmNGJkYWRmIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzI5MjA5NywiY3NyZiI6IjdmNzE3ZDY4LTM2MGMtNGZiZi04OWE4LTBkYjExMGIyMGUxYiIsImV4cCI6MTczNzI5Mjk5NywiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1Y2tadno1a3hVZW9tb3M2d0VqY3duSFFyRmdDZlV0M3E5NVNlR0k4elFCWVpUWmM0X3c2RDVrSENxV2dPMUxMNVE2SDktN2ZkYm1RbGE0ZFNJZ0djc3VTaThXNkNybkhycTN6bXJFTTlsU0NXdXd3a3UwZ3RZbEFMVll1dHdrNkVKZjNmM0Q0RV9oMUVXVmczMXVoVUN0d2tEMVZ5YmFDZ1lLQWRjU0FSQVNGUUhHWDJNaUxoa29xWlBGMzJqQ3hmWUFKM1VDNFEwMTcxIiwiIl19.1gJTl8N6ZhEQweubZKhsWgHPxGvhGtWciBkyx3nwE18`
-          }
-          
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzQ0NDA0NiwianRpIjoiYTUzYjA5YTgtNWY2OS00MzE5LWJiNWQtZjkyNTE5OWZiMjk1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzQ0NDA0NiwiY3NyZiI6IjZhNjA2MTQwLWY0MDItNGFkMC1hYjk2LWIyNzA4NjEyNjgyNSIsImV4cCI6MTczNzQ0NDk0NiwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1NnN5djJWckN1SS16VzhkU3VaRFF2S0NYallYYzZvR3F6aDdhNmVvS1dVSUtLYndOMDA0eXhfcEp3elVXWkpteGpHWGdOT0lTdEZDX2tfNWdLTXY3M0kyM0NHbWJoNFoxV1BBNUZnX1c1b05UZ1Z6eWZzOGJnLWcxVXRiclpiaGRsak9XWjZ4bnY2Y3B5Mm9NRldmSEI0V0VwRGxjTWFDZ1lLQWVJU0FSQVNGUUhHWDJNaV80alViRXgyVFEtSFBzZTF5bGhxelEwMTcxIiwiIl19.OB0lhRQpV3f7B5l4DbqqxuHzQU4ECIvePX3RKBKsFZw`
+          }          
         });
+        
         if (!response.ok) {
           return {
             success: false,
@@ -50,38 +67,46 @@ export class FileUploadService {
         }
   
         const result = await response.json();
+        return {
+          success: true,
+          message: 'File trained successfully'
+        };
       }
-      else{
+      else {
         formData.append('action', 'train');
-      }  
-      
-      // Create DataSource record
-      const dataSource = await db.$queryRaw<DataSourceResponse[]>`
-        INSERT INTO "DataSources" (
-          "chatbotId", "sourceTypeId", "tenantId", "sourceDetails", "createdAt"
-        ) VALUES (
-          ${uuidv4()}::uuid, ${2}, ${tenantId},
-          ${JSON.stringify({
+        
+        // Create chatbot first
+        const chatbot = await createChatbot(tenantId, file.name);
+
+        // Create DataSource record with chatbot ID
+        const dataSource = await db.$queryRaw<DataSourceResponse[]>`
+          INSERT INTO "DataSources" (
+            "chatbotId", "sourceTypeId", "tenantId", "sourceDetails", "createdAt"
+          ) VALUES (
+            ${chatbot.id}::uuid, ${2}, ${tenantId},
+            ${JSON.stringify({
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type
+            })}::jsonb,
+            CURRENT_TIMESTAMP
+          ) RETURNING "sourceId"`;
+
+        return {
+          success: true,
+          message: 'File uploaded successfully',
+          data: {
+            sourceId: dataSource[0].sourceId,
             fileName: file.name,
             fileSize: file.size,
-            fileType: file.type
-          })}::jsonb,
-          CURRENT_TIMESTAMP
-        ) RETURNING "sourceId"`;
-
-      return {
-        success: true,
-        message: 'File uploaded successfully',
-        data: {
-          sourceId: dataSource[0].sourceId,
-          fileName: file.name,
-          fileSize: file.size,
-          isTrain: isTrain,
-          //filePath: result.filePath
-        }
-      };
-
-    } catch (error) {
+            chatbotId: chatbot.id,
+            isTrain: isTrain,
+          }
+        };
+      }  
+      
+    } 
+    catch (error) {
       console.error('Upload error:', error);
       return {
         success: false,
