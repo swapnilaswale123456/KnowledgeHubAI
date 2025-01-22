@@ -4,6 +4,7 @@ import { EntitySimple } from "~/utils/db/entities/entities.db.server";
 import { TFunction } from "i18next";
 import { EntityGroupWithDetails } from "~/utils/db/entities/entityGroups.db.server";
 import { AppConfiguration } from "~/utils/db/appConfiguration.db.server";
+import { useChatbot } from "~/context/ChatbotContext";
 
 type Props = {
   t: TFunction;
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export const AppSidebar = ({ t, tenantId, entities, entityGroups, appConfiguration }: Props): SideBarItem[] => {
+  const { selectedChatbotId } = useChatbot();
   const currentTenantUrl = `/app/${tenantId}`;
 
   const sectionItems: SideBarItem[] = [];
@@ -37,15 +39,18 @@ export const AppSidebar = ({ t, tenantId, entities, entityGroups, appConfigurati
       });
     }
     if (group.section) {
+      
       const section = sectionItems.find((f) => f.title === group.section);
-      if (section) {
-        section.items = [...(section.items ?? []), item];
-      } else {
-        sectionItems.push({
-          title: group.section,
-          path: ``,
-          items: [item],
-        });
+      if(selectedChatbotId){
+        if (section) {
+          section.items = [...(section.items ?? []), item];
+        } else {
+          sectionItems.push({
+            title: group.section,
+            path: ``,
+            items: [item],
+          });
+        }
       }
     } else {
       entitiesItems.push(item);
@@ -115,6 +120,8 @@ export const AppSidebar = ({ t, tenantId, entities, entityGroups, appConfigurati
       icon: SvgIcon.PORTALS,
     });
   }
+
+  
 
   return [
     appItem,

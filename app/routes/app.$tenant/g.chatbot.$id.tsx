@@ -10,6 +10,7 @@ import { Message, ChatSettings, ChatContext } from "~/types/chat";
 import { WebSocketService } from '~/utils/services/websocket/WebSocketService';
 import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
 import { useLoaderData } from "@remix-run/react";
+import { useChatbot } from "~/context/ChatbotContext";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
@@ -41,6 +42,7 @@ const DEFAULT_SETTINGS: ChatSettings = {
 };
 
 export default function ChatbotRoute() {
+  const { selectedChatbotId, setSelectedChatbotId } = useChatbot();
   const params = useParams();
   const { chatbot } = useLoaderData<typeof loader>();
   const [showGuide, setShowGuide] = useState(true);
@@ -105,6 +107,13 @@ export default function ChatbotRoute() {
   ]);
   const [ws, setWs] = useState<WebSocketService | null>(null);
   const [connected, setConnected] = useState(false);
+
+  // Update selected chatbot when route changes
+  useEffect(() => {
+    if (params.id) {
+      setSelectedChatbotId(params.id);
+    }
+  }, [params.id, setSelectedChatbotId]);
 
   useEffect(() => {
     if (!params.id) return;
