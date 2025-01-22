@@ -7,10 +7,20 @@ import { cn } from "~/lib/utils";
 import { ChatInterface } from "~/components/chat/ChatInterface";
 import { QuickStartGuide } from "~/components/chat/QuickStartGuide";
 import { Message, ChatSettings, ChatContext } from "~/types/chat";
+import { WebSocketService } from '~/utils/services/websocket/WebSocketService';
+import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
+import { useLoaderData } from "@remix-run/react";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
-  return json({});
+  
+  // Load chatbot details
+  const chatbot = await ChatbotService.getChatbots(params.id!);
+  if (!chatbot) {
+    throw new Response("Chatbot not found", { status: 404 });
+  }
+
+  return json({ chatbot });
 };
 
 interface QuickStartStep {
@@ -32,13 +42,14 @@ const DEFAULT_SETTINGS: ChatSettings = {
 
 export default function ChatbotRoute() {
   const params = useParams();
+  const { chatbot } = useLoaderData<typeof loader>();
   const [showGuide, setShowGuide] = useState(true);
   const [message, setMessage] = useState("");
   const [isMaximized, setIsMaximized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hi! I am KnowledgeAI, Ask me about anything!',
+      content: chatbot.initialMessage || 'Hi! I am KnowledgeAI, Ask me about anything!',
       sender: 'bot',
       timestamp: new Date(),
       status: 'sent' as const
@@ -92,6 +103,39 @@ export default function ChatbotRoute() {
       link: `/app/${params.tenant}/settings/embed`
     }
   ]);
+  const [ws, setWs] = useState<WebSocketService | null>(null);
+  const [connected, setConnected] = useState(false);
+
+  useEffect(() => {
+    if (!params.id) return;
+
+    const wsService = new WebSocketService(params.id);
+    
+    wsService.addMessageHandler((data) => {
+      if (data.type === 'typing') {
+        setIsTyping(data.isTyping);
+      } else if (data.type === 'message') {
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          content: data.content,
+          sender: 'bot',
+          timestamp: new Date(),
+          status: 'sent'
+        }]);
+      }
+    });
+
+    wsService.connect();
+    setWs(wsService);
+
+    return () => {
+      wsService.disconnect();
+    };
+  }, [params.id]);
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+  };
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
@@ -190,22 +234,22 @@ export default function ChatbotRoute() {
     <div className="flex flex-1 h-full w-full p-6 bg-gray-100">
       <div className={cn(
         "flex bg-white rounded-lg border transition-all duration-200 overflow-hidden w-full h-full",
-        isMaximized 
-          ? "w-full h-full"
-          : "max-w-[1000px] max-h-[700px] mx-auto"
+        isMaximized ? "w-full h-full" : "max-w-[1000px] max-h-[700px] mx-auto"
       )}>
         <ChatInterface 
+          chatbotId={params.id!}
           message={message}
           isMaximized={isMaximized}
           messages={messages}
           settings={settings}
           isTyping={isTyping}
-          onMessageChange={(e) => setMessage(e.target.value)}
+          onMessageChange={handleMessageChange}
           onSendMessage={handleSendMessage}
           onToggleMaximize={() => setIsMaximized(!isMaximized)}
           onFileUpload={handleFileUpload}
           onVoiceRecord={handleVoiceRecord}
           onEmojiSelect={handleEmojiSelect}
+          setMessages={setMessages}
         />
 
         {showGuide && (

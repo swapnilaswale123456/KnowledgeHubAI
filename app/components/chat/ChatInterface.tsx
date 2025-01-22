@@ -7,8 +7,10 @@ import { cn } from "~/lib/utils";
 import { EmojiPicker } from "~/components/chat/EmojiPicker";
 import { MessageItem } from "~/components/chat/MessageItem";
 import { TypingIndicator } from "~/components/chat/TypingIndicator";
+import { WebSocketService } from '~/utils/services/websocket/WebSocketService';
 
 interface ChatInterfaceProps {
+  chatbotId: string;
   message: string;
   isMaximized: boolean;
   messages: Message[];
@@ -20,10 +22,12 @@ interface ChatInterfaceProps {
   onFileUpload: (file: File) => void;
   onVoiceRecord: () => void;
   onEmojiSelect: (emoji: any) => void;
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }
 
 export function ChatInterface({ 
-  message, 
+  chatbotId,
+  message,
   isMaximized,
   messages,
   settings,
@@ -33,19 +37,120 @@ export function ChatInterface({
   onToggleMaximize,
   onFileUpload,
   onVoiceRecord,
-  onEmojiSelect
+  onEmojiSelect,
+  setMessages
 }: ChatInterfaceProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const wsRef = useRef<WebSocketService | null>(null);
+  const messageHandlerRef = useRef<((data: any) => void) | null>(null);
+
+  useEffect(() => {
+    let wsService: WebSocketService | null = null;
+
+    const initializeWebSocket = () => {
+      if (!chatbotId) return;
+
+      if (wsRef.current) {
+        // Clean up existing handlers before disconnecting
+        if (messageHandlerRef.current) {
+          wsRef.current.removeMessageHandler(messageHandlerRef.current);
+        }
+        wsRef.current.disconnect();
+        wsRef.current = null;
+      }
+
+      wsService = new WebSocketService(chatbotId);
+      
+      // Create message handler and store reference
+      const messageHandler = (data: any) => {
+        console.log('Received in ChatInterface:', data);
+        
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {
+            data = { type: 'message', content: data };
+          }
+        }
+
+        if (data.type === 'message' || data.response) {
+          const newMessage: Message = {
+            id: crypto.randomUUID(),
+            content: data.content || data.response || data.message || data,
+            sender: 'bot',
+            timestamp: new Date(),
+            status: 'sent'
+          };
+          setMessages(prev => [...prev, newMessage]);
+        }
+      };
+
+      // Store handler reference for cleanup
+      messageHandlerRef.current = messageHandler;
+      wsService.addMessageHandler(messageHandler);
+
+      wsService.addConnectionStateHandler((connected) => {
+        setIsConnected(connected);
+        console.log('WebSocket connection state:', connected);
+      });
+
+      wsService.connect();
+      wsRef.current = wsService;
+    };
+
+    initializeWebSocket();
+
+    return () => {
+      if (wsService && messageHandlerRef.current) {
+        wsService.removeMessageHandler(messageHandlerRef.current);
+        wsService.disconnect();
+        wsRef.current = null;
+        messageHandlerRef.current = null;
+      }
+    };
+  }, [chatbotId, setMessages]);
+
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
+
+    if (!wsRef.current || !isConnected) {
+      console.warn('Cannot send message: WebSocket not connected');
+      return;
+    }
+
+    const newMessage: Message = {
+      id: crypto.randomUUID(),
+      content: message.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+      status: 'sending'
+    };
+
+    try {
+      wsRef.current.sendMessage({
+        type: 'message',
+        content: message.trim()
+      });
+
+      setMessages(prev => [...prev, newMessage]);
+      onMessageChange({ target: { value: '' } } as any);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setMessages(prev => [...prev, { ...newMessage, status: 'error' }]);
+    }
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -89,7 +194,7 @@ export function ChatInterface({
                   onChange={onMessageChange}
                   placeholder="Type your message..."
                   className="flex-1 border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  onKeyPress={(e) => e.key === 'Enter' && onSendMessage()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 />
                 <input
                   type="file"
@@ -122,7 +227,7 @@ export function ChatInterface({
                   )}
                 </button>
                 <button 
-                  onClick={onSendMessage}
+                  onClick={handleSendMessage}
                   className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 >
                   <Send className="h-4 w-4" />
