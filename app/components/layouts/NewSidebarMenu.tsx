@@ -29,7 +29,7 @@ import { useAppData } from "~/utils/data/useAppData";
 import { useAdminData } from "~/utils/data/useAdminData";
 import { useTranslation } from "react-i18next";
 import NewTenantSelector from "./selectors/NewTenantSelector";
-import LogoDark from "~/assets/img/logo-dark.png";
+import LogoDark from "~/assets/img/logo-light.png";
 import LogoLight from "~/assets/img/logo-light.png";
 import { Inbox } from "@novu/react";
 import NotificationsButton from "./buttons/NotificationsButton";

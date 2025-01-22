@@ -6,8 +6,9 @@ import { MessageSquare, Code, Upload, Settings } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { ChatInterface } from "~/components/chat/ChatInterface";
 import { QuickStartGuide } from "~/components/chat/QuickStartGuide";
+import { ChatbotLayout } from "~/components/chat/ChatbotLayout";
 import { Message, ChatSettings, ChatContext } from "~/types/chat";
-import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
+import { ChatbotService, ChatbotDetails } from "~/utils/services/chatbots/chatbotService.server";
 import { useChatbot } from "~/context/ChatbotContext";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -107,15 +108,20 @@ export default function ChatbotDetailRoute() {
       link: `/app/${params.tenant}/settings/embed`
     }
   ]);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Set selected chatbot if accessing the page directly
   useEffect(() => {
     if (!selectedChatbot || selectedChatbot.id !== chatbot.id) {
-      setSelectedChatbot(chatbot);
+      setSelectedChatbot({
+        ...chatbot,
+        createdAt: new Date(chatbot.createdAt),
+        updatedAt: new Date(chatbot.updatedAt)
+      } as ChatbotDetails);
     }
   }, [chatbot, selectedChatbot, setSelectedChatbot]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
 
     const newMessage: Message = {
@@ -209,37 +215,31 @@ export default function ChatbotDetailRoute() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-2 pt-2">
-      <div className="flex items-center justify-between">
-        <h3 className="text-x2 font-bold">{chatbot.name}</h3>
-      </div>
-      <div className="flex flex-1 h-full w-full p-3 bg-gray-100">
-        <div className={cn(
-          "flex bg-white rounded-lg border transition-all duration-200 overflow-hidden w-full h-full",
-          
-        )}>
-          <ChatInterface 
-            message={message}
-            isMaximized={isMaximized}
-            messages={messages}
-            settings={settings}
-            isTyping={isTyping}
-            onMessageChange={(e) => setMessage(e.target.value)}
-            onSendMessage={handleSendMessage}
-            onToggleMaximize={() => setIsMaximized(!isMaximized)}
-            onFileUpload={handleFileUpload}
-            onVoiceRecord={handleVoiceRecord}
-            onEmojiSelect={handleEmojiSelect}
-          />
+    <ChatbotLayout 
+      title={chatbot.name}
+      isConnected={isConnected}
+    >
+      <ChatInterface 
+        chatbotId={chatbot.id}
+        message={message}
+        isMaximized={isMaximized}
+        messages={messages}
+        settings={settings}
+        isTyping={isTyping}
+        onMessageChange={(e) => setMessage(e.target.value)}
+        onSendMessage={handleSendMessage}
+        onToggleMaximize={() => setIsMaximized(!isMaximized)}
+        onFileUpload={handleFileUpload}
+        onVoiceRecord={handleVoiceRecord}
+        onEmojiSelect={handleEmojiSelect}
+      />
 
-          {showGuide && (
-            <QuickStartGuide 
-              steps={steps}
-              onClose={() => setShowGuide(false)}
-            />
-          )}
-        </div>
-      </div>
-    </div>
+      {showGuide && (
+        <QuickStartGuide 
+          steps={steps}
+          onClose={() => setShowGuide(false)}
+        />
+      )}
+    </ChatbotLayout>
   );
 }

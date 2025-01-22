@@ -79,8 +79,13 @@ export default function DashboardRoute() {
     console.log('Delete chatbot:', chatbotId);
   };
 
-  const handleChatbotClick = (chatbot: ChatbotDetails) => {
-    setSelectedChatbot(chatbot);
+  const handleChatbotClick = (chatbot: any) => {
+    const formattedChatbot = {
+      ...chatbot,
+      createdAt: new Date(chatbot.createdAt)
+    };
+    
+    setSelectedChatbot(formattedChatbot);
     navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`);
   };
 
@@ -123,121 +128,76 @@ export default function DashboardRoute() {
                     key={chatbot.id}
                     className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow"
                   >
-                    {/* Card Header */}
                     <div className="p-4 flex justify-between items-center border-b border-gray-200">
                       <button
-                        className="text-lg font-bold text-blue-600 hover:underline text-left"
                         onClick={() => handleChatbotClick(chatbot)}
+                        className="flex-1 text-left hover:text-blue-600"
                       >
-                        {chatbot.name}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(chatbot.id)}
-                        className="text-gray-400 hover:text-red-500"
-                        title="Delete Chatbot"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zM8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M9 11h6M12 14v-3" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Card Content */}
-                    <div className="p-4 space-y-4">
-                      <div className="flex justify-between items-center">
-                        <p className="text-sm text-gray-600">
-                          <strong>Status:</strong> {chatbot.status}
+                        <h3 className="text-lg font-bold">{chatbot.name}</h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Created {format(new Date(chatbot.createdAt), 'MMM d, yyyy')}
                         </p>
-                        <p className="text-sm text-gray-600">
-                          <strong>Created:</strong>{" "}
-                          {new Date(chatbot.createdAt).toLocaleDateString()}
-                        </p>
+                      </button>
+                      
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/app/${params.tenant}/g/chatbot/${chatbot.id}`}
+                          className="text-gray-500 hover:text-blue-600"
+                        >
+                          <svg
+                            className="w-6 h-6"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </Link>
+                        <Link
+                          to={`/chatbot/${chatbot.id}/data-source`}
+                          className="text-gray-500 hover:text-blue-600"
+                        >
+                          <svg
+                            className="w-6 h-6"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </Link>
+                        <Link
+                          to={`/chatbot/${chatbot.id}/inbox`}
+                          className="text-gray-500 hover:text-blue-600"
+                        >
+                          <svg
+                            className="w-6 h-6"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </Link>
+                        <Link
+                          to={`/chatbot/${chatbot.id}/settings`}
+                          className="text-gray-500 hover:text-blue-600"
+                        >
+                          <svg
+                            className="w-6 h-6"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </Link>
                       </div>
-                      <div className="flex space-x-4">
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-gray-900">0</div>
-                          <p className="text-sm text-gray-500">Messages</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-gray-900">0</div>
-                          <p className="text-sm text-gray-500">Conversations</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-gray-900">0</div>
-                          <p className="text-sm text-gray-500">Resolutions</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card Footer */}
-                    <div className="p-4 border-t border-gray-200 flex justify-around items-center">
-                      <Link
-                        to={`/chatbot/${chatbot.id}/customize`}
-                        title="Customize"
-                        className="text-gray-500 hover:text-blue-600"
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </Link>
-                      <Link
-                        to={`/chatbot/${chatbot.id}/data-source`}
-                        title="Data Source"
-                        className="text-gray-500 hover:text-blue-600"
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                      </Link>
-                      <Link
-                        to={`/chatbot/${chatbot.id}/inbox`}
-                        title="Inbox"
-                        className="text-gray-500 hover:text-blue-600"
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                      </Link>
-                      <Link
-                        to={`/chatbot/${chatbot.id}/settings`}
-                        title="Settings"
-                        className="text-gray-500 hover:text-blue-600"
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </Link>
                     </div>
                   </div>
                 ))}

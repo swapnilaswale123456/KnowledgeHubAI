@@ -5,7 +5,7 @@ export interface ChatbotDetails {
   id: string;
   name: string;
   uniqueUrl: string;
-  theme: any;
+  theme?: any;
   initialMessage: string | null;
   businessName: string | null;
   status: ChatbotStatus;

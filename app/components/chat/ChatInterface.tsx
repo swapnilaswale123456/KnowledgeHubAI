@@ -7,23 +7,26 @@ import { cn } from "~/lib/utils";
 import { EmojiPicker } from "~/components/chat/EmojiPicker";
 import { MessageItem } from "~/components/chat/MessageItem";
 import { TypingIndicator } from "~/components/chat/TypingIndicator";
+import { WebSocketService } from "~/utils/services/websocket/WebSocketService";
 
 interface ChatInterfaceProps {
+  chatbotId: string;
   message: string;
   isMaximized: boolean;
   messages: Message[];
   settings: ChatSettings;
   isTyping: boolean;
   onMessageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSendMessage: () => void;
+  onSendMessage: (message: string) => void;
   onToggleMaximize: () => void;
   onFileUpload: (file: File) => void;
   onVoiceRecord: () => void;
-  onEmojiSelect: (emoji: any) => void;
+  onEmojiSelect: (emoji: string) => void;
 }
 
 export function ChatInterface({ 
-  message, 
+  chatbotId,
+  message,
   isMaximized,
   messages,
   settings,
@@ -35,9 +38,59 @@ export function ChatInterface({
   onVoiceRecord,
   onEmojiSelect
 }: ChatInterfaceProps) {
+  const [ws, setWs] = useState<WebSocketService | null>(null);
+  const [connected, setConnected] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!chatbotId) return;
+
+    const wsService = new WebSocketService(chatbotId);
+    
+    wsService.addMessageHandler((data) => {
+      if (data.type === 'connection') {
+        setConnected(true);
+      } else if (data.type === 'message') {
+        const newMessage: Message = {
+          id: crypto.randomUUID(),
+          content: data.content,
+          sender: 'bot',
+          timestamp: new Date(),
+          status: 'sent'
+        };
+        setMessages(prev => [...prev, newMessage]);
+      }
+    });
+
+    wsService.connect();
+    setWs(wsService);
+
+    return () => {
+      wsService.disconnect();
+    };
+  }, [chatbotId]);
+
+  const handleSendMessage = () => {
+    if (!message.trim() || !ws) return;
+
+    const newMessage: Message = {
+      id: crypto.randomUUID(),
+      content: message.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+      status: 'sending'
+    };
+
+    ws.sendMessage({
+      type: 'message',
+      content: message.trim(),
+      chatbotId
+    });
+
+    onSendMessage(message.trim());
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -89,7 +142,7 @@ export function ChatInterface({
                   onChange={onMessageChange}
                   placeholder="Type your message..."
                   className="flex-1 border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  onKeyPress={(e) => e.key === 'Enter' && onSendMessage()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 />
                 <input
                   type="file"
@@ -122,7 +175,7 @@ export function ChatInterface({
                   )}
                 </button>
                 <button 
-                  onClick={onSendMessage}
+                  onClick={handleSendMessage}
                   className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 >
                   <Send className="h-4 w-4" />
