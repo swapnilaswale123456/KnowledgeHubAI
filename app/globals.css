@@ -162,3 +162,58 @@
     @apply bg-background text-foreground;
   }
 }
+
+.formatted-message {
+  @apply prose prose-sm max-w-none;
+}
+
+.formatted-message pre {
+  @apply bg-gray-800 text-white p-3 rounded-md overflow-x-auto my-2;
+}
+
+.formatted-message code {
+  @apply bg-gray-100 text-gray-800 px-1 rounded text-sm font-mono;
+}
+
+.formatted-message p {
+  @apply my-2 text-sm leading-relaxed;
+}
+
+.formatted-message ul {
+  @apply list-disc pl-4 my-2;
+}
+
+.formatted-message ol {
+  @apply list-decimal pl-4 my-2;
+}
+
+.formatted-message table {
+  @apply w-full border-collapse my-2;
+}
+
+.formatted-message td,
+.formatted-message th {
+  @apply border border-gray-300 px-2 py-1;
+}
+
+.formatted-message th {
+  @apply bg-gray-100;
+}
+
+.formatted-message h1,
+.formatted-message h2,
+.formatted-message h3 {
+  @apply font-semibold my-2;
+}
+
+.formatted-message h1 {
+  @apply text-xl;
+}
+
+.formatted-message h2 {
+  @apply text-lg;
+}
+
+.formatted-message h3 {
+  @apply text-base;
+}

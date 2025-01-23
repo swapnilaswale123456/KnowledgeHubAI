@@ -9,30 +9,19 @@ export function useWebSocket(chatbotId: string, setMessages: React.Dispatch<Reac
   const messageHandlerRef = useRef<((data: any) => void) | null>(null);
 
   const handleMessage = useCallback((data: any) => {
-    try {
-      console.log('Received message:', data);
-      
-      if (typeof data === 'string') {
-        try {
-          data = JSON.parse(data);
-        } catch (e) {
-          data = { type: 'message', content: data };
-        }
-      }
+    console.log('Received WebSocket data in hook:', data);
+    
+    const newMessage: Message = {
+      id: crypto.randomUUID(),
+      content: data.content || data.answer || data.response || data,
+      sender: 'bot',
+      timestamp: new Date(),
+      status: 'sent',
+      isFormatted: data.type === 'html' || (typeof data.content === 'string' && data.content.includes('<')),
+    };
 
-      if (data.type === 'message' || data.response) {
-        const newMessage: Message = {
-          id: crypto.randomUUID(),
-          content: data.content || data.response || data.message || data,
-          sender: 'bot',
-          timestamp: new Date(),
-          status: 'sent'
-        };
-        setMessages(prev => [...prev, newMessage]);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error processing message'));
-    }
+    console.log('Created new message:', newMessage);
+    setMessages(prev => [...prev, newMessage]);
   }, [setMessages]);
 
   useEffect(() => {
@@ -74,22 +63,33 @@ export function useWebSocket(chatbotId: string, setMessages: React.Dispatch<Reac
     };
   }, [chatbotId, handleMessage]);
 
-  const sendMessage = useCallback((content: string) => {
-    if (!content.trim() || !wsRef.current || !isConnected) {
+  const sendMessage = useCallback((message: string | { type: string; content: string; chatbot_id?: string }) => {
+    if (!wsRef.current || !isConnected) {
       console.warn('Cannot send message: WebSocket not connected');
       return false;
     }
 
     try {
-      return wsRef.current.sendMessage({
-        type: 'message',
-        content: content.trim()
-      });
+      // If message is a string, convert it to the expected format
+      const messagePayload = typeof message === 'string' 
+        ? {
+            type: 'message',
+            content: message.trim(),
+            chatbot_id: chatbotId
+          }
+        : message;
+
+      if (!messagePayload.content || (typeof messagePayload.content === 'string' && !messagePayload.content.trim())) {
+        console.warn('Cannot send empty message');
+        return false;
+      }
+
+      return wsRef.current.sendMessage(messagePayload);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to send message'));
       return false;
     }
-  }, [isConnected]);
+  }, [isConnected, chatbotId]);
 
   return {
     isConnected,

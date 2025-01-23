@@ -4,9 +4,15 @@ export interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   status: 'sending' | 'sent' | 'error';
-  type?: 'text' | 'file' | 'voice';
+  type?: 'text' | 'html' | 'file' | 'voice';
+  isFormatted?: boolean;
   fileUrl?: string;
   fileName?: string;
+  metadata?: {
+    format?: string;
+    language?: string;
+    [key: string]: any;
+  };
 }
 
 export interface ChatSettings {

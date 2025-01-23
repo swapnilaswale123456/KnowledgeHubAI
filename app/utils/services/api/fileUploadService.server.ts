@@ -49,7 +49,7 @@ async function createChatbot(tenantId: string, fileName: string) {
 export class FileUploadService {
   private baseUrl: string;
   private apiKey: string;
-
+  public chatbotId: string | null = null;
   constructor() {
     this.baseUrl = process.env.PYTHON_API_ENDPOINT || 'http://127.0.0.1:5000';
     this.apiKey = process.env.PYTHON_API_KEY || '';
@@ -59,13 +59,15 @@ export class FileUploadService {
     try {
       const formData = new FormData();
       formData.append('file', file);      
+      formData.append('chatbotId', this.chatbotId ?? '');
+
       
       if (isTrain == true) {
         const response = await fetch(`${this.baseUrl}/file/upload/v2/file`, {
           method: 'POST',
           body: formData,
           headers: {
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzQ3NDIyMCwianRpIjoiYmQ1ZTdiNTctOTQ0Yy00Mjc0LWEzZmEtMWY5YTIzZTcxODk4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzQ3NDIyMCwiY3NyZiI6ImI4ZmY2ZDc3LTZkZWQtNDhlZi1iOTAzLTczYTAwMzdiY2JhNyIsImV4cCI6MTczNzQ3NTEyMCwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc1Z3AzT1VyaDlfNmJYTm1YUHlwMjA4NlhJMHo0UG5CaU53c3pEenN2S2E1R1NxLUxQdG5aLU1ieUg4Z3ptR2lUcW56Z0FCaDZsWlVJd0ZaVFl1YkVEbjRac2JKUDJzRDlod0R2d3YxV2dFa2d3ZmwxckdIUXVZV3h2TjE4Q21BTGV6OW1obkpFRjF5SGF6TnY2MWZsZ242ZVJQU2YwZmFDZ1lLQWY4U0FSQVNGUUhHWDJNaXBsVnFBZW1TTTNjR3RTR2RfLWdfamcwMTcxIiwiIl19.GY1Vk_VW4qadWOj1DZ3uSfPUaQ9JVYcawHiBnbcZXAM`
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzY0MTU5NiwianRpIjoiNTM0YmZkMjYtMThiOS00ZjRlLWFiM2EtNmIwMThjMzI0YTcxIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzY0MTU5NiwiY3NyZiI6IjczYTM0ZDBhLTNmYjUtNDkzYy05MzY0LWVmOWJmOGE3OWViOCIsImV4cCI6MTczNzY0MjQ5NiwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc3N2t2MVg2YnJ3N1BEa241UERtNm4waENyNDZSWjIyR3pRa0Nodk12Sm9NcC1HR2I1SkhaanRxbG55MWFITFBiWTRXT2FUTDlWaERZU2c1N0c1cEFkZHhjY2d4WnZMeUE4ZUJuN3U5VlN5MngtZmdOWGx2SkppNE44UHUwU25qQ3dXMnE2OU5jWkN1MWpzZUNlS1lsZjFZcEtfUlZZYUNnWUtBWDhTQVJBU0ZRSEdYMk1paVVTNzluYzRqVUdiS1A1XzIwdGhsZzAxNzAiLCIiXX0.o8oZMKnI6fKJ8s6vF1piM_KSp96yWr8xGVhKYfSQgQ8`
           }          
         });
         
@@ -106,6 +108,7 @@ export class FileUploadService {
             CURRENT_TIMESTAMP
           ) RETURNING "sourceId"`;
 
+        this.chatbotId = chatbot.id;
         return {
           success: true,
           message: 'File uploaded successfully',

@@ -35,7 +35,7 @@ export function ChatInterface({
   const handleSendMessage = () => {
     if (!message.trim()) return;
 
-    const newMessage: Message = {
+    const userMessage: Message = {
       id: crypto.randomUUID(),
       content: message.trim(),
       sender: 'user',
@@ -43,8 +43,32 @@ export function ChatInterface({
       status: 'sending'
     };
 
-    const success = sendMessage(message);
-    setMessages(prev => [...prev, { ...newMessage, status: success ? 'sent' : 'error' }]);
+    setMessages(prev => [...prev, userMessage]);
+
+    const success = sendMessage({
+      type: 'message',
+      content: message.trim(),
+      chatbot_id: chatbotId
+    });
+
+    if (!success) {
+      setMessages(prev => 
+        prev.map(m => 
+          m.id === userMessage.id 
+            ? { ...m, status: 'error' } 
+            : m
+        )
+      );
+    } else {
+      setMessages(prev => 
+        prev.map(m => 
+          m.id === userMessage.id 
+            ? { ...m, status: 'sent' } 
+            : m
+        )
+      );
+    }
+
     setMessage('');
   };
 

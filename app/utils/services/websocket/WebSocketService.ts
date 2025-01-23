@@ -5,8 +5,9 @@ type ConnectionStateHandler = (connected: boolean) => void;
 
 interface WebSocketMessage {
   type: string;
-  content: any;
+  content: string;
   chatbot_id?: string;
+  [key: string]: any;
 }
 
 export class WebSocketService {
@@ -38,7 +39,7 @@ export class WebSocketService {
       const wsUrl = getWebSocketUrl(this.chatbotId);
       this.ws = new WebSocket(wsUrl);
       console.log('Connecting to WebSocket:', wsUrl);
-      
+
       // Set connection timeout
       this.connectionTimeout = setTimeout(() => {
         if (this.ws?.readyState !== WebSocket.OPEN) {
@@ -62,16 +63,41 @@ export class WebSocketService {
     this.clearConnectionTimeout();
     this.reconnectAttempts = 0;
     this.notifyConnectionState(true);
-    this.startPingInterval();
+    //this.startPingInterval();
   }
 
   private handleMessage(event: MessageEvent) {
     try {
-      const data = event.data;
-      if (data.type === 'pong') {
-        return; // Handle ping-pong separately
+      console.log('Raw WebSocket message:', event.data);
+      let parsedData;
+      
+      try {
+        parsedData = JSON.parse(event.data);
+      } catch (e) {
+        // If not JSON, treat as plain text
+        parsedData = { content: event.data, type: 'text' };
       }
-      this.messageHandlers.forEach(handler => handler(data));
+
+      if (parsedData.type === 'pong') {
+        return;
+      }
+
+      // Normalize the response structure
+      let messageContent;
+      if (typeof parsedData === 'string') {
+        messageContent = { content: parsedData, type: 'text' };
+      } else if (parsedData.answer) {
+        messageContent = { content: parsedData.answer, type: 'text' };
+      } else if (parsedData.response) {
+        messageContent = { content: parsedData.response, type: 'text' };
+      } else if (parsedData.content) {
+        messageContent = parsedData;
+      } else {
+        messageContent = { content: JSON.stringify(parsedData), type: 'text' };
+      }
+
+      console.log('Processed message content:', messageContent);
+      this.messageHandlers.forEach(handler => handler(messageContent));
     } catch (error) {
       console.error('Error handling message:', error, event.data);
     }
@@ -114,10 +140,10 @@ export class WebSocketService {
 
   private startPingInterval() {
     this.pingInterval = setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.sendMessage({ type: 'ping', content: null });
-      }
-    }, WS_CONFIG.PING_INTERVAL);
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          this.sendMessage({ type: 'ping', content: null });
+        }
+      }, WS_CONFIG.PING_INTERVAL);
   }
 
   private cleanup() {
@@ -148,9 +174,11 @@ export class WebSocketService {
     try {
       const payload = {
         ...message,
-        chatbot_id: this.chatbotId,
+        chatbot_id: message.chatbot_id || this.chatbotId,
         timestamp: new Date().toISOString()
       };
+
+      console.log('Sending message:', payload);
       this.ws.send(JSON.stringify(payload));
       return true;
     } catch (error) {
