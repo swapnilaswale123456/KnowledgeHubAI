@@ -1,10 +1,20 @@
-import { LoaderFunction } from "@remix-run/node";
+import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { requireAuth } from "~/utils/loaders.middleware";
 import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
+import type { MetaFunction } from "@remix-run/node";
 
-export const loader: LoaderFunction = async ({ request, params }) => {
-  return null;
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+  await requireAuth({ request, params });
+  
+  return json({ 
+    title: "Data Sources"
+  });
 };
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => [
+  { title: data?.title || "Data Sources" }
+];
 
 export default function DataSourceOverviewRoute() {
   const { t } = useTranslation();

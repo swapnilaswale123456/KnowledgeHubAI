@@ -11,6 +11,7 @@ import { WebSocketService } from '~/utils/services/websocket/WebSocketService';
 import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
 import { useLoaderData } from "@remix-run/react";
 import { useChatbot } from "~/context/ChatbotContext";
+import type { MetaFunction } from "@remix-run/node";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
@@ -21,8 +22,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     throw new Response("Chatbot not found", { status: 404 });
   }
 
-  return json({ chatbot });
+  return json({ 
+    chatbot,
+    title: "Chatbot | KnowledgeHub AI"
+  });
 };
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => [
+  { title: data?.title || "Chatbot | KnowledgeHub AI" }
+];
 
 interface QuickStartStep {
   id: number;
