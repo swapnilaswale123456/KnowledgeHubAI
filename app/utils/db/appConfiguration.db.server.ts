@@ -136,7 +136,7 @@ export async function getAppConfiguration({ request }: { request: Request }): Pr
           enabled: true,
         },
         github: {
-          enabled: false,
+          enabled: true,
           authorizationURL: (() => {
             const url = new URL("https://github.com/login/oauth/authorize");
             url.searchParams.append("client_id", process?.env.GITHUB_OAUTH_CLIENT_ID ?? "");
@@ -146,7 +146,7 @@ export async function getAppConfiguration({ request }: { request: Request }): Pr
           })(),
         },
         google: {
-          enabled: false,
+          enabled: true,
         },
       },
     },

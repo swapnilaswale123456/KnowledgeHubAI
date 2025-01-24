@@ -18,8 +18,9 @@ export let getAuthenticator = (request: Request) => {
       // Get the user data from your DB or API using the tokens and profile
       return profile as GoogleProfile;
     }
+    
   );
-
+ 
   authenticator.use(googleStrategy);
 
   return authenticator;
