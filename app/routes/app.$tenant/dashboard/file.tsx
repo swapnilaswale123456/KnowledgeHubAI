@@ -1,15 +1,42 @@
 import { json, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { useParams, useNavigate } from "@remix-run/react";
+import { useParams, useNavigate, useLoaderData, useFetcher } from "@remix-run/react";
 import { Link } from "@remix-run/react";
 import { ChevronLeft } from "lucide-react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { getFileUploadService } from "~/utils/services/api/fileUploadService.server";
 import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 import FileUpload from "~/components/core/files/FileUpload";
+import { FileList, FileSource } from "~/components/core/files/FileList";
+import { db } from "~/utils/db.server";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
-  return json({});
+  const tenantId = await getTenantIdFromUrl(params);
+
+  const files = await db.dataSources.findMany({
+    where: {
+      tenantId,
+      sourceTypeId: 2,
+    },
+    select: {
+      sourceId: true,
+      sourceDetails: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
+  return json({
+    files: files.map(f => ({
+      sourceId: f.sourceId,
+      fileName: (f.sourceDetails as any)?.fileName ?? 'Untitled',
+      fileType: (f.sourceDetails as any)?.fileType ?? 'application/octet-stream',
+      createdAt: f.createdAt,
+      isTrained: (f.sourceDetails as any)?.isTrained ?? true
+    } as FileSource))
+  });
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -44,13 +71,27 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function FileUploadRoute() {
+  const { files } = useLoaderData<typeof loader>();
   const params = useParams();
   const navigate = useNavigate();
+  const fetcher = useFetcher();
 
   const handleSuccess = () => {
     setTimeout(() => {
       navigate(`/app/${params.tenant}/g/chatbot`);
     }, 2000);
+  };
+
+  const handleDelete = (sourceId: number) => {
+    if (!confirm("Are you sure you want to delete this file?")) return;
+    
+    const formData = new FormData();
+    formData.append("intent", "delete");
+    formData.append("sourceId", sourceId.toString());
+    
+    fetcher.submit(formData, {
+      method: "POST"
+    });
   };
 
   const backButton = (
@@ -64,10 +105,16 @@ export default function FileUploadRoute() {
   );
 
   return (
-    <FileUpload
-      onSuccess={handleSuccess}
-      showBackButton={true}
-      backButtonComponent={backButton}
-    />
+    <div className="space-y-0">
+      <FileUpload
+        onSuccess={handleSuccess}
+        showBackButton={true}
+        backButtonComponent={backButton}
+      />
+      <FileList 
+        files={files as unknown as FileSource[]}
+        onDelete={handleDelete}
+      />
+    </div>
   );
 } 

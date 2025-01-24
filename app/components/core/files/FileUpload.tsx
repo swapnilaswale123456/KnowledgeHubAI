@@ -105,7 +105,7 @@ export default function FileUpload({
   };
 
   return (
-    <div className="flex-1 space-y-6 p-8 max-w-5xl mx-auto">
+    <div className="flex-1 space-y-2 p-4 max-w-5xl mx-auto">
       {showBackButton && backButtonComponent}
 
       <Card>
@@ -145,7 +145,7 @@ export default function FileUpload({
                 <h3 className="font-medium mb-4">Uploaded File Details</h3>
                 <div className="space-y-2">
                   <p className="text-sm">
-                    <span className="text-gray-500">File name:</span>{" "}
+                    <span className="text-gray-500">Trained File:</span>{" "}
                     <span className="font-medium">{uploadedFile.name}</span>
                   </p>
                   <p className="text-sm">

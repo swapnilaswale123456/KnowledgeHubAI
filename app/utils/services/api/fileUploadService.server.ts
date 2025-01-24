@@ -161,14 +161,49 @@ export class FileUploadService {
 
   async deleteDataSource(sourceId: number) {
     try {
-      await db.$queryRaw`
-        DELETE FROM "DataSources" 
-        WHERE "sourceId" = ${sourceId}
-      `;
-      return {
-        success: true,
-        message: 'File deleted successfully'
+      await db.dataSources.delete({
+        where: { sourceId }
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Delete datasource error:', error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Delete datasource failed'
       };
+    }
+  }
+
+  async deleteChatbot(chatbotId: string) {
+    try {
+      await db.chatbot.delete({
+        where: { id: chatbotId }
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Delete chatbot error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Delete chatbot failed'
+      };
+    }
+  }
+
+  async deleteDataSourceAndChatbot(sourceId: number) {
+    try {
+      const dataSource = await db.dataSources.findUnique({
+        where: { sourceId },
+        select: { chatbotId: true }
+      });
+
+      const results = await Promise.all([
+        this.deleteDataSource(sourceId),
+        dataSource?.chatbotId ? this.deleteChatbot(dataSource.chatbotId) : { success: true }
+      ]);
+
+      return results.every(r => r.success) 
+        ? { success: true }
+        : { success: false, message: 'Failed to delete all resources' };
     } catch (error) {
       console.error('Delete error:', error);
       return {
