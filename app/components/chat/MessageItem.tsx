@@ -77,30 +77,32 @@ export function MessageItem({ message, settings }: MessageItemProps) {
   };
   
   return (
-    <div 
-      className={cn(
-        "flex items-end gap-2 group",
-        !isBot && "flex-row-reverse"
-      )}
-      onMouseEnter={() => setShowCopy(true)}
-      onMouseLeave={() => setShowCopy(false)}
-    >
+    <div className={cn(
+      "flex items-start gap-1.5",
+      !isBot && "flex-row-reverse"
+    )}>
       {isBot && (
-        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-          <Bot className="w-4 h-4 text-blue-600" />
+        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <Bot className="w-3 h-3 text-blue-600" />
         </div>
       )}
       
       <div className={cn(
-        "max-w-[80%] break-words relative group-hover:opacity-100",
+        "max-w-[85%] break-words",
         isBot ? "bg-gray-100" : "bg-blue-500 text-white",
-        "px-4 py-2 rounded-2xl",
-        isBot ? "rounded-bl-none" : "rounded-br-none",
-        "transition-all duration-200"
+        "px-3 py-1.5 rounded-2xl",
+        isBot ? "rounded-bl-none" : "rounded-br-none"
       )}>
-        {renderContent()}
+        <div className={cn(
+          "text-xs leading-relaxed",
+          settings.fontSize === 'small' && 'text-xs',
+          settings.fontSize === 'medium' && 'text-sm',
+          settings.fontSize === 'large' && 'text-base'
+        )}>
+          {message.content}
+        </div>
         <span className={cn(
-          "text-xs mt-1 block opacity-70",
+          "text-[10px] mt-0.5 block opacity-70",
           isBot ? "text-gray-500" : "text-blue-100"
         )}>
           {format(new Date(message.timestamp), 'HH:mm')}

@@ -31,6 +31,7 @@ export function ChatInterface({
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { isConnected, sendMessage } = useWebSocket(chatbotId, setMessages);
+  const prevMessagesLengthRef = useRef(messages.length);
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -73,7 +74,11 @@ export function ChatInterface({
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only scroll if new messages are added
+    if (messages.length > prevMessagesLengthRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevMessagesLengthRef.current = messages.length;
   }, [messages]);
 
   const handleFileUpload = async (file: File) => {
@@ -85,45 +90,50 @@ export function ChatInterface({
   };
 
   return (
-    <div className={cn(
-      "flex-1 flex flex-col",
-      "w-full md:max-w-[400px] h-[600px]",
-      "bg-white rounded-2xl shadow-xl overflow-hidden",
-      !isMaximized && "md:max-w-[800px] h-screen"
-    )}>
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-white/10 rounded-full">
-            <Bot className="w-5 h-5" />
+    <div
+      className={cn(
+        "flex-1 flex flex-col",
+        "w-full h-[300px] sm:h-[400px] md:h-[500px]", // Adjust height for different breakpoints
+        "bg-white rounded-2xl shadow-xl overflow-hidden",
+        !isMaximized && "md:max-w-[800px] h-[450px]"
+      )}
+    >
+      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div className="flex items-center space-x-2">
+          <div className="p-1.5 bg-white/10 rounded-full">
+            <Bot className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="font-medium">KnowledgeAI</h2>
-            <p className="text-xs text-blue-100">
+            <h2 className="text-sm font-medium leading-none">KnowledgeAI</h2>
+            <p className="text-xs text-blue-100 mt-0.5">
               {isTyping ? 'Typing...' : 'Online'}
             </p>
           </div>
         </div>
         <button 
           onClick={onToggleMaximize}
-          className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
         >
           {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 scroll-smooth">
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2 scroll-smooth">
         {messages.map((msg) => (
           <MessageItem 
             key={msg.id}
             message={msg}
-            settings={settings}
+            settings={{
+              ...settings,
+              fontSize: 'small'
+            }}
           />
         ))}
         {isTyping && <TypingIndicator />}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t p-4 bg-gray-50">
+      <div className="border-t p-2 bg-gray-50">
         <div className="flex items-center space-x-2">
           <input
             type="text"
@@ -131,13 +141,13 @@ export function ChatInterface({
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Type your message..."
-            className="flex-1 px-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-3 py-1.5 text-sm rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button
             onClick={handleSendMessage}
             disabled={!message.trim()}
             className={cn(
-              "p-3 rounded-full",
+              "p-2 rounded-full",
               "transition-colors duration-200",
               message.trim()
                 ? "bg-blue-500 text-white hover:bg-blue-600"
