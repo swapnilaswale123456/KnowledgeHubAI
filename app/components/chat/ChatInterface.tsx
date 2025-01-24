@@ -88,8 +88,8 @@ export function ChatInterface({
     <div className={cn(
       "flex-1 flex flex-col",
       "w-full md:max-w-[400px] h-[600px]",
-      "bg-white rounded-lg shadow-lg overflow-hidden",
-      isMaximized && "md:max-w-[800px] h-screen"
+      "bg-white rounded-2xl shadow-xl overflow-hidden",
+      !isMaximized && "md:max-w-[800px] h-screen"
     )}>
       <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
         <div className="flex items-center space-x-3">
