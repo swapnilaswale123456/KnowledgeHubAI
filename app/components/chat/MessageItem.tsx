@@ -1,19 +1,17 @@
 import { Message, ChatSettings } from "~/types/chat";
 import { cn } from "~/lib/utils";
-import { Copy, RotateCcw, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { Bot, Copy } from "lucide-react";
 import { useState } from "react";
-import { BotAvatar } from "~/components/avatars/BotAvatar";
-import { UserAvatar } from "~/components/avatars/UserAvatar";
 
 interface MessageItemProps {
   message: Message;
   settings: ChatSettings;
-  onRetry?: () => void;
-  onDelete?: () => void;
 }
 
-export function MessageItem({ message, settings, onRetry, onDelete }: MessageItemProps) {
-  const [showActions, setShowActions] = useState(false);
+export function MessageItem({ message, settings }: MessageItemProps) {
+  const isBot = message.sender === 'bot';
+  const [showCopy, setShowCopy] = useState(false);
 
   const copyMessage = () => {
     if (typeof window === 'undefined') return;
@@ -21,7 +19,6 @@ export function MessageItem({ message, settings, onRetry, onDelete }: MessageIte
   };
 
   const parseHtmlContent = (content: string) => {
-    // Replace HTML tags with markdown equivalents
     return content
       .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
       .replace(/<b>(.*?)<\/b>/g, '**$1**')
@@ -40,93 +37,6 @@ export function MessageItem({ message, settings, onRetry, onDelete }: MessageIte
       .replace(/&amp;/g, '&');
   };
 
-  const formatText = (text: string, key?: number) => {
-    // First parse any HTML in the content
-    const parsedText = parseHtmlContent(text);
-    
-    // Split by newlines and create paragraphs
-    const paragraphs = parsedText.split('\n').filter(Boolean);
-    return paragraphs.map((paragraph, idx) => {
-      const finalKey = key !== undefined ? `${key}-${idx}` : idx;
-      
-      // Handle bold text
-      paragraph = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      
-      // Handle italic text
-      paragraph = paragraph.replace(/_(.*?)_/g, '<em>$1</em>');
-      
-      // Check if it's a list item
-      if (paragraph.startsWith('- ') || paragraph.startsWith('* ')) {
-        return (
-          <li key={finalKey} className="ml-4">
-            <span dangerouslySetInnerHTML={{ __html: paragraph.slice(2) }} />
-          </li>
-        );
-      }
-      
-      // Check if it's a numbered list item
-      if (/^\d+\.\s/.test(paragraph)) {
-        return (
-          <li key={finalKey} className="ml-4 list-decimal">
-            <span dangerouslySetInnerHTML={{ 
-              __html: paragraph.replace(/^\d+\.\s/, '')
-            }} />
-          </li>
-        );
-      }
-
-      // Check if it's a heading
-      if (paragraph.startsWith('# ')) {
-        return (
-          <h1 key={finalKey} className="text-xl font-bold my-2">
-            <span dangerouslySetInnerHTML={{ __html: paragraph.slice(2) }} />
-          </h1>
-        );
-      }
-      if (paragraph.startsWith('## ')) {
-        return (
-          <h2 key={finalKey} className="text-lg font-bold my-2">
-            <span dangerouslySetInnerHTML={{ __html: paragraph.slice(3) }} />
-          </h2>
-        );
-      }
-      if (paragraph.startsWith('### ')) {
-        return (
-          <h3 key={finalKey} className="text-base font-bold my-2">
-            <span dangerouslySetInnerHTML={{ __html: paragraph.slice(4) }} />
-          </h3>
-        );
-      }
-
-      // Regular paragraph
-      return (
-        <p key={finalKey} className={cn(
-          "my-2 whitespace-pre-wrap",
-          settings.fontSize === 'small' && 'text-xs',
-          settings.fontSize === 'medium' && 'text-sm',
-          settings.fontSize === 'large' && 'text-base'
-        )}>
-          <span dangerouslySetInnerHTML={{ __html: paragraph }} />
-        </p>
-      );
-    });
-  };
-
-  const formatCodeBlock = (content: string) => {
-    const parts = content.split(/(```[\s\S]*?```)/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('```') && part.endsWith('```')) {
-        const code = part.slice(3, -3).trim();
-        return (
-          <pre key={index} className="bg-gray-800 text-white p-3 rounded-md overflow-x-auto my-2">
-            <code>{code}</code>
-          </pre>
-        );
-      }
-      return formatText(part, index);
-    });
-  };
-
   const renderContent = () => {
     if (message.type === 'file') {
       return (
@@ -141,74 +51,75 @@ export function MessageItem({ message, settings, onRetry, onDelete }: MessageIte
       );
     }
 
+    if (isBot) {
+      return (
+        <div className={cn(
+          "formatted-message",
+          settings.fontSize === 'small' && 'text-xs',
+          settings.fontSize === 'medium' && 'text-sm',
+          settings.fontSize === 'large' && 'text-base'
+        )}>
+          <div dangerouslySetInnerHTML={{ __html: message.content }} />
+        </div>
+      );
+    }
+
     return (
-      <div className="space-y-1">
-        {formatCodeBlock(message.content)}
+      <div className={cn(
+        "whitespace-pre-wrap",
+        settings.fontSize === 'small' && 'text-xs',
+        settings.fontSize === 'medium' && 'text-sm',
+        settings.fontSize === 'large' && 'text-base'
+      )}>
+        {message.content}
       </div>
     );
   };
-
+  
   return (
     <div 
       className={cn(
-        "flex items-start gap-3 max-w-2xl mx-auto",
-        message.sender === 'user' && 'flex-row-reverse'
+        "flex items-end gap-2 group",
+        !isBot && "flex-row-reverse"
       )}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseEnter={() => setShowCopy(true)}
+      onMouseLeave={() => setShowCopy(false)}
     >
-      <div className="w-6 h-6">
-        {message.sender === 'bot' ? <BotAvatar /> : <UserAvatar />}
-      </div>
-      <div className="flex flex-col gap-1 max-w-[85%]">
-        <div className={cn(
-          "flex items-start gap-2",
-          message.sender === 'user' && 'flex-row-reverse'
+      {isBot && (
+        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <Bot className="w-4 h-4 text-blue-600" />
+        </div>
+      )}
+      
+      <div className={cn(
+        "max-w-[80%] break-words relative group-hover:opacity-100",
+        isBot ? "bg-gray-100" : "bg-blue-500 text-white",
+        "px-4 py-2 rounded-2xl",
+        isBot ? "rounded-bl-none" : "rounded-br-none",
+        "transition-all duration-200"
+      )}>
+        {renderContent()}
+        <span className={cn(
+          "text-xs mt-1 block opacity-70",
+          isBot ? "text-gray-500" : "text-blue-100"
         )}>
-          <div className={cn(
-            "p-3 rounded-lg",
-            message.sender === 'bot' ? 'bg-gray-100' : 'bg-blue-500 text-white',
-            message.sender === 'bot' && 'formatted-message'
-          )}>
-            {renderContent()}
-          </div>
-          {showActions && (
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={copyMessage}
-                className="p-1 hover:bg-gray-100 rounded"
-                title="Copy message"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-              {message.status === 'error' && (
-                <button 
-                  onClick={onRetry}
-                  className="p-1 hover:bg-gray-100 rounded text-red-500"
-                  title="Retry"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
-              )}
-              <button 
-                onClick={onDelete}
-                className="p-1 hover:bg-gray-100 rounded"
-                title="Delete message"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+          {format(new Date(message.timestamp), 'HH:mm')}
+        </span>
+      </div>
+
+      {showCopy && (
+        <button 
+          onClick={copyMessage}
+          className={cn(
+            "p-1.5 rounded-full transition-colors",
+            "hover:bg-gray-100",
+            "opacity-0 group-hover:opacity-100"
           )}
-        </div>
-        <div className={cn(
-          "text-xs text-gray-500",
-          message.sender === 'user' && 'text-right'
-        )}>
-          {message.sender === 'bot' ? 'AI Assistant' : 'You'} • {
-            new Date(message.timestamp).toLocaleTimeString()
-          }
-        </div>
-      </div>
+          title="Copy message"
+        >
+          <Copy className="h-4 w-4 text-gray-500" />
+        </button>
+      )}
     </div>
   );
 } 
