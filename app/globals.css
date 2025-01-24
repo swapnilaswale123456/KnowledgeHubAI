@@ -168,32 +168,32 @@
 }
 
 .formatted-message pre {
-  @apply bg-gray-800 text-white p-3 rounded-md overflow-x-auto my-2;
+  @apply bg-gray-800 text-white p-2 rounded-md overflow-x-auto my-1 text-xs;
 }
 
 .formatted-message code {
-  @apply bg-gray-100 text-gray-800 px-1 rounded text-sm font-mono;
+  @apply bg-gray-100 text-gray-800 px-1 rounded text-xs font-mono;
 }
 
 .formatted-message p {
-  @apply my-2 text-sm leading-relaxed;
+  @apply my-1 text-xs leading-relaxed;
 }
 
 .formatted-message ul {
-  @apply list-disc pl-4 my-2;
+  @apply list-disc pl-4 my-1 text-xs;
 }
 
 .formatted-message ol {
-  @apply list-decimal pl-4 my-2;
+  @apply list-decimal pl-4 my-1 text-xs;
 }
 
 .formatted-message table {
-  @apply w-full border-collapse my-2;
+  @apply w-full border-collapse my-1 text-xs;
 }
 
 .formatted-message td,
 .formatted-message th {
-  @apply border border-gray-300 px-2 py-1;
+  @apply border border-gray-300 px-2 py-1 text-xs;
 }
 
 .formatted-message th {
@@ -203,17 +203,17 @@
 .formatted-message h1,
 .formatted-message h2,
 .formatted-message h3 {
-  @apply font-semibold my-2;
+  @apply font-semibold my-1;
 }
 
 .formatted-message h1 {
-  @apply text-xl;
+  @apply text-sm;
 }
 
 .formatted-message h2 {
-  @apply text-lg;
+  @apply text-xs;
 }
 
 .formatted-message h3 {
-  @apply text-base;
+  @apply text-xs;
 }
