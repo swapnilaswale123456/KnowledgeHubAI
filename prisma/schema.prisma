@@ -104,6 +104,8 @@ model User {
   workflowCredentialsCreated WorkflowCredential[]
   workflowsExecuted          WorkflowExecution[]      @relation("executedByUser")
   workflowVariablesCreated   WorkflowVariable[]
+  createdTemplates           InstructionTemplate[]    @relation("createdTemplates")
+  instructions             UserInstruction[]            @relation("userInstructions")
 }
 
 model AdminUser {
@@ -882,7 +884,7 @@ model Row {
   createdByUserId                String?
   createdByApiKeyId              String?
   order                          Int                           @default(0)
-  deletedAt                      DateTime?
+  deletedAt                        DateTime?
   inEntityGroupConfigurationRows EntityGroupConfigurationRow[]
   formulaCalculationLogs         FormulaComponentLog[]
   logs                           Log[]
@@ -1993,7 +1995,7 @@ model WorkflowExecution {
   createdByUserId     String?
   blockRuns           WorkflowBlockExecution[]
   createdByUser       User?                    @relation("executedByUser", fields: [createdByUserId], references: [id])
-  tenant              Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant              Tenant?                  @relation(fields: [tenantId], references: [id])
   waitingBlock        WorkflowBlock?           @relation(fields: [waitingBlockId], references: [id])
   workflow            Workflow                 @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 }
@@ -2287,7 +2289,7 @@ model PortalUserSubscription {
   portalUserId     String                          @unique
   stripeCustomerId String?
   portal           Portal                          @relation(fields: [portalId], references: [id], onDelete: Cascade)
-  portalUser       PortalUser                      @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
+  portalUser         PortalUser                      @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
   products         PortalUserSubscriptionProduct[]
 }
 
@@ -2316,7 +2318,7 @@ model PortalUserSubscriptionProductPrice {
   portalUserSubscriptionProductId String
   subscriptionPriceId             String?
   portal                          Portal                        @relation(fields: [portalId], references: [id], onDelete: Cascade)
-  portalUserSubscriptionProduct   PortalUserSubscriptionProduct @relation(fields: [portalUserSubscriptionProductId], references: [id], onDelete: Cascade)
+  portalUserSubscriptionProduct   PortalUserSubscriptionProduct       @relation(fields: [portalUserSubscriptionProductId], references: [id], onDelete: Cascade)
   subscriptionPrice               PortalSubscriptionPrice?      @relation(fields: [subscriptionPriceId], references: [id])
 }
 
@@ -2402,6 +2404,7 @@ model Chatbot {
   llmModel        LlmModel?     @relation(fields: [llmModelId], references: [id])
   tenant          Tenant        @relation(fields: [tenantId], references: [id])
   tenantId        String
+  instructions    UserInstruction[]     @relation("chatbotInstructions")
 
   @@index([tenantId])
   @@map("chatbots")
@@ -2444,4 +2447,35 @@ model Language {
   chatbots    Chatbot[]
 
   @@map("languages")
+}
+
+model InstructionTemplate {
+  id          Int               @id @default(autoincrement()) @map("TemplateID")
+  name        String            @map("TemplateName") @db.VarChar(255)
+  objective   String            @map("Objective") @db.Text
+  style       String            @map("Style") @db.Text
+  rules       String            @map("Rules") @db.Text
+  createdAt   DateTime          @default(now()) @map("CreatedAt")
+  createdBy   String?          @map("CreatedBy")
+  creator     User?            @relation("createdTemplates", fields: [createdBy], references: [id], onDelete: SetNull)
+  instructions UserInstruction[]
+
+  @@map("instruction_templates")
+}
+
+model UserInstruction {
+  id            Int                @id @default(autoincrement()) @map("InstructionID")
+  userId        String            @map("UserID")
+  chatbotId     String            @map("ChatbotID")
+  templateId    Int?              @map("TemplateID")
+  objective     String            @map("Objective") @db.Text
+  style         String            @map("Style") @db.Text
+  rules         String            @map("Rules") @db.Text
+  createdAt     DateTime          @default(now()) @map("CreatedAt")
+  lastModified  DateTime          @default(now()) @map("LastModified")
+  creator       User              @relation("userInstructions", fields: [userId], references: [id], onDelete: Cascade)
+  chatbot       Chatbot           @relation("chatbotInstructions", fields: [chatbotId], references: [id], onDelete: Cascade)
+  template      InstructionTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@map("user_instructions")
 }
