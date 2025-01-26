@@ -15,11 +15,12 @@ interface TemplateCardProps {
     name: string;
     objective: string;
     style: string;
+    rules: string;
   };
-  onEdit: (id: number) => void;
+  onEdit: (template: any) => void;
   onDuplicate: (id: number) => void;
   onDelete: (id: number) => void;
-  onView: (id: number) => void;
+  onView: (template: any) => void;
 }
 
 export function TemplateCard({ 
@@ -44,7 +45,7 @@ export function TemplateCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(template.id)}>
+              <DropdownMenuItem onClick={() => onEdit(template)}>
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onDuplicate(template.id)}>
@@ -80,7 +81,7 @@ export function TemplateCard({
           </Button>
           <Button 
             variant="outline"
-            onClick={() => onView(template.id)}
+            onClick={() => onView(template)}
           >
             View Details
           </Button>

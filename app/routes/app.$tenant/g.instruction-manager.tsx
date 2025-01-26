@@ -1,5 +1,5 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate } from "@remix-run/react";
+import { json, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useNavigate, useSubmit, useNavigation } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Plus, Search, FileText } from "lucide-react";
@@ -10,13 +10,37 @@ import { useState } from "react";
 import { TemplateCard } from "~/components/instruction-templates/TemplateCard";
 import * as templateService from "~/services/instructionTemplateService.server";
 import type { MetaFunction } from "@remix-run/node";
+import { TemplateModal } from "~/components/instruction-templates/TemplateModal";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   await requireAuth({ request, params });
   const tenantId = await getTenantIdFromUrl(params);
-  const templates = await templateService.getTemplates(tenantId);
+  const url = new URL(request.url);
+  const templateId = url.searchParams.get('templateId');
   
-  return json({ templates, title: "Instruction Manager" });
+  const [templates, selectedTemplate] = await Promise.all([
+    templateService.getTemplates(tenantId),
+    templateId ? templateService.getTemplateById(Number(templateId)) : null
+  ]);
+  
+  return json({ templates, selectedTemplate, title: "Instruction Manager" });
+}
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  const tenantId = await getTenantIdFromUrl(params);
+  const formData = await request.formData();
+  const { _action, ...values } = Object.fromEntries(formData);
+
+  switch (_action) {
+    case 'create':
+      return await templateService.createTemplate({ ...values, tenantId } as any);
+    case 'update':
+      return await templateService.updateTemplate(Number(values.id), values as any);
+    case 'delete':
+      return await templateService.deleteTemplate(Number(values.id));
+    default:
+      return null;
+  }
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
@@ -26,17 +50,61 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => [
 export default function InstructionManager() {
   const { templates } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
+  const submit = useSubmit();
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const isSubmitting = navigation.state === 'submitting';
 
   const filteredTemplates = templates.filter(template => 
     template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     template.objective.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleSave = async (data: any) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      formData.append(key, value as string);
+    });
+    
+    if (data.id) {
+      formData.append('_action', 'update');
+    } else {
+      formData.append('_action', 'create');
+    }
+
+    await submit(formData, { method: 'post' });
+    setIsModalOpen(false);
+  };
+
   const handleDelete = async (id: number) => {
     if (confirm('Are you sure you want to delete this template?')) {
-      // Add delete action implementation
+      const formData = new FormData();
+      formData.append('id', id.toString());
+      formData.append('_action', 'delete');
+      await submit(formData, { method: 'post' });
     }
+  };
+
+  const handleView = (template: any) => {
+    setSelectedTemplate(template);
+    setModalMode('view');
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (template: any) => {
+    setSelectedTemplate(template);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
+  const handleCreate = () => {
+    setSelectedTemplate(null);
+    setModalMode('edit');
+    setIsModalOpen(true);
   };
 
   return (
@@ -51,7 +119,7 @@ export default function InstructionManager() {
           </p>
         </div>
         <Button 
-          onClick={() => navigate('new')}
+          onClick={handleCreate}
           className="inline-flex items-center gap-x-2 rounded-md bg-blue-600/10 px-3.5 py-2 text-sm font-medium text-blue-600 hover:bg-blue-600 hover:text-white dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500 dark:hover:text-white transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -77,7 +145,7 @@ export default function InstructionManager() {
           title="No templates found"
           description={searchQuery ? "Try adjusting your search" : "Create your first template to get started"}
           action={
-            <Button onClick={() => navigate('new')}>
+            <Button onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" />
               Add Template
             </Button>
@@ -89,14 +157,23 @@ export default function InstructionManager() {
             <TemplateCard
               key={template.id}
               template={template}
-              onEdit={(id) => navigate(`edit/${id}`)}
+              onEdit={handleEdit}
               onDuplicate={(id) => navigate(`duplicate/${id}`)}
               onDelete={handleDelete}
-              onView={(id) => navigate(`${id}`)}
+              onView={handleView}
             />
           ))}
         </div>
       )}
+
+      <TemplateModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        template={selectedTemplate}
+        mode={modalMode}
+        onSave={handleSave}
+        isSubmitting={isSubmitting || isLoading}
+      />
     </div>
   );
 }
