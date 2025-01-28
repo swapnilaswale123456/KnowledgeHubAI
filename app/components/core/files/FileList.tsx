@@ -21,7 +21,7 @@ export interface FileSource {
   sourceId: number;
   fileName: string;
   fileType: string;
-  createdAt: Date;
+  createdAt: Date | string;
   isTrained?: boolean;
 }
 
@@ -57,113 +57,100 @@ export function FileList({ files, onDelete }: FileListProps) {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedFiles = filteredFiles.slice(startIndex, startIndex + itemsPerPage);
 
+  if (files.length === 0) {
+    return (
+      <div className="text-center p-8 border rounded-lg">
+        <p className="text-gray-500">No files uploaded yet</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-5xl space-y-2 px-4 pb-6 pt-2 sm:px-6 lg:px-8 xl:max-w-full">
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-        {/* Search Bar */}
-        <div className="p-4 border-b">
-          <div className="relative">
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Uploaded Files</CardTitle>
+          <div className="relative w-64">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="search"
               placeholder="Search files..."
-              className="pl-10 max-w-sm"
+              className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>File Name</TableHead>
+              <TableHead>Format</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedFiles.map((file) => (
+              <TableRow key={file.sourceId}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <FileTextIcon className="h-4 w-4 text-blue-500" />
+                    {file.fileName}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">
+                    {getFileFormat(file.fileType)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={file.isTrained ? "success" : "warning"}>
+                    {file.isTrained ? "Trained" : "Pending"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete?.(file.sourceId)}
+                  >
+                    <Trash2Icon className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
-        <div className="relative w-full overflow-auto">
-          <table className="w-full caption-bottom text-sm">
-            <thead className="[&_tr]:border-b">
-              <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Trained File</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Format</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="[&_tr:last-child]:border-0">
-              {paginatedFiles.map((file) => (
-                <tr key={file.sourceId} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                  <td className="p-4 align-middle">
-                    <div className="flex items-center gap-2">
-                      <FileTextIcon className="h-4 w-4 text-blue-500" />
-                      <span className="font-medium">{file.fileName}</span>
-                    </div>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <Badge variant="secondary">
-                      {getFileFormat(file.fileType)}
-                    </Badge>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <Badge variant="outline" className={
-                      file.isTrained 
-                        ? "bg-green-50 text-green-600" 
-                        : "bg-yellow-50 text-yellow-600"
-                    }>
-                      {file.isTrained ? "Trained" : "Pending"}
-                    </Badge>
-                  </td>
-                  <td className="p-4 align-middle text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete?.(file.sourceId)}
-                      className="text-gray-500 hover:text-red-600"
-                    >
-                      <Trash2Icon className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {filteredFiles.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-4 text-center text-muted-foreground">
-                    {searchTerm ? "No matching files found" : "No files uploaded yet"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
         {totalPages > 1 && (
-          <div className="border-t p-4">
+          <div className="mt-4 flex justify-center">
             <Pagination>
               <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  />
-                </PaginationItem>
-                
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                />
                 {[...Array(totalPages)].map((_, i) => (
-                  <PaginationItem key={i + 1}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(i + 1)}
-                      isActive={currentPage === i + 1}
-                    >
-                      {i + 1}
-                    </PaginationLink>
-                  </PaginationItem>
+                  <PaginationLink
+                    key={i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                    isActive={currentPage === i + 1}
+                  >
+                    {i + 1}
+                  </PaginationLink>
                 ))}
-
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  />
-                </PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                />
               </PaginationContent>
             </Pagination>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 } 

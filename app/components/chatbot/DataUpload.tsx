@@ -16,9 +16,15 @@ export function DataUpload({ files, onChange, onChangeDataSource }: DataUploadPr
   const fetcher = useFetcher();
 
   const handleSuccess = (result: any) => {
-    if (result.success) {
-      // Add the new file to the list
-      onChange([...files, result.file]);
+    if (result && result.data) {
+      const newFile: FileSource = {
+        sourceId: result.data.sourceId,
+        fileName: result.data.fileName,
+        fileType: result.data.fileType || 'application/octet-stream',
+        createdAt: new Date(),
+        isTrained: false
+      };
+      onChange([...files, newFile]);
     }
   };
 
@@ -33,7 +39,6 @@ export function DataUpload({ files, onChange, onChangeDataSource }: DataUploadPr
       method: "POST"
     });
 
-    // Remove the file from the list
     onChange(files.filter(f => f.sourceId !== sourceId));
   };
 
@@ -55,10 +60,15 @@ export function DataUpload({ files, onChange, onChangeDataSource }: DataUploadPr
         onSuccess={handleSuccess}
         showBackButton={false}
       />
-      <FileList 
-        files={files}
-        onDelete={handleDelete}
-      />
+
+      {files.length > 0 && (
+        <div className="mt-6">
+          <FileList 
+            files={files}
+            onDelete={handleDelete}
+          />
+        </div>
+      )}
     </div>
   );
 } 

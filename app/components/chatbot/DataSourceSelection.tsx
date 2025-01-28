@@ -1,32 +1,42 @@
+import { useState } from "react";
+import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Label } from "~/components/ui/label";
-import { Bot, FileText, Globe, Database } from "lucide-react";
+import { 
+  File, 
+  Globe, 
+  Type, 
+  BookOpen, 
+  Youtube,
+  Upload,
+  X,
+  ArrowLeft 
+} from "lucide-react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
+import FileUpload from "~/components/core/files/FileUpload";
+import { FileList } from "~/components/core/files/FileList";
+import { cn } from "~/lib/utils";
 
-const dataSourceTypes = [
+interface DataSourceOption {
+  key: string;
+  name: string;
+  icon: React.ReactNode;
+  description: string;
+}
+
+const dataSourceOptions: DataSourceOption[] = [
   {
-    id: "files",
-    title: "Document Upload",
-    description: "Upload PDFs, Word documents, or text files",
-    icon: FileText,
+    key: "file",
+    name: "File Upload",
+    icon: <File className="h-5 w-5" />,
+    description: "Upload PDF, DOC, or TXT files"
   },
   {
-    id: "website",
-    title: "Website Crawler",
-    description: "Import content from your website",
-    icon: Globe,
+    key: "website",
+    name: "Website",
+    icon: <Globe className="h-5 w-5" />,
+    description: "Import from website URLs"
   },
-  {
-    id: "database",
-    title: "Database Connection",
-    description: "Connect to your database",
-    icon: Database,
-  },
-  {
-    id: "chatbot",
-    title: "Existing Chatbot",
-    description: "Use an existing chatbot as a data source",
-    icon: Bot,
-  },
+  // ... other options
 ];
 
 interface DataSourceSelectionProps {
@@ -35,37 +45,84 @@ interface DataSourceSelectionProps {
 }
 
 export function DataSourceSelection({ value, onChange }: DataSourceSelectionProps) {
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
+  const fetcher = useFetcher();
+  const { files } = useLoaderData<typeof loader>();
+
+  const handleSourceSelect = (sourceKey: string) => {
+    onChange(sourceKey);
+    // The parent component will handle moving to step 6
+  };
+
+  const handleSuccess = (result: any) => {
+    if (result.success) {
+      onChange(result.file.sourceId.toString());
+      setSelectedSource(null);
+    }
+  };
+
+  const handleBack = () => {
+    setSelectedSource(null);
+  };
+
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {dataSourceTypes.map((type) => {
-        const Icon = type.icon;
-        return (
-          <Card
-            key={type.id}
-            className={`relative p-4 cursor-pointer hover:border-primary transition-colors ${
-              value === type.id ? "border-primary bg-primary/5" : ""
-            }`}
-            onClick={() => onChange(type.id)}
+    <div className="space-y-6">
+      {selectedSource === "file" ? (
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="mb-4"
           >
-            <div className="flex flex-col h-full">
-              <div className="mb-3">
-                <div className="p-1.5 w-fit rounded-lg bg-primary/10">
-                  <Icon className="w-4 h-4 text-primary" />
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Sources
+          </Button>
+          <FileUpload 
+            onSuccess={handleSuccess}
+            showBackButton={false}
+          />
+          {files && files.length > 0 && (
+            <div className="mt-6">
+              <FileList 
+                files={files}
+                onDelete={(sourceId) => {
+                  // Handle delete
+                  fetcher.submit(
+                    { intent: "delete", sourceId: sourceId.toString() },
+                    { method: "POST" }
+                  );
+                }}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {dataSourceOptions.map((source) => (
+            <Card 
+              key={source.key}
+              className={cn(
+                "p-4 cursor-pointer hover:border-primary transition-colors",
+                value === source.key && "border-primary bg-primary/5"
+              )}
+              onClick={() => handleSourceSelect(source.key)}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  {source.icon}
+                </div>
+                <div>
+                  <h4 className="font-medium">{source.name}</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {source.description}
+                  </p>
                 </div>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold mb-1">{type.title}</h3>
-                <p className="text-xs text-gray-500">{type.description}</p>
-              </div>
-            </div>
-            {value === type.id && (
-              <div className="absolute top-2 right-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-              </div>
-            )}
-          </Card>
-        );
-      })}
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 } 

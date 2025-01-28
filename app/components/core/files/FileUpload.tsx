@@ -5,7 +5,7 @@ import ErrorModal from "~/components/ui/modals/ErrorModal";
 import SuccessModal, { RefSuccessModal } from "~/components/ui/modals/SuccessModal";
 
 interface FileUploadProps {
-  onSuccess?: () => void;
+  onSuccess: (result: any) => void;
   showBackButton?: boolean;
   backButtonComponent?: React.ReactNode;
   title?: string;
@@ -54,7 +54,7 @@ export default function FileUpload({
       if (isTraining) {
         successModal.current?.show("Success!", "File trained successfully");
         setIsTraining(false);
-        onSuccess?.();
+        onSuccess(fetcher.data.data);
       }
     } else if (fetcher.state === "idle" && !fetcher.data?.success) {
       setError(fetcher.data?.message || "");

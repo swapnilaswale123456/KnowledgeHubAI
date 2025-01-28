@@ -17,10 +17,9 @@ import { getTenant } from "~/utils/db/tenants.db.server";
 import { Fragment, useState } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { Card } from "~/components/ui/card";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Trash2, Bot, Activity, Clock, MessageSquare } from "lucide-react";
 import { ChatbotService, ChatbotDetails } from "~/utils/services/chatbots/chatbotService.server";
 import { useChatbot } from "~/context/ChatbotContext";
-import { Bot, Activity, Clock, MessageSquare } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { IndustrySelection } from "~/components/chatbot/IndustrySelection";
 import { ChatbotType } from "~/components/chatbot/ChatbotType";
@@ -34,10 +33,9 @@ import { db } from "~/utils/db.server";
 import type { FileSource } from "~/components/core/files/FileList";
 import { DataSourceSelection } from "~/components/chatbot/DataSourceSelection";
 import { getIndustries, getChatbotTypesByIndustry, getSkillsByChatbotType } from "~/services/chatbot/InstructionService";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
-import { Label } from "~/components/ui/label";
-import { Select, SelectItem } from "~/components/ui/select";
-import { Checkbox } from "~/components/ui/checkbox";
+
+import { Badge } from "~/components/ui/badge";
+import { format } from "date-fns";
 
 export { serverTimingHeaders as headers };
 
@@ -111,7 +109,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       sourceId: f.sourceId,
       fileName: (f.sourceDetails as any)?.fileName ?? 'Untitled',
       fileType: (f.sourceDetails as any)?.fileType ?? 'application/octet-stream',
-      createdAt: f.createdAt,
+      createdAt: new Date(f.createdAt),
       isTrained: (f.sourceDetails as any)?.isTrained ?? true
     })),
     industries,
@@ -136,6 +134,16 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     return json(result);
   }
 
+  if (intent === "train") {
+    const sourceId = formData.get("sourceId") as string;
+    const file = formData.get("file") as File;
+    if (!file) {
+      return json({ success: false, message: "No file provided for training" });
+    }
+    const result = await fileUploadService.uploadFile(file, tenantId, request, true);
+    return json(result);
+  }
+
   const file = formData.get("file") as File;
   if (!file) {
     return json({ success: false, message: "No file uploaded" });
@@ -154,7 +162,7 @@ export default function DashboardRoute() {
   const { selectedChatbotId, setSelectedChatbotId } = useChatbot();
   const navigate = useNavigate();
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(5);
   const [config, setConfig] = useState({
     industry: "",
     type: "",
@@ -342,7 +350,35 @@ export default function DashboardRoute() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {chatbots.map((chatbot) => (
               <Card key={chatbot.id} className="p-4">
-                {/* Chatbot card content */}
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-medium">{chatbot.name}</h3>
+                   
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(chatbot.id)}
+                    className="text-gray-500 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                
+
+                <div className="mt-4 flex items-center justify-between">
+                  <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">
+                    Active
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`)}
+                  >
+                    View Details
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>
@@ -366,7 +402,7 @@ export default function DashboardRoute() {
                 </p>
               </div>
 
-              <div className="max-w-2xl mx-auto">
+              <div className="max-w-6xl mx-auto">
                 {currentStep === 1 && (
                   <IndustrySelection
                     value={config.industry}
@@ -410,7 +446,8 @@ export default function DashboardRoute() {
               </div>
             </div>
 
-            <div className="flex justify-between max-w-2xl mx-auto">
+            <div className="flex justify-center items-center max-w-2xl mx-auto">
+            <div className="flex space-x-4">
               <Button
                 size="sm"
                 variant="outline"
@@ -432,6 +469,8 @@ export default function DashboardRoute() {
                 {currentStep === steps.length ? "Create Chatbot" : "Next"}
               </Button>
             </div>
+          </div>
+
           </div>
         </div>
       )}

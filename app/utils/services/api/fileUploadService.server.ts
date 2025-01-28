@@ -60,7 +60,6 @@ export class FileUploadService {
       const formData = new FormData();
       formData.append('file', file);      
       formData.append('chatbotId', this.chatbotId ?? '');
-
       
       if (isTrain == true) {
         const response = await fetch(`${this.baseUrl}/file/upload/v2/file`, {
