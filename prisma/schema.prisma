@@ -103,7 +103,7 @@ model User {
   workflowsCreated           Workflow[]               @relation("createdByUser")
   workflowCredentialsCreated WorkflowCredential[]
   workflowsExecuted          WorkflowExecution[]      @relation("executedByUser")
-  workflowVariablesCreated   WorkflowVariable[] 
+  workflowVariablesCreated   WorkflowVariable[]
 }
 
 model AdminUser {
@@ -165,8 +165,8 @@ model Tenant {
   workflowCredentials       WorkflowCredential[]
   workflowExecutions        WorkflowExecution[]
   workflowVariables         WorkflowVariable[]
-  types                     TenantType[]               @relation("TenantToTenantType")
   chatbots                  Chatbot[]
+  types                     TenantType[]               @relation("TenantToTenantType")
 
   @@index([slug])
   @@map("Tenant")
@@ -882,7 +882,7 @@ model Row {
   createdByUserId                String?
   createdByApiKeyId              String?
   order                          Int                           @default(0)
-  deletedAt                        DateTime?
+  deletedAt                      DateTime?
   inEntityGroupConfigurationRows EntityGroupConfigurationRow[]
   formulaCalculationLogs         FormulaComponentLog[]
   logs                           Log[]
@@ -2287,7 +2287,7 @@ model PortalUserSubscription {
   portalUserId     String                          @unique
   stripeCustomerId String?
   portal           Portal                          @relation(fields: [portalId], references: [id], onDelete: Cascade)
-  portalUser         PortalUser                      @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
+  portalUser       PortalUser                      @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
   products         PortalUserSubscriptionProduct[]
 }
 
@@ -2316,7 +2316,7 @@ model PortalUserSubscriptionProductPrice {
   portalUserSubscriptionProductId String
   subscriptionPriceId             String?
   portal                          Portal                        @relation(fields: [portalId], references: [id], onDelete: Cascade)
-  portalUserSubscriptionProduct   PortalUserSubscriptionProduct       @relation(fields: [portalUserSubscriptionProductId], references: [id], onDelete: Cascade)
+  portalUserSubscriptionProduct   PortalUserSubscriptionProduct @relation(fields: [portalUserSubscriptionProductId], references: [id], onDelete: Cascade)
   subscriptionPrice               PortalSubscriptionPrice?      @relation(fields: [subscriptionPriceId], references: [id])
 }
 
@@ -2346,77 +2346,60 @@ model Widget {
   @@unique([tenantId, name])
 }
 
-// Update the existing DataSourceType model
 model DataSourceType {
-  sourceTypeId Int          @id @default(autoincrement())
-  sourceKey    String       @db.VarChar(50) @unique
-  sourceName   String       @db.Text
-  dataSources  DataSources[] // Add this relation
+  sourceTypeId Int           @id @default(autoincrement())
+  sourceKey    String        @unique @db.VarChar(50)
+  sourceName   String
+  dataSources  DataSources[]
 
   @@map("DataSourceTypes")
 }
 
-// Add the new DataSources model
 model DataSources {
-  sourceId        Int           @id @default(autoincrement())
-  chatbotId       String        @db.Uuid
-  sourceTypeId    Int
-  tenantId        String
-  sourceDetails   Json?
+  sourceId         Int            @id @default(autoincrement())
+  chatbotId        String         @db.Uuid
+  sourceTypeId     Int
+  tenantId         String
+  sourceDetails    Json?
   uploadedFilePath String?
-  createdAt       DateTime      @default(now())
-  
-  sourceType      DataSourceType @relation(fields: [sourceTypeId], references: [sourceTypeId])
+  createdAt        DateTime       @default(now())
+  sourceType       DataSourceType @relation(fields: [sourceTypeId], references: [sourceTypeId])
 
   @@map("DataSources")
 }
 
 model Languages {
-  languageId   Int    @id @default(autoincrement()) // SERIAL PRIMARY KEY
-  languageKey  String @unique                      // VARCHAR(50) NOT NULL
-  languageName String                             // TEXT NOT NULL
-}
-
-enum ChatbotStatus {
-  ACTIVE
-  INACTIVE
-  ARCHIVED
+  languageId   Int    @id @default(autoincrement())
+  languageKey  String @unique
+  languageName String
 }
 
 model Chatbot {
-  id              String        @id @default(cuid())
-  name            String        @db.VarChar(100)
-  uniqueUrl       String        @unique
-  theme           Json?         @default("{\"primaryColor\": null, \"secondaryColor\": null, \"fontFamily\": null, \"fontSize\": null, \"borderRadius\": null, \"backgroundColor\": null}")
+  id              String              @id @default(cuid())
+  name            String              @db.VarChar(100)
+  uniqueUrl       String              @unique
+  theme           Json?               @default("{\"fontSize\": null, \"fontFamily\": null, \"borderRadius\": null, \"primaryColor\": null, \"secondaryColor\": null, \"backgroundColor\": null}")
   languageId      Int?
-  initialMessage  String?       @default("Hello! How can I assist you?")
-  businessName    String?       @db.VarChar(100)
+  initialMessage  String?             @default("Hello! How can I assist you?")
+  businessName    String?             @db.VarChar(100)
   llmModelId      Int?
-  totalCharacters Int           @default(1000000)
-  status          ChatbotStatus @default(ACTIVE)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // Relations
-  language        Language?     @relation(fields: [languageId], references: [id])
-  llmModel        LlmModel?     @relation(fields: [llmModelId], references: [id])
-  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  totalCharacters Int                 @default(1000000)
+  status          ChatbotStatus       @default(ACTIVE)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
   tenantId        String
-  
+  language        Language?           @relation(fields: [languageId], references: [id])
+  llmModel        LlmModel?           @relation(fields: [llmModelId], references: [id])
+  tenant          Tenant              @relation(fields: [tenantId], references: [id])
+  instructions    InstructionMaster[]
+
   @@index([tenantId])
   @@map("chatbots")
 }
 
-enum LlmModelType {
-  GPT_3_5
-  GPT_4
-  CLAUDE
-  CUSTOM
-}
-
 model LlmModel {
-  id          Int           @id @default(autoincrement())
-  name        String        @db.VarChar(100)
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(100)
   type        LlmModelType
   apiKey      String?
   endpoint    String?
@@ -2425,23 +2408,123 @@ model LlmModel {
   isEnabled   Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-
-  // Relations
   chatbots    Chatbot[]
 
   @@map("llm_models")
 }
 
 model Language {
-  id          Int       @id @default(autoincrement())
-  name        String    @db.VarChar(100)
-  code        String    @unique @db.VarChar(10)  // e.g., "en", "es", "fr"
-  isEnabled   Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Relations
-  chatbots    Chatbot[]
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(100)
+  code      String    @unique @db.VarChar(10)
+  isEnabled Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  chatbots  Chatbot[]
 
   @@map("languages")
+}
+
+model Industry {
+  id           Int                    @id @default(autoincrement())
+  name         String                 @unique @db.VarChar(100)
+  icon         String?                @db.VarChar(50)
+  description  String?
+  isEnabled    Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  chatbotTypes IndustryChatbotTypes[]
+  instructions InstructionMaster[]
+}
+
+model ChatbotType {
+  id           Int                    @id @default(autoincrement())
+  name         String                 @unique @db.VarChar(100)
+  icon         String?                @db.VarChar(50)
+  description  String?
+  isEnabled    Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  skills       ChatbotTypeSkills[]
+  industries   IndustryChatbotTypes[]
+  instructions InstructionMaster[]
+}
+
+model Skill {
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique @db.VarChar(100)
+  icon              String?             @db.VarChar(50)
+  description       String?
+  isEnabled         Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  chatbotTypes      ChatbotTypeSkills[]
+  instructionSkills InstructionSkill[]
+}
+
+model InstructionMaster {
+  id                Int                @id @default(autoincrement())
+  chatbotId         String?
+  industryId        Int?
+  chatbotTypeId     Int?
+  purpose           String?
+  audience          String?
+  tone              String?            @db.VarChar(50)
+  objective         String?
+  style             String?
+  rules             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  chatbot           Chatbot?           @relation(fields: [chatbotId], references: [id])
+  chatbotType       ChatbotType?       @relation(fields: [chatbotTypeId], references: [id])
+  industry          Industry?          @relation(fields: [industryId], references: [id])
+  instructionSkills InstructionSkill[]
+
+  @@map("instruction_master")
+}
+
+model InstructionSkill {
+  instructionId Int
+  skillId       Int
+  createdAt     DateTime          @default(now())
+  instruction   InstructionMaster @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  skill         Skill             @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([instructionId, skillId])
+  @@map("instruction_skills")
+}
+
+model IndustryChatbotTypes {
+  industryId    Int
+  chatbotTypeId Int
+  createdAt     DateTime    @default(now())
+  chatbotType   ChatbotType @relation(fields: [chatbotTypeId], references: [id], onDelete: Cascade)
+  industry      Industry    @relation(fields: [industryId], references: [id], onDelete: Cascade)
+
+  @@id([industryId, chatbotTypeId])
+  @@map("industry_chatbot_types")
+}
+
+model ChatbotTypeSkills {
+  chatbotTypeId Int
+  skillId       Int
+  createdAt     DateTime    @default(now())
+  chatbotType   ChatbotType @relation(fields: [chatbotTypeId], references: [id], onDelete: Cascade)
+  skill         Skill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([chatbotTypeId, skillId])
+  @@map("chatbot_type_skills")
+}
+
+enum ChatbotStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum LlmModelType {
+  GPT_3_5
+  GPT_4
+  CLAUDE
+  CUSTOM
 }
