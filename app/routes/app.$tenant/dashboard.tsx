@@ -16,8 +16,8 @@ import { promiseHash } from "~/utils/promises/promiseHash";
 import { getTenant } from "~/utils/db/tenants.db.server";
 import { Fragment, useState } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
-import { Card } from "~/components/ui/card";
-import { Plus, X, Trash2, Bot, Activity, Clock, MessageSquare } from "lucide-react";
+import { Card, CardContent } from "~/components/ui/card";
+import { Plus, X, Trash2, Bot, Activity, Clock, MessageSquare, Database, MoreVertical, Settings } from "lucide-react";
 import { ChatbotService, ChatbotDetails } from "~/utils/services/chatbots/chatbotService.server";
 import { useChatbot } from "~/context/ChatbotContext";
 import { Button } from "~/components/ui/button";
@@ -36,6 +36,7 @@ import { getIndustries, getChatbotTypesByIndustry, getSkillsByChatbotType } from
 
 import { Badge } from "~/components/ui/badge";
 import { format } from "date-fns";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
 
 export { serverTimingHeaders as headers };
 
@@ -256,129 +257,149 @@ export default function DashboardRoute() {
 
   return (
     <div className="flex-1">
-      {!isWorkflowOpen && (
-        <div className="border-b">
-          <div className="flex h-16 items-center px-4">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Your Chatbots
-              </h1>
-              <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-                Build and manage your AI assistants
-              </p>
-            </div>
-            <div className="flex gap-2 ml-auto">
-              <Button
-                variant="outline"
-                asChild
-                className="inline-flex items-center gap-x-2"
-              >
-                <Link to={`/app/${params.tenant}/g/data-sources`}>
-                  Manage Data Sources
-                </Link>
-              </Button>
-              <Button
-                onClick={() => setIsWorkflowOpen(true)}
-                className="inline-flex items-center gap-x-2"
-              >
-                <Plus className="w-4 h-4" />
-                Create Chatbot
-              </Button>
-            </div>
+      <div className="border-b bg-white">
+        <div className="flex h-16 items-center px-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              AI Chatbots
+            </h1>
+            <p className="text-sm text-gray-500">
+              Manage and monitor your chatbots
+            </p>
+          </div>
+          <div className="flex gap-3 ml-auto">
+            <Button
+              variant="outline"
+              asChild
+              className="inline-flex items-center gap-x-2"
+            >
+              <Link to={`/app/${params.tenant}/g/data-sources`}>
+                <Database className="w-4 h-4" />
+                Data Sources
+              </Link>
+            </Button>
+            <Button
+              onClick={() => setIsWorkflowOpen(true)}
+              className="inline-flex items-center gap-x-2 bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4" />
+              New Chatbot
+            </Button>
           </div>
         </div>
-      )}
+      </div>
 
       {!isWorkflowOpen ? (
-        <div className="space-y-6 p-8 pt-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
-                  <Bot className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        <div className="p-8 bg-gray-50 min-h-screen">
+          {/* Stats Section */}
+          <div className="grid grid-cols-4 gap-6 mb-8">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">Total Assistants</p>
+                    <h3 className="text-3xl font-bold text-blue-900 mt-2">{chatbots.length}</h3>
+                  </div>
+                  <div className="p-3 bg-blue-200 rounded-xl">
+                    <Bot className="h-6 w-6 text-blue-700" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Chatbots</p>
-                  <h3 className="text-2xl font-bold">{chatbots.length}</h3>
-                </div>
-              </div>
+              </CardContent>
             </Card>
 
-            <Card className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-full">
-                  <Activity className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-none">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium text-green-600">Active</p>
+                    <h3 className="text-3xl font-bold text-green-900 mt-2">{chatbots.length}</h3>
+                  </div>
+                  <div className="p-3 bg-green-200 rounded-xl">
+                    <Activity className="h-6 w-6 text-green-700" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Active Chatbots</p>
-                  <h3 className="text-2xl font-bold text-green-600">
-                    {chatbots.length}
-                  </h3>
-                </div>
-              </div>
+              </CardContent>
             </Card>
 
-            <Card className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full">
-                  <Clock className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-none">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium text-purple-600">Total Messages</p>
+                    <h3 className="text-3xl font-bold text-purple-900 mt-2">0</h3>
+                  </div>
+                  <div className="p-3 bg-purple-200 rounded-xl">
+                    <MessageSquare className="h-6 w-6 text-purple-700" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Inactive Chatbots</p>
-                  <h3 className="text-2xl font-bold text-gray-600">
-                    {0}
-                  </h3>
-                </div>
-              </div>
+              </CardContent>
             </Card>
 
-            <Card className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-full">
-                  <MessageSquare className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-none">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium text-orange-600">Data Sources</p>
+                    <h3 className="text-3xl font-bold text-orange-900 mt-2">{files.length}</h3>
+                  </div>
+                  <div className="p-3 bg-orange-200 rounded-xl">
+                    <Database className="h-6 w-6 text-orange-700" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Messages</p>
-                  <h3 className="text-2xl font-bold text-purple-600">
-                    {0}
-                  </h3>
-                </div>
-              </div>
+              </CardContent>
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Chatbots Grid */}
+          <div className="grid grid-cols-3 gap-6">
             {chatbots.map((chatbot) => (
-              <Card key={chatbot.id} className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <h3 className="font-medium">{chatbot.name}</h3>
-                   
+              <Card key={chatbot.id} className="hover:shadow-lg transition-shadow duration-200">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Bot className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h3 className="font-semibold text-lg">{chatbot.name}</h3>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`)}>
+                          <Settings className="h-4 w-4 mr-2" />
+                          Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(chatbot.id)} className="text-red-600">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(chatbot.id)}
-                    className="text-gray-500 hover:text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
 
-                
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50">
+                        Active
+                      </Badge>
+                      <span className="text-gray-500">Created {format(new Date(), 'MMM d, yyyy')}</span>
+                    </div>
 
-                <div className="mt-4 flex items-center justify-between">
-                  <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">
-                    Active
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`)}
-                  >
-                    View Details
-                  </Button>
-                </div>
+                    <div className="pt-4 border-t">
+                      <Button 
+                        className="w-full"
+                        variant="outline"
+                        onClick={() => navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`)}
+                      >
+                        View Chatbot
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
             ))}
           </div>
