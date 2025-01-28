@@ -103,9 +103,7 @@ model User {
   workflowsCreated           Workflow[]               @relation("createdByUser")
   workflowCredentialsCreated WorkflowCredential[]
   workflowsExecuted          WorkflowExecution[]      @relation("executedByUser")
-  workflowVariablesCreated   WorkflowVariable[]
-  createdTemplates           InstructionTemplate[]    @relation("createdTemplates")
-  instructions             UserInstruction[]            @relation("userInstructions")
+  workflowVariablesCreated   WorkflowVariable[] 
 }
 
 model AdminUser {
@@ -2404,8 +2402,7 @@ model Chatbot {
   llmModel        LlmModel?     @relation(fields: [llmModelId], references: [id])
   tenant          Tenant        @relation(fields: [tenantId], references: [id])
   tenantId        String
-  instructions    UserInstruction[]     @relation("chatbotInstructions")
-
+  
   @@index([tenantId])
   @@map("chatbots")
 }
@@ -2447,35 +2444,4 @@ model Language {
   chatbots    Chatbot[]
 
   @@map("languages")
-}
-
-model InstructionTemplate {
-  id          Int               @id @default(autoincrement()) @map("TemplateID")
-  name        String            @map("TemplateName") @db.VarChar(255)
-  objective   String            @map("Objective") @db.Text
-  style       String            @map("Style") @db.Text
-  rules       String            @map("Rules") @db.Text
-  createdAt   DateTime          @default(now()) @map("CreatedAt")
-  createdBy   String?          @map("CreatedBy")
-  creator     User?            @relation("createdTemplates", fields: [createdBy], references: [id], onDelete: SetNull)
-  instructions UserInstruction[]
-
-  @@map("instruction_templates")
-}
-
-model UserInstruction {
-  id            Int                @id @default(autoincrement()) @map("InstructionID")
-  userId        String            @map("UserID")
-  chatbotId     String            @map("ChatbotID")
-  templateId    Int?              @map("TemplateID")
-  objective     String            @map("Objective") @db.Text
-  style         String            @map("Style") @db.Text
-  rules         String            @map("Rules") @db.Text
-  createdAt     DateTime          @default(now()) @map("CreatedAt")
-  lastModified  DateTime          @default(now()) @map("LastModified")
-  creator       User              @relation("userInstructions", fields: [userId], references: [id], onDelete: Cascade)
-  chatbot       Chatbot           @relation("chatbotInstructions", fields: [chatbotId], references: [id], onDelete: Cascade)
-  template      InstructionTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-
-  @@map("user_instructions")
 }
