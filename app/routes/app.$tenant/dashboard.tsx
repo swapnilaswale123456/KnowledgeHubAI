@@ -5,7 +5,7 @@ import { DashboardLoaderData, loadDashboardData } from "~/utils/data/useDashboar
 import { getTranslations } from "~/locale/i18next.server";
 import { getAppDashboardStats } from "~/utils/services/appDashboardService";
 import ProfileBanner from "~/components/app/ProfileBanner";
-import { DashboardStats } from "~/components/ui/stats/DashboardStats";
+import { DashboardStats } from "~/components/dashboard/DashboardStats";
 import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 import { Stat } from "~/application/dtos/stats/Stat";
 import { useTranslation } from "react-i18next";
@@ -43,6 +43,9 @@ import { ChatbotStatusService } from "~/services/chatbot/ChatbotStatusService";
 import { ChatbotStatus } from "@prisma/client";
 import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
 import { DataSourceQueryService } from "~/services/data/DataSourceQueryService";
+import { DashboardHeader } from "~/components/dashboard/DashboardHeader";
+import { ChatbotCard } from "~/components/dashboard/ChatbotCard";
+import { ChatbotWorkflow } from "~/components/dashboard/ChatbotWorkflow";
 
 export { serverTimingHeaders as headers };
 
@@ -84,8 +87,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   );
 
   // Get uploaded files
-  const files = await DataSourceQueryService.getDataSources(tenantId);
-
+  const files = await DataSourceQueryService.getDataSources(tenantId); 
   // Get initial industry for default values
   const industries = await getIndustries();
   const firstIndustry = industries[0];
@@ -176,6 +178,7 @@ export default function DashboardRoute() {
     },
     dataSource: "",
     trainingData: [],
+    files: []
   });
 
   const fetcher = useFetcher<ActionData>();
@@ -252,6 +255,7 @@ export default function DashboardRoute() {
         scope: { purpose: "", audience: "", tone: "" },
         dataSource: "",
         trainingData: [],
+        files: []
       });
     } catch (error) {
       console.error("Error creating chatbot:", error);
@@ -279,272 +283,44 @@ export default function DashboardRoute() {
 
   return (
     <div className="flex-1">
-      <div className="border-b bg-white">
-        <div className="flex h-16 items-center px-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              AI Chatbots
-            </h1>
-            <p className="text-sm text-gray-500">
-              Manage and monitor your chatbots
-            </p>
-          </div>
-          <div className="flex gap-3 ml-auto">
-            <Button
-              variant="outline"
-              asChild
-              className="inline-flex items-center gap-x-2"
-            >
-              <Link to={`/app/${params.tenant}/g/data-sources`}>
-                <Database className="w-4 h-4" />
-                Data Sources
-              </Link>
-            </Button>
-            <Button
-              onClick={() => setIsWorkflowOpen(true)}
-              className="inline-flex items-center gap-x-2 bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="w-4 h-4" />
-              New Chatbot
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader 
+        onNewChatbot={() => setIsWorkflowOpen(true)}
+        onDataSources={() => navigate(`/app/${params.tenant}/g/data-sources`)}
+      />
 
       {!isWorkflowOpen ? (
         <div className="p-8 bg-gray-50 min-h-screen">
-          {/* Stats Section */}
-          <div className="grid grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-blue-600">Total Assistants</p>
-                    <h3 className="text-3xl font-bold text-blue-900 mt-2">{chatbots.length}</h3>
-                  </div>
-                  <div className="p-3 bg-blue-200 rounded-xl">
-                    <Bot className="h-6 w-6 text-blue-700" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <DashboardStats 
+            totalChatbots={chatbots?.length ?? 0}
+            activeChatbots={dashboardStats?.activeCount ?? 0}
+            totalMessages={0}
+            totalDataSources={dashboardStats?.totalDataSources ?? 0}
+          />
 
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-none">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-green-600">Active</p>
-                    <h3 className="text-3xl font-bold text-green-900 mt-2">{dashboardStats.activeCount}</h3>
-                  </div>
-                  <div className="p-3 bg-green-200 rounded-xl">
-                    <Activity className="h-6 w-6 text-green-700" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-none">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-purple-600">Total Messages</p>
-                    <h3 className="text-3xl font-bold text-purple-900 mt-2">0</h3>
-                  </div>
-                  <div className="p-3 bg-purple-200 rounded-xl">
-                    <MessageSquare className="h-6 w-6 text-purple-700" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-none">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-orange-600">Data Sources</p>
-                    <h3 className="text-3xl font-bold text-orange-900 mt-2">{dashboardStats.totalDataSources}</h3>
-                  </div>
-                  <div className="p-3 bg-orange-200 rounded-xl">
-                    <Database className="h-6 w-6 text-orange-700" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Chatbots Grid */}
           <div className="grid grid-cols-3 gap-6">
             {chatbots.map((chatbot) => (
-              <Card key={chatbot.id} className="hover:shadow-lg transition-shadow duration-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Bot className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <h3 className="font-semibold text-lg">{chatbot.name}</h3>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`)}>
-                          <Settings className="h-4 w-4 mr-2" />
-                          Settings
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {chatbot.status !== ChatbotStatus.ACTIVE && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(chatbot.id, ChatbotStatus.ACTIVE)}>
-                            <Activity className="h-4 w-4 mr-2" />
-                            Activate
-                          </DropdownMenuItem>
-                        )}
-                        {chatbot.status !== ChatbotStatus.INACTIVE && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(chatbot.id, ChatbotStatus.INACTIVE)}>
-                            <Pause className="h-4 w-4 mr-2" />
-                            Deactivate
-                          </DropdownMenuItem>
-                        )}
-                        {chatbot.status !== ChatbotStatus.ARCHIVED && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(chatbot.id, ChatbotStatus.ARCHIVED)}>
-                            <Archive className="h-4 w-4 mr-2" />
-                            Archive
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleDelete(chatbot.id)} className="text-red-600">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <Badge 
-                        className={cn(
-                          "capitalize",
-                          chatbot.status === "ACTIVE" && "bg-blue-50 text-blue-700 hover:bg-blue-50",
-                          chatbot.status === "ARCHIVED" && "bg-gray-100 text-gray-700 hover:bg-gray-100",
-                          chatbot.status === "INACTIVE" && "bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
-                        )}
-                      >
-                        {chatbot.status.toLowerCase()}
-                      </Badge>
-                      <span className="text-gray-500">
-                        Created {format(new Date(chatbot.createdAt), 'MMM d, yyyy')}
-                      </span>
-                    </div>
-
-                    <div className="pt-4 border-t">
-                      <Button 
-                        className="w-full"
-                        variant="outline"
-                        onClick={() => navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`)}
-                      >
-                        View Chatbot
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <ChatbotCard
+                key={chatbot.id}
+                chatbot={chatbot}
+                onStatusChange={handleStatusChange}
+                onDelete={handleDelete}
+                onNavigate={navigate}
+                tenantSlug={params.tenant ?? ''}
+              />
             ))}
           </div>
         </div>
       ) : (
-        <div className="p-4">
-          <div className="max-w-6xl mx-auto">
-            <WorkflowSteps
-              currentStep={currentStep}
-              onClose={() => setIsWorkflowOpen(false)}
-              onStepChange={handleStepChange}
-            />
-
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-              <div className="mb-4">
-                <h2 className="text-base font-semibold mb-1">
-                  {steps[currentStep - 1].title}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {steps[currentStep - 1].description}
-                </p>
-              </div>
-
-              <div className={currentStep === 5 || currentStep === 6 ? "max-w-6xl mx-auto" : "max-w-2xl mx-auto"}>
-                {currentStep === 1 && (
-                  <IndustrySelection
-                    value={config.industry}
-                    onChange={(value) => handleUpdateConfig("industry", value)}
-                  />
-                )}
-                {currentStep === 2 && (
-                  <ChatbotType
-                    value={config.type}
-                    onChange={(value) => handleUpdateConfig("type", value)}
-                  />
-                )}
-                {currentStep === 3 && (
-                  <SkillsSelection
-                    selectedSkills={config.skills}
-                    onChange={(skills) => handleUpdateConfig("skills", skills)}
-                  />
-                )}
-                {currentStep === 4 && (
-                  <ChatbotScope
-                    scope={config.scope}
-                    onChange={(field, value) => 
-                      handleUpdateConfig("scope", { ...config.scope, [field]: value })
-                    }
-                  />
-                )}
-                {currentStep === 5 && (
-                  <DataSourceSelection
-                    value={config.dataSource}
-                    onChange={(value) => handleUpdateConfig("dataSource", value)}
-                  />
-                )}
-                {currentStep === 6 && (
-                  <DataUpload
-                    files={files}
-                    onChange={(newFiles) => handleUpdateConfig("trainingData", newFiles)}
-                    onChangeDataSource={() => setCurrentStep(5)}
-                  />
-                )}
-                {currentStep === 7 && <FinalReview config={config} />}
-              </div>
-            </div>
-
-            <div className="flex justify-center items-center max-w-2xl mx-auto">
-            <div className="flex space-x-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  if (currentStep === 1) {
-                    setIsWorkflowOpen(false);
-                  } else {
-                    setCurrentStep((prev) => Math.max(1, prev - 1));
-                  }
-                }}
-              >
-                {currentStep === 1 ? "Cancel" : "Back"}
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleNext}
-                disabled={!canProceed()}
-              >
-                {currentStep === steps.length ? "Create Chatbot" : "Next"}
-              </Button>
-            </div>
-          </div>
-
-          </div>
-        </div>
+        <ChatbotWorkflow 
+          currentStep={currentStep}
+          config={config}
+          onStepChange={handleStepChange}
+          onClose={() => setIsWorkflowOpen(false)}
+          onUpdateConfig={handleUpdateConfig}
+          onNext={handleNext}
+          onSubmit={handleSubmit}
+          existingFiles={files}
+        />
       )}
     </div>
   );

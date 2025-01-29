@@ -8,34 +8,16 @@ import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 import FileUpload from "~/components/core/files/FileUpload";
 import { FileList, FileSource } from "~/components/core/files/FileList";
 import { db } from "~/utils/db.server";
+import { DataSourceQueryService } from "~/services/data/DataSourceQueryService";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
   const tenantId = await getTenantIdFromUrl(params);
 
-  const files = await db.dataSources.findMany({
-    where: {
-      tenantId,
-      sourceTypeId: 2,
-    },
-    select: {
-      sourceId: true,
-      sourceDetails: true,
-      createdAt: true,
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
+  const files = await DataSourceQueryService.getDataSources(tenantId);
 
   return json({
-    files: files.map(f => ({
-      sourceId: f.sourceId,
-      fileName: (f.sourceDetails as any)?.fileName ?? 'Untitled',
-      fileType: (f.sourceDetails as any)?.fileType ?? 'application/octet-stream',
-      createdAt: f.createdAt,
-      isTrained: (f.sourceDetails as any)?.isTrained ?? true
-    } as FileSource))
+    files
   });
 };
 

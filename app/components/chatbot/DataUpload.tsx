@@ -1,19 +1,22 @@
 import { Upload, File, X, ArrowLeft } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { useFetcher } from "@remix-run/react";
 import { Progress } from "~/components/ui/progress";
 import FileUpload from "~/components/core/files/FileUpload";
 import { FileList, FileSource } from "~/components/core/files/FileList";
+import { DataSourceQueryService } from "~/services/data/DataSourceQueryService";
 
 interface DataUploadProps {
   files: FileSource[];
   onChange: (files: FileSource[]) => void;
   onChangeDataSource: () => void;
+  existingFiles: FileSource[];
 }
 
-export function DataUpload({ files, onChange, onChangeDataSource }: DataUploadProps) {
+export function DataUpload({ files = [], onChange, onChangeDataSource, existingFiles }: DataUploadProps) {
   const fetcher = useFetcher();
+  const [fileList, setFileList] = useState<FileSource[]>(existingFiles);
 
   const handleSuccess = (result: any) => {
     if (result && result.data) {
@@ -24,6 +27,7 @@ export function DataUpload({ files, onChange, onChangeDataSource }: DataUploadPr
         createdAt: new Date(),
         isTrained: false
       };
+      setFileList(prev => [...prev, newFile]);
       onChange([...files, newFile]);
     }
   };
@@ -39,6 +43,7 @@ export function DataUpload({ files, onChange, onChangeDataSource }: DataUploadPr
       method: "POST"
     });
 
+    setFileList(prev => prev.filter(f => f.sourceId !== sourceId));
     onChange(files.filter(f => f.sourceId !== sourceId));
   };
 
@@ -61,14 +66,12 @@ export function DataUpload({ files, onChange, onChangeDataSource }: DataUploadPr
         showBackButton={false}
       />
 
-      {files.length > 0 && (
-        <div className="mt-6">
-          <FileList 
-            files={files}
-            onDelete={handleDelete}
-          />
-        </div>
-      )}
+      <div className="mt-6">
+        <FileList 
+          files={fileList}
+          onDelete={handleDelete}
+        />
+      </div>
     </div>
   );
 } 

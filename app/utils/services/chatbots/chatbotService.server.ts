@@ -5,12 +5,12 @@ export interface ChatbotDetails {
   id: string;
   name: string;
   uniqueUrl: string;
-  theme: any;
-  initialMessage: string | null;
-  businessName: string | null;
   status: ChatbotStatus;
   createdAt: Date;
   updatedAt: Date;
+  theme?: string;
+  initialMessage?: string;
+  businessName?: string;
 }
 
 export class ChatbotService {
