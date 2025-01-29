@@ -1,0 +1,29 @@
+import { db } from "~/utils/db.server";
+import type { FileSource } from "~/components/core/files/FileList";
+
+export class DataSourceQueryService {
+  static async getDataSources(tenantId: string): Promise<FileSource[]> {
+    const files = await db.dataSources.findMany({
+      where: {
+        tenantId,
+        sourceTypeId: 2,
+      },
+      select: {
+        sourceId: true,
+        sourceDetails: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return files.map(f => ({
+      sourceId: f.sourceId,
+      fileName: (f.sourceDetails as any)?.fileName ?? 'Untitled',
+      fileType: (f.sourceDetails as any)?.fileType ?? 'application/octet-stream',
+      createdAt: new Date(f.createdAt),
+      isTrained: (f.sourceDetails as any)?.isTrained ?? true
+    }));
+  }
+} 

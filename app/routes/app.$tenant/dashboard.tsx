@@ -1,5 +1,5 @@
 import { json, LoaderFunctionArgs, MetaFunction, ActionFunctionArgs } from "@remix-run/node";
-import { useSearchParams, Link, useParams, Outlet, useLocation, useLoaderData, useNavigate } from "@remix-run/react";
+import { useSearchParams, Link, useParams, Outlet, useLocation, useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { useAppData } from "~/utils/data/useAppData";
 import { DashboardLoaderData, loadDashboardData } from "~/utils/data/useDashboardData";
 import { getTranslations } from "~/locale/i18next.server";
@@ -14,10 +14,10 @@ import { serverTimingHeaders } from "~/modules/metrics/utils/defaultHeaders.serv
 import { createMetrics } from "~/modules/metrics/services/.server/MetricTracker";
 import { promiseHash } from "~/utils/promises/promiseHash";
 import { getTenant } from "~/utils/db/tenants.db.server";
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { Card, CardContent } from "~/components/ui/card";
-import { Plus, X, Trash2, Bot, Activity, Clock, MessageSquare, Database, MoreVertical, Settings } from "lucide-react";
+import { Plus, X, Trash2, Bot, Activity, Clock, MessageSquare, Database, MoreVertical, Settings, Pause, Archive } from "lucide-react";
 import { ChatbotService, ChatbotDetails } from "~/utils/services/chatbots/chatbotService.server";
 import { useChatbot } from "~/context/ChatbotContext";
 import { Button } from "~/components/ui/button";
@@ -36,7 +36,13 @@ import { getIndustries, getChatbotTypesByIndustry, getSkillsByChatbotType } from
 
 import { Badge } from "~/components/ui/badge";
 import { format } from "date-fns";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "~/components/ui/dropdown-menu";
+import { ChatbotSetupService } from "~/services/chatbot/ChatbotSetupService";
+import { cn } from "~/lib/utils";
+import { ChatbotStatusService } from "~/services/chatbot/ChatbotStatusService";
+import { ChatbotStatus } from "@prisma/client";
+import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
+import { DataSourceQueryService } from "~/services/data/DataSourceQueryService";
 
 export { serverTimingHeaders as headers };
 
@@ -48,7 +54,13 @@ type LoaderData = DashboardLoaderData & {
   industries: { id: number; name: string }[];
   chatbotTypes: { id: number; name: string }[];
   skills: { id: number; name: string }[];
+  dashboardStats: { totalDataSources: number; activeCount: number };
 };
+
+interface ActionData {
+  success: boolean;
+  chatbot?: any;
+}
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
@@ -56,7 +68,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   let { t } = await time(getTranslations(request), "getTranslations");
   const tenantId = await time(getTenantIdFromUrl(params), "getTenantIdFromUrl");
   const tenant = await time(getTenant(tenantId), "getTenant");
-  const chatbots = await ChatbotService.getChatbots(tenantId);
+  const chatbots = await ChatbotQueryService.getChatbots(tenantId);
+  const dashboardStats = await ChatbotQueryService.getDashboardStats(tenantId);
 
   const { stats, dashboardData } = await time(
     promiseHash({
@@ -71,20 +84,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   );
 
   // Get uploaded files
-  const files = await db.dataSources.findMany({
-    where: {
-      tenantId,
-      sourceTypeId: 2,
-    },
-    select: {
-      sourceId: true,
-      sourceDetails: true,
-      createdAt: true,
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
+  const files = await DataSourceQueryService.getDataSources(tenantId);
 
   // Get initial industry for default values
   const industries = await getIndustries();
@@ -106,16 +106,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     ...dashboardData,
     stats,
     chatbots,
-    files: files.map(f => ({
-      sourceId: f.sourceId,
-      fileName: (f.sourceDetails as any)?.fileName ?? 'Untitled',
-      fileType: (f.sourceDetails as any)?.fileType ?? 'application/octet-stream',
-      createdAt: new Date(f.createdAt),
-      isTrained: (f.sourceDetails as any)?.isTrained ?? true
-    })),
+    files,
     industries,
     chatbotTypes,
     skills,
+    dashboardStats,
   };
 
   return json(data, { headers: getServerTimingHeader() });
@@ -145,6 +140,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     return json(result);
   }
 
+  if (intent === "create-chatbot") {
+    const config = JSON.parse(formData.get("config") as string);
+    const chatbot = await ChatbotSetupService.createChatbot(tenantId, config);
+    return json({ success: true, chatbot });
+  }
+
   const file = formData.get("file") as File;
   if (!file) {
     return json({ success: false, message: "No file uploaded" });
@@ -158,7 +159,7 @@ export default function DashboardRoute() {
   const { t } = useTranslation();
   const params = useParams();
   const location = useLocation();
-  const { chatbots, files, industries, chatbotTypes, skills } = useLoaderData<typeof loader>();
+  const { chatbots, files, industries, chatbotTypes, skills, dashboardStats } = useLoaderData<typeof loader>();
   const isChildRoute = location.pathname.includes('/create') || location.pathname.includes('/file');
   const { selectedChatbotId, setSelectedChatbotId } = useChatbot();
   const navigate = useNavigate();
@@ -176,6 +177,8 @@ export default function DashboardRoute() {
     dataSource: "",
     trainingData: [],
   });
+
+  const fetcher = useFetcher<ActionData>();
 
   const handleSelectChatbot = (chatbotId: string) => {
     setSelectedChatbotId(chatbotId);
@@ -214,18 +217,32 @@ export default function DashboardRoute() {
     }
   };
 
-  const handleNext = () => {
-    if (currentStep === steps.length) {
+  const handleNext = async () => {
+    if (currentStep === 4 && canProceed()) {
+      const formData = new FormData();
+      formData.append("intent", "create-chatbot");
+      formData.append("config", JSON.stringify(config));
+      
+      fetcher.submit(formData, { method: "POST" });
+    } else if (currentStep === steps.length) {
       handleSubmit();
     } else if (canProceed()) {
       setCurrentStep((prev) => Math.min(steps.length, prev + 1));
     }
   };
 
+  // Add useEffect to watch fetcher state
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.success) {
+      setCurrentStep((prev) => Math.min(steps.length, prev + 1));
+    }
+  }, [fetcher.state, fetcher.data]);
+
   const handleSubmit = async () => {
     try {
       // Add your API call here to create the chatbot
-      console.log("Submitting config:", config);
+      console.log("Submitting config:", params.tenant);     
+      //console.log("Chatbot created:", chatbot);     
       setIsWorkflowOpen(false);
       setCurrentStep(1);
       setConfig({
@@ -249,6 +266,11 @@ export default function DashboardRoute() {
 
   const handleCreateChatbot = () => {
     navigate(`/app/${params.tenant}/dashboard`);
+  };
+
+  const handleStatusChange = async (chatbotId: string, status: ChatbotStatus) => {
+    await ChatbotStatusService.updateStatus(chatbotId, status);
+    // Optionally refresh the chatbots list
   };
 
   if (isChildRoute) {
@@ -312,7 +334,7 @@ export default function DashboardRoute() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-medium text-green-600">Active</p>
-                    <h3 className="text-3xl font-bold text-green-900 mt-2">{chatbots.length}</h3>
+                    <h3 className="text-3xl font-bold text-green-900 mt-2">{dashboardStats.activeCount}</h3>
                   </div>
                   <div className="p-3 bg-green-200 rounded-xl">
                     <Activity className="h-6 w-6 text-green-700" />
@@ -340,7 +362,7 @@ export default function DashboardRoute() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-medium text-orange-600">Data Sources</p>
-                    <h3 className="text-3xl font-bold text-orange-900 mt-2">{files.length}</h3>
+                    <h3 className="text-3xl font-bold text-orange-900 mt-2">{dashboardStats.totalDataSources}</h3>
                   </div>
                   <div className="p-3 bg-orange-200 rounded-xl">
                     <Database className="h-6 w-6 text-orange-700" />
@@ -373,6 +395,26 @@ export default function DashboardRoute() {
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {chatbot.status !== ChatbotStatus.ACTIVE && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(chatbot.id, ChatbotStatus.ACTIVE)}>
+                            <Activity className="h-4 w-4 mr-2" />
+                            Activate
+                          </DropdownMenuItem>
+                        )}
+                        {chatbot.status !== ChatbotStatus.INACTIVE && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(chatbot.id, ChatbotStatus.INACTIVE)}>
+                            <Pause className="h-4 w-4 mr-2" />
+                            Deactivate
+                          </DropdownMenuItem>
+                        )}
+                        {chatbot.status !== ChatbotStatus.ARCHIVED && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(chatbot.id, ChatbotStatus.ARCHIVED)}>
+                            <Archive className="h-4 w-4 mr-2" />
+                            Archive
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleDelete(chatbot.id)} className="text-red-600">
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
@@ -383,10 +425,19 @@ export default function DashboardRoute() {
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between text-sm">
-                      <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50">
-                        Active
+                      <Badge 
+                        className={cn(
+                          "capitalize",
+                          chatbot.status === "ACTIVE" && "bg-blue-50 text-blue-700 hover:bg-blue-50",
+                          chatbot.status === "ARCHIVED" && "bg-gray-100 text-gray-700 hover:bg-gray-100",
+                          chatbot.status === "INACTIVE" && "bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
+                        )}
+                      >
+                        {chatbot.status.toLowerCase()}
                       </Badge>
-                      <span className="text-gray-500">Created {format(new Date(), 'MMM d, yyyy')}</span>
+                      <span className="text-gray-500">
+                        Created {format(new Date(chatbot.createdAt), 'MMM d, yyyy')}
+                      </span>
                     </div>
 
                     <div className="pt-4 border-t">
