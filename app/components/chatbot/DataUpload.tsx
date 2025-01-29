@@ -18,6 +18,10 @@ export function DataUpload({ files = [], onChange, onChangeDataSource, existingF
   const fetcher = useFetcher();
   const [fileList, setFileList] = useState<FileSource[]>(existingFiles);
 
+  useEffect(() => {
+    onChange(fileList);
+  }, [fileList, onChange]);
+
   const handleSuccess = (result: any) => {
     if (result && result.data) {
       const newFile: FileSource = {

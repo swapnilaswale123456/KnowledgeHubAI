@@ -18,6 +18,7 @@ interface ChatbotWorkflowProps {
   onNext: () => void;
   onSubmit: () => void;
   existingFiles: FileSource[];
+  isSubmitting: boolean;
 }
 
 export function ChatbotWorkflow({ 
@@ -28,7 +29,8 @@ export function ChatbotWorkflow({
   onUpdateConfig,
   onNext,
   onSubmit,
-  existingFiles
+  existingFiles,
+  isSubmitting
 }: ChatbotWorkflowProps) {
   return (
     <div className="p-4">
@@ -110,8 +112,16 @@ export function ChatbotWorkflow({
             </Button>
             <Button
               onClick={currentStep === steps.length ? onSubmit : onNext}
+              disabled={isSubmitting}
             >
-              {currentStep === steps.length ? "Create Chatbot" : "Next"}
+              {isSubmitting ? (
+                <div className="flex items-center">
+                  <span className="animate-spin mr-2">⏳</span>
+                  Creating Chatbot...
+                </div>
+              ) : (
+                currentStep === steps.length ? "Create Chatbot" : "Next"
+              )}
             </Button>
           </div>
         </div>

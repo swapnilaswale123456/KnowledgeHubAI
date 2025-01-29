@@ -65,6 +65,20 @@ interface ActionData {
   chatbot?: any;
 }
 
+interface ChatbotConfig {
+  industry: string;
+  type: string;
+  skills: string[];
+  scope: {
+    purpose: string;
+    audience: string;
+    tone: string;
+  };
+  dataSource: string;
+  trainingData: FileSource[];
+  files: FileSource[];
+}
+
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
   const { time, getServerTimingHeader } = await createMetrics({ request, params }, "app.$tenant.dashboard");
@@ -148,6 +162,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     return json({ success: true, chatbot });
   }
 
+  if (intent === "update-status") {
+    const chatbotId = formData.get("chatbotId") as string;
+    const status = formData.get("status") as ChatbotStatus;
+    await ChatbotStatusService.updateStatus(chatbotId, status);
+    return json({ success: true });
+  }
+
   const file = formData.get("file") as File;
   if (!file) {
     return json({ success: false, message: "No file uploaded" });
@@ -167,7 +188,7 @@ export default function DashboardRoute() {
   const navigate = useNavigate();
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(5);
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<ChatbotConfig>({
     industry: "",
     type: "",
     skills: [],
@@ -180,6 +201,7 @@ export default function DashboardRoute() {
     trainingData: [],
     files: []
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetcher = useFetcher<ActionData>();
 
@@ -222,6 +244,7 @@ export default function DashboardRoute() {
 
   const handleNext = async () => {
     if (currentStep === 4 && canProceed()) {
+      setIsSubmitting(true);
       const formData = new FormData();
       formData.append("intent", "create-chatbot");
       formData.append("config", JSON.stringify(config));
@@ -234,29 +257,43 @@ export default function DashboardRoute() {
     }
   };
 
-  // Add useEffect to watch fetcher state
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.success) {
+      setIsSubmitting(false);
       setCurrentStep((prev) => Math.min(steps.length, prev + 1));
     }
   }, [fetcher.state, fetcher.data]);
 
   const handleSubmit = async () => {
     try {
-      // Add your API call here to create the chatbot
-      console.log("Submitting config:", params.tenant);     
-      //console.log("Chatbot created:", chatbot);     
-      setIsWorkflowOpen(false);
-      setCurrentStep(1);
-      setConfig({
-        industry: "",
-        type: "",
-        skills: [],
-        scope: { purpose: "", audience: "", tone: "" },
-        dataSource: "",
-        trainingData: [],
-        files: []
-      });
+      if (!config.trainingData.length) return;
+      
+      const formData = new FormData();
+      formData.append("intent", "train");
+      formData.append("sourceId", String(config.trainingData[0].sourceId));
+      
+      fetcher.submit(formData, { method: "POST" });
+      
+      if (fetcher.data?.success && fetcher.data.chatbot?.id) {
+        const statusFormData = new FormData();
+        statusFormData.append("intent", "update-status");
+        statusFormData.append("chatbotId", fetcher.data.chatbot.id);
+        statusFormData.append("status", ChatbotStatus.ACTIVE);
+        
+        await fetcher.submit(statusFormData, { method: "POST" });
+        
+        setIsWorkflowOpen(false);
+        setCurrentStep(1);
+        setConfig({
+          industry: "",
+          type: "",
+          skills: [],
+          scope: { purpose: "", audience: "", tone: "" },
+          dataSource: "",
+          trainingData: [],
+          files: []
+        });
+      }
     } catch (error) {
       console.error("Error creating chatbot:", error);
     }
@@ -320,6 +357,7 @@ export default function DashboardRoute() {
           onNext={handleNext}
           onSubmit={handleSubmit}
           existingFiles={files}
+          isSubmitting={isSubmitting}
         />
       )}
     </div>
