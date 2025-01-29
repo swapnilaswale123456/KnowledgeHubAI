@@ -183,6 +183,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const chatbot = await ChatbotSetupService.updateChatbot(chatbotId, config);
     return json({ success: true, chatbot });
   }
+  if (intent === "delete-chatbot") {
+    const chatbotId = formData.get("chatbotId") as string;
+    await ChatbotSetupService.deleteChatbot(chatbotId);
+    
+    // Return updated chatbots list
+    const chatbots = await ChatbotQueryService.getChatbots(tenantId);
+    return json({ success: true, chatbots });
+  }
 
   const file = formData.get("file") as File;
   if (!file) {
@@ -226,8 +234,11 @@ export default function DashboardRoute() {
   };
 
   const handleDelete = async (chatbotId: string) => {
-    // TODO: Implement delete functionality
-    console.log('Delete chatbot:', chatbotId);
+    const formData = new FormData();
+    formData.append("intent", "delete-chatbot");
+    formData.append("chatbotId", chatbotId);
+    
+    fetcher.submit(formData, { method: "POST" });
   };
 
   const handleUpdateConfig = (field: keyof typeof config, value: any) => {
@@ -306,6 +317,13 @@ export default function DashboardRoute() {
       const startStep = chatbot.lastCompletedStep === 4 ? 5 : chatbot.lastCompletedStep ?? 1;
       setCurrentStep(startStep);
       setIsWorkflowOpen(true);
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.chatbots) {
+      // Optionally refresh the page or update local state
+      window.location.reload();
     }
   }, [fetcher.state, fetcher.data]);
 

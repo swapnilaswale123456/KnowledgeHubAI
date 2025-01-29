@@ -3,6 +3,12 @@ import type { ChatbotConfig } from "~/types/chatbot";
 import { ChatbotStatus } from "@prisma/client";
 import { nanoid } from 'nanoid';
 import { v4 as uuidv4 } from 'uuid';
+import { validate as isUUID, parse as parseUUID } from "uuid";
+
+interface DataSource {
+  sourceId: number;
+  chatbotId: string;
+}
 
 export class ChatbotSetupService {
   static async createChatbot(tenantId: string, config: ChatbotConfig, step: number) {
@@ -118,8 +124,45 @@ export class ChatbotSetupService {
   }
 
   static async deleteChatbot(chatbotId: string) {
-    await db.chatbot.delete({
-      where: { id: chatbotId }
-    });
+    try {
+      // First get the chatbot to verify it exists
+      const chatbot = await db.chatbot.findUnique({
+        where: { id: chatbotId }
+      });
+
+      if (!chatbot) {
+        throw new Error("Chatbot not found");
+      }
+
+      // Delete in this order to handle foreign key constraints
+      await db.$transaction([
+        // Delete instruction skills first
+        db.instructionSkill.deleteMany({
+          where: {
+            instruction: {
+              chatbotId
+            }
+          }
+        }),
+
+        // Delete instruction master records
+        db.instructionMaster.deleteMany({
+          where: { chatbotId }
+        }),
+
+        // Delete data sources
+        db.dataSources.deleteMany({
+          where: { chatbotId: chatbot.id }
+        }),
+
+        // Finally delete the chatbot
+        db.chatbot.delete({
+          where: { id: chatbotId }
+        })
+      ]);
+    } catch (error) {
+      console.error("Error deleting chatbot:", error);
+      throw error;
+    }
   }
 } 
