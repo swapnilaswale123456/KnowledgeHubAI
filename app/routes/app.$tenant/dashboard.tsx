@@ -423,7 +423,7 @@ export default function DashboardRoute() {
                 </p>
               </div>
 
-              <div className="max-w-6xl mx-auto">
+              <div className={currentStep === 5 || currentStep === 6 ? "max-w-6xl mx-auto" : "max-w-2xl mx-auto"}>
                 {currentStep === 1 && (
                   <IndustrySelection
                     value={config.industry}
