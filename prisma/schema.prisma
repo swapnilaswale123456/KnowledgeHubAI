@@ -2392,6 +2392,7 @@ model Chatbot {
   llmModel        LlmModel?           @relation(fields: [llmModelId], references: [id])
   tenant          Tenant              @relation(fields: [tenantId], references: [id])
   instructions    InstructionMaster[]
+  lastCompletedStep Int @default(1)
 
   @@index([tenantId])
   @@map("chatbots")

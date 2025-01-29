@@ -15,10 +15,11 @@ interface ChatbotCardProps {
   onStatusChange: (id: string, status: ChatbotStatus) => void;
   onDelete: (id: string) => void;
   onNavigate: (path: string) => void;
+  onEdit: (chatbot: ChatbotDetails) => void;
   tenantSlug: string;
 }
 
-export function ChatbotCard({ chatbot, onStatusChange, onDelete, onNavigate, tenantSlug }: ChatbotCardProps) {
+export function ChatbotCard({ chatbot, onStatusChange, onDelete, onNavigate, onEdit, tenantSlug }: ChatbotCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
       <CardContent className="p-6">
@@ -48,14 +49,25 @@ export function ChatbotCard({ chatbot, onStatusChange, onDelete, onNavigate, ten
             </span>
           </div>
 
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t flex gap-2">
             <Button 
-              className="w-full"
+              className="flex-1"
               variant="outline"
               onClick={() => onNavigate(`/app/${tenantSlug}/g/chatbot/${chatbot.id}`)}
             >
               View Chatbot
             </Button>
+            
+            {chatbot.status === ChatbotStatus.ARCHIVED && (
+              <Button
+                className="flex-1"
+                variant="secondary"
+                onClick={() => onEdit(chatbot)}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

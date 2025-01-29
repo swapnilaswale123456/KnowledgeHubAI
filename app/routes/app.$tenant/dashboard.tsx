@@ -158,7 +158,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (intent === "create-chatbot") {
     const config = JSON.parse(formData.get("config") as string);
-    const chatbot = await ChatbotSetupService.createChatbot(tenantId, config);
+    const currentStep = Number(formData.get("currentStep") || "1");
+    const chatbot = await ChatbotSetupService.createChatbot(tenantId, config, currentStep);
     return json({ success: true, chatbot });
   }
 
@@ -167,6 +168,20 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const status = formData.get("status") as ChatbotStatus;
     await ChatbotStatusService.updateStatus(chatbotId, status);
     return json({ success: true });
+  }
+
+  if (intent === "get-chatbot") {
+    const chatbotId = formData.get("chatbotId") as string;
+    const chatbot = await ChatbotQueryService.getChatbot(chatbotId);
+    return json({ chatbot });
+  }
+
+  if (intent === "update-chatbot") {
+    const chatbotId = formData.get("chatbotId") as string;
+    const config = JSON.parse(formData.get("config") as string);
+    const currentStep = Number(formData.get("currentStep") || "1");
+    const chatbot = await ChatbotSetupService.updateChatbot(chatbotId, config);
+    return json({ success: true, chatbot });
   }
 
   const file = formData.get("file") as File;
@@ -202,6 +217,7 @@ export default function DashboardRoute() {
     files: []
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingChatbotId, setEditingChatbotId] = useState<string | null>(null);
 
   const fetcher = useFetcher<ActionData>();
 
@@ -246,8 +262,18 @@ export default function DashboardRoute() {
     if (currentStep === 4 && canProceed()) {
       setIsSubmitting(true);
       const formData = new FormData();
-      formData.append("intent", "create-chatbot");
+      
+      if (editingChatbotId) {
+        // Update existing chatbot
+        formData.append("intent", "update-chatbot");
+        formData.append("chatbotId", editingChatbotId);
+      } else {
+        // Create new chatbot
+        formData.append("intent", "create-chatbot");
+      }
+      
       formData.append("config", JSON.stringify(config));
+      formData.append("currentStep", currentStep.toString());
       
       fetcher.submit(formData, { method: "POST" });
     } else if (currentStep === steps.length) {
@@ -261,6 +287,25 @@ export default function DashboardRoute() {
     if (fetcher.state === "idle" && fetcher.data?.success) {
       setIsSubmitting(false);
       setCurrentStep((prev) => Math.min(steps.length, prev + 1));
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.chatbot) {
+      const chatbot = fetcher.data.chatbot;
+      setConfig({
+        industry: chatbot.industry ?? "",
+        type: chatbot.type ?? "",
+        skills: chatbot.skills ?? [],
+        scope: chatbot.scope ?? { purpose: "", audience: "", tone: "" },
+        dataSource: chatbot.dataSource ?? "",
+        trainingData: chatbot.trainingData ?? [],
+        files: chatbot.files ?? []
+      });
+      // If step 4 is completed, open at step 5
+      const startStep = chatbot.lastCompletedStep === 4 ? 5 : chatbot.lastCompletedStep ?? 1;
+      setCurrentStep(startStep);
+      setIsWorkflowOpen(true);
     }
   }, [fetcher.state, fetcher.data]);
 
@@ -314,6 +359,15 @@ export default function DashboardRoute() {
     // Optionally refresh the chatbots list
   };
 
+  const handleEdit = async (chatbot: ChatbotDetails) => {
+    setEditingChatbotId(chatbot.id); // Set editing ID
+    const formData = new FormData();
+    formData.append("intent", "get-chatbot");
+    formData.append("chatbotId", chatbot.id);
+    
+    fetcher.submit(formData, { method: "POST" });
+  };
+
   if (isChildRoute) {
     return <Outlet />;
   }
@@ -342,6 +396,7 @@ export default function DashboardRoute() {
                 onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
                 onNavigate={navigate}
+                onEdit={handleEdit}
                 tenantSlug={params.tenant ?? ''}
               />
             ))}
@@ -352,7 +407,19 @@ export default function DashboardRoute() {
           currentStep={currentStep}
           config={config}
           onStepChange={handleStepChange}
-          onClose={() => setIsWorkflowOpen(false)}
+          onClose={() => {
+            setIsWorkflowOpen(false);
+            setEditingChatbotId(null); // Reset editing state
+            setConfig({
+              industry: "",
+              type: "",
+              skills: [],
+              scope: { purpose: "", audience: "", tone: "" },
+              dataSource: "",
+              trainingData: [],
+              files: []
+            });
+          }}
           onUpdateConfig={handleUpdateConfig}
           onNext={handleNext}
           onSubmit={handleSubmit}

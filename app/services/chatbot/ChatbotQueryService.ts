@@ -29,25 +29,39 @@ export class ChatbotQueryService {
   static async getChatbot(chatbotId: string): Promise<ChatbotDetails | null> {
     const chatbot = await db.chatbot.findUnique({
       where: { id: chatbotId },
-      select: {
-        id: true,
-        name: true,
-        uniqueUrl: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        theme: true,
-        initialMessage: true,
-        businessName: true
+      include: {
+        instructions: {
+          include: {
+            industry: true,
+            chatbotType: true,
+            instructionSkills: {
+              include: {
+                skill: true
+              }
+            }
+          }
+        }
       }
     });
 
-    return chatbot ? {
+    if (!chatbot) return null;
+
+    return {
       ...chatbot,
       theme: chatbot.theme ? JSON.stringify(chatbot.theme) : undefined,
       initialMessage: chatbot.initialMessage ?? undefined,
-      businessName: chatbot.businessName ?? undefined
-    } : null;
+      businessName: chatbot.businessName ?? undefined,
+      createdAt: new Date(chatbot.createdAt),
+      updatedAt: new Date(chatbot.updatedAt),
+      industry: chatbot.instructions?.[0]?.industryId?.toString(),
+      type: chatbot.instructions?.[0]?.chatbotTypeId?.toString(),
+      skills: chatbot.instructions?.[0]?.instructionSkills?.map(is => is.skillId.toString()) ?? [],
+      scope: {
+        purpose: chatbot.instructions?.[0]?.purpose ?? "",
+        audience: chatbot.instructions?.[0]?.audience ?? "",
+        tone: chatbot.instructions?.[0]?.tone ?? ""
+      }
+    };
   }
 
   static async getDashboardStats(tenantId: string) {

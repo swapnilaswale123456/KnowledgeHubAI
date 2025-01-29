@@ -2,9 +2,10 @@ import { db } from "~/utils/db.server";
 import type { ChatbotConfig } from "~/types/chatbot";
 import { ChatbotStatus } from "@prisma/client";
 import { nanoid } from 'nanoid';
+import { v4 as uuidv4 } from 'uuid';
 
 export class ChatbotSetupService {
-  static async createChatbot(tenantId: string, config: ChatbotConfig) {
+  static async createChatbot(tenantId: string, config: ChatbotConfig, step: number) {
     // First verify tenant exists
     const tenant = await db.tenant.findUnique({
       where: { id: tenantId }
@@ -14,13 +15,25 @@ export class ChatbotSetupService {
       throw new Error("Tenant not found");
     }
 
-    const uniqueId = nanoid();
+    const uniqueIdentifier = uuidv4();
     const chatbot = await db.chatbot.create({
       data: {
-        name: "New Chatbot", // Can be customized later
-        uniqueUrl: `chat-${uniqueId}`, // Format: chat-{unique_id}
-        tenantId: tenant.id, // Use verified tenant ID
+        id: uniqueIdentifier,
+        name: `${config.industry} Bot`,
+        uniqueUrl: `chat-${tenantId}-${uniqueIdentifier.slice(0,8)}`,
+        tenantId,
         status: ChatbotStatus.ARCHIVED,
+        llmModelId: 1,
+        languageId: 1,
+        lastCompletedStep: step,
+        theme: {
+          primaryColor: "#4F46E5",
+          secondaryColor: "#6366F1",
+          fontFamily: "Inter",
+          fontSize: "16px",
+          borderRadius: "8px",
+          backgroundColor: "#F9FAFB"
+        },
         instructions: {
           create: {
             industryId: parseInt(config.industry),
