@@ -51,7 +51,7 @@ async function createChatbot(tenantId: string, fileName: string) {
 export class FileUploadService {
   private baseUrl: string;
   private apiKey: string;
-  public chatbotId: string | null = null;
+  public chatbotIdlocal: string | null = null;
   constructor() {
     this.baseUrl = process.env.PYTHON_API_ENDPOINT || 'http://127.0.0.1:5000';
     this.apiKey = process.env.PYTHON_API_KEY || '';
@@ -59,16 +59,17 @@ export class FileUploadService {
 
   async uploadFile(file: File, tenantId: string, request: Request, isTrain = false, chatbotId: string | null = null) {
     try {
+      this.chatbotIdlocal = chatbotId;
       const formData = new FormData();
-      formData.append('file', file);     
-      formData.append('chatbotId', this.chatbotId ?? '');
-     
-      if (isTrain == true) {
+      formData.append('file', file);
+      formData.append('chatbotId', this.chatbotIdlocal ?? '');     
+      if (isTrain) {
+        // Training flow
         const response = await fetch(`${this.baseUrl}/file/upload/v2/file`, {
           method: 'POST',
           body: formData,
           headers: {
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNzY0MTU5NiwianRpIjoiNTM0YmZkMjYtMThiOS00ZjRlLWFiM2EtNmIwMThjMzI0YTcxIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InN3YXBuaWxhMzAyQGdtYWlsLmNvbSIsIm5iZiI6MTczNzY0MTU5NiwiY3NyZiI6IjczYTM0ZDBhLTNmYjUtNDkzYy05MzY0LWVmOWJmOGE3OWViOCIsImV4cCI6MTczNzY0MjQ5NiwiZ29vZ2xlX3Rva2VuIjpbInlhMjkuYTBBUlc1bTc3N2t2MVg2YnJ3N1BEa241UERtNm4waENyNDZSWjIyR3pRa0Nodk12Sm9NcC1HR2I1SkhaanRxbG55MWFITFBiWTRXT2FUTDlWaERZU2c1N0c1cEFkZHhjY2d4WnZMeUE4ZUJuN3U5VlN5MngtZmdOWGx2SkppNE44UHUwU25qQ3dXMnE2OU5jWkN1MWpzZUNlS1lsZjFZcEtfUlZZYUNnWUtBWDhTQVJBU0ZRSEdYMk1paVVTNzluYzRqVUdiS1A1XzIwdGhsZzAxNzAiLCIiXX0.o8oZMKnI6fKJ8s6vF1piM_KSp96yWr8xGVhKYfSQgQ8`
+            'Authorization': `Bearer`
           }          
         });
         
@@ -78,53 +79,58 @@ export class FileUploadService {
             message: `Upload failed: ${response.statusText}`
           };
         }
-  
-        const result = await response.json();
+
         return {
           success: true,
           message: 'File trained successfully'
         };
-      }
-      else {
-        formData.append('action', 'train');       
-        formData.append('chatbotId', chatbotId ?? ''); 
-        // Create chatbot first
-       const chatbot = await ChatbotQueryService.getChatbot(chatbotId ?? '');
+      } else {
+        // Regular upload flow
+        if (!chatbotId) {
+          return {
+            success: false,
+            message: 'Chatbot ID is required'
+          };
+        }
 
-        // Create DataSource record with chatbot ID
-        const dataSource = await db.$queryRaw<DataSourceResponse[]>`
-          INSERT INTO "DataSources" (
-            "chatbotId", "sourceTypeId", "tenantId", "sourceDetails", "createdAt"
-          ) VALUES (
-            ${chatbot?.id}::uuid, 
-            ${2}, 
-            ${tenantId},
-            ${JSON.stringify({
+        const chatbot = await ChatbotQueryService.getChatbot(chatbotId);
+        if (!chatbot) {
+          return {
+            success: false,
+            message: 'Invalid chatbot ID'
+          };
+        }
+        this.chatbotIdlocal = chatbot.id;
+        formData.append('chatbotId', this.chatbotIdlocal ?? '');
+        // Create DataSource record using Prisma instead of raw query
+        const dataSource = await db.dataSources.create({
+          data: {
+            chatbotId: chatbot.id,
+            sourceTypeId: 2,
+            tenantId: tenantId,
+            sourceDetails: {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
               uploadedBy: tenantId,
               createdAt: new Date().toISOString()
-            })}::jsonb,
-            CURRENT_TIMESTAMP
-          ) RETURNING "sourceId"`;
+            }
+          }
+        });
 
-        this.chatbotId = chatbot?.id ?? null;
         return {
           success: true,
           message: 'File uploaded successfully',
           data: {
-            sourceId: dataSource[0].sourceId,
+            sourceId: dataSource.sourceId,
             fileName: file.name,
             fileSize: file.size,
-            chatbotId: chatbot?.id ?? null,
-            isTrain: isTrain,
+            chatbotId: chatbot.id,
+            isTrain: isTrain
           }
         };
-      }  
-      
-    } 
-    catch (error) {
+      }
+    } catch (error) {
       console.error('Upload error:', error);
       return {
         success: false,

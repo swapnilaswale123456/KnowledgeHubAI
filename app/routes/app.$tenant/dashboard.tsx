@@ -150,6 +150,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (intent === "train") {
     const sourceId = formData.get("sourceId") as string;
     const file = formData.get("file") as File;
+    const chatbotId = formData.get("chatbotId") as string;
     if (!file) {
       return json({ success: false, message: "No file provided for training" });
     }
