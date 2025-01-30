@@ -423,10 +423,13 @@ export default function DashboardRoute() {
 
     return (
     <div className="flex-1">
-      <DashboardHeader 
-        onNewChatbot={() => workflowState.setIsWorkflowOpen(true)}
-        onDataSources={() => navigate(`/app/${params.tenant}/g/data-sources`)}
-      />
+       {/* Only show header when workflow is not open */}
+       {!isWorkflowOpen && (
+        <DashboardHeader 
+          onNewChatbot={() => workflowState.setIsWorkflowOpen(true)}
+          onDataSources={() => navigate(`/app/${params.tenant}/g/data-sources`)}
+        />
+      )}
 
       {!isWorkflowOpen ? (
         <DashboardContent 
