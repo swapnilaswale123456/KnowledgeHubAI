@@ -8,13 +8,14 @@ import { DataUpload } from "~/components/chatbot/DataUpload";
 import { FinalReview } from "~/components/chatbot/FinalReview";
 import { Button } from "~/components/ui/button";
 import { FileSource } from "../core/files/FileList";
+import type { ChatbotConfig } from "~/types/chatbot";
 
 interface ChatbotWorkflowProps {
   currentStep: number;
   config: any;
   onStepChange: (step: number) => void;
   onClose: () => void;
-  onUpdateConfig: (field: "type" | "files" | "skills" | "industry" | "dataSource" | "scope" | "trainingData", value: any) => void;
+  onUpdateConfig: (field: keyof ChatbotConfig, value: any) => void;
   onNext: () => void;
   onSubmit: () => void;
   existingFiles: FileSource[];

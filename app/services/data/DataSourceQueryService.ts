@@ -2,11 +2,12 @@ import { db } from "~/utils/db.server";
 import type { FileSource } from "~/components/core/files/FileList";
 
 export class DataSourceQueryService {
-  static async getDataSources(tenantId: string): Promise<FileSource[]> {
+  static async getDataSources(tenantId: string, chatbotId?: string): Promise<FileSource[]> {
     const files = await db.dataSources.findMany({
       where: {
         tenantId,
         sourceTypeId: 2,
+        ...(chatbotId && { chatbotId })
       },
       select: {
         sourceId: true,

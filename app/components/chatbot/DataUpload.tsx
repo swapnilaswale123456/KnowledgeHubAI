@@ -17,10 +17,22 @@ interface DataUploadProps {
 
 export function DataUpload({ files = [], onChange, onChangeDataSource, existingFiles, chatbotId }: DataUploadProps) {
   const fetcher = useFetcher();
-  const [fileList, setFileList] = useState<FileSource[]>(existingFiles);  
+  const [fileList, setFileList] = useState<FileSource[]>(
+    chatbotId ? existingFiles.filter(f => f.chatbotId === chatbotId) : []
+  );  
   useEffect(() => {
     onChange(fileList);
   }, [fileList, onChange]);
+
+  useEffect(() => {
+    if (chatbotId) {
+      const formData = new FormData();
+      formData.append("intent", "get-files");
+      formData.append("chatbotId", chatbotId);
+      
+      fetcher.submit(formData, { method: "POST" });
+    }
+  }, [chatbotId]);
 
   const handleSuccess = (result: any) => {
     if (result && result.data) {
