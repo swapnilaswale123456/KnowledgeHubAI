@@ -9,6 +9,7 @@ interface FileUploadProps {
   showBackButton?: boolean;
   backButtonComponent?: React.ReactNode;
   title?: string;
+  chatbotId?: string;
 }
 
 interface UploadResponse {
@@ -27,7 +28,8 @@ export default function FileUpload({
   onSuccess, 
   showBackButton = false,
   backButtonComponent,
-  title = "Upload Documents"
+  title = "Upload Documents",
+  chatbotId
 }: FileUploadProps) {
   const fetcher = useFetcher<UploadResponse>();
   const [isUploading, setIsUploading] = useState(false);
@@ -70,6 +72,9 @@ export default function FileUpload({
     
     const formData = new FormData();
     formData.append("file", file);
+    if (chatbotId) {
+      formData.append("chatbotId", chatbotId);
+    }
     
     fetcher.submit(formData, {
       method: "post",

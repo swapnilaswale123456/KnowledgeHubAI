@@ -19,6 +19,7 @@ interface ChatbotWorkflowProps {
   onSubmit: () => void;
   existingFiles: FileSource[];
   isSubmitting: boolean;
+  editingChatbotId?: string;
 }
 
 export function ChatbotWorkflow({ 
@@ -30,7 +31,8 @@ export function ChatbotWorkflow({
   onNext,
   onSubmit,
   existingFiles,
-  isSubmitting
+  isSubmitting,
+  editingChatbotId
 }: ChatbotWorkflowProps) {
   return (
     <div className="p-4">
@@ -90,6 +92,7 @@ export function ChatbotWorkflow({
                 onChange={(newFiles) => onUpdateConfig("trainingData", newFiles)}
                 onChangeDataSource={() => onStepChange(5)}
                 existingFiles={existingFiles}
+                chatbotId={editingChatbotId}
               />
             )}
             {currentStep === 7 && <FinalReview config={config} />}

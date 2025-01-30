@@ -2,6 +2,8 @@ import { json } from "@remix-run/node";
 import { db } from "~/utils/db.server";
 import { v4 as uuidv4 } from 'uuid';
 import { ChatbotStatus } from "@prisma/client";
+import { ChatbotSetupService } from "~/services/chatbot/ChatbotSetupService";
+import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
 
 interface FileUploadResponse {
   success: boolean;
@@ -55,12 +57,12 @@ export class FileUploadService {
     this.apiKey = process.env.PYTHON_API_KEY || '';
   }
 
-  async uploadFile(file: File, tenantId: string, request: Request, isTrain = false) {
+  async uploadFile(file: File, tenantId: string, request: Request, isTrain = false, chatbotId: string | null = null) {
     try {
       const formData = new FormData();
-      formData.append('file', file);      
+      formData.append('file', file);     
       formData.append('chatbotId', this.chatbotId ?? '');
-      
+     
       if (isTrain == true) {
         const response = await fetch(`${this.baseUrl}/file/upload/v2/file`, {
           method: 'POST',
@@ -84,17 +86,17 @@ export class FileUploadService {
         };
       }
       else {
-        formData.append('action', 'train');
-        
+        formData.append('action', 'train');       
+        formData.append('chatbotId', chatbotId ?? ''); 
         // Create chatbot first
-        const chatbot = await createChatbot(tenantId, file.name);
+       const chatbot = await ChatbotQueryService.getChatbot(chatbotId ?? '');
 
         // Create DataSource record with chatbot ID
         const dataSource = await db.$queryRaw<DataSourceResponse[]>`
           INSERT INTO "DataSources" (
             "chatbotId", "sourceTypeId", "tenantId", "sourceDetails", "createdAt"
           ) VALUES (
-            ${chatbot.id}::uuid, 
+            ${chatbot?.id}::uuid, 
             ${2}, 
             ${tenantId},
             ${JSON.stringify({
@@ -107,7 +109,7 @@ export class FileUploadService {
             CURRENT_TIMESTAMP
           ) RETURNING "sourceId"`;
 
-        this.chatbotId = chatbot.id;
+        this.chatbotId = chatbot?.id ?? null;
         return {
           success: true,
           message: 'File uploaded successfully',
@@ -115,7 +117,7 @@ export class FileUploadService {
             sourceId: dataSource[0].sourceId,
             fileName: file.name,
             fileSize: file.size,
-            chatbotId: chatbot.id,
+            chatbotId: chatbot?.id ?? null,
             isTrain: isTrain,
           }
         };

@@ -139,6 +139,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const intent = formData.get("intent");
   const tenantId = await getTenantIdFromUrl(params);
   const fileUploadService = getFileUploadService();
+  const chatbotId = formData.get("chatbotId") as string;
 
   if (intent === "delete") {
     const sourceId = formData.get("sourceId") as string;
@@ -152,7 +153,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     if (!file) {
       return json({ success: false, message: "No file provided for training" });
     }
-    const result = await fileUploadService.uploadFile(file, tenantId, request, true);
+    const result = await fileUploadService.uploadFile(file, tenantId, request, true, chatbotId);
     return json(result);
   }
 
@@ -191,13 +192,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const chatbots = await ChatbotQueryService.getChatbots(tenantId);
     return json({ success: true, chatbots });
   }
-
+ 
   const file = formData.get("file") as File;
   if (!file) {
     return json({ success: false, message: "No file uploaded" });
-  }
-
-  const result = await fileUploadService.uploadFile(file, tenantId, request);
+  }  
+  
+  const result = await fileUploadService.uploadFile(file, tenantId, request,false,chatbotId);
   return json(result);
 };
 
@@ -270,10 +271,11 @@ export default function DashboardRoute() {
   };
 
   const handleNext = async () => {
+    
     if (currentStep === 4 && canProceed()) {
       setIsSubmitting(true);
       const formData = new FormData();
-      
+     
       if (editingChatbotId) {
         // Update existing chatbot
         formData.append("intent", "update-chatbot");
@@ -287,9 +289,14 @@ export default function DashboardRoute() {
       formData.append("currentStep", currentStep.toString());
       
       fetcher.submit(formData, { method: "POST" });
-    } else if (currentStep === steps.length) {
+    } 
+    else if (currentStep === steps.length) {      
       handleSubmit();
-    } else if (canProceed()) {
+    } 
+    else if (canProceed()) 
+    {
+      const formData = new FormData();
+      formData.append("chatbotId", editingChatbotId ?? "");      
       setCurrentStep((prev) => Math.min(steps.length, prev + 1));
     }
   };
@@ -315,15 +322,10 @@ export default function DashboardRoute() {
       });
       // If step 4 is completed, open at step 5
       const startStep = chatbot.lastCompletedStep === 4 ? 5 : chatbot.lastCompletedStep ?? 1;
+      
       setCurrentStep(startStep);
       setIsWorkflowOpen(true);
-    }
-  }, [fetcher.state, fetcher.data]);
-
-  useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.chatbots) {
-      // Optionally refresh the page or update local state
-      window.location.reload();
+    
     }
   }, [fetcher.state, fetcher.data]);
 
@@ -378,6 +380,7 @@ export default function DashboardRoute() {
   };
 
   const handleEdit = async (chatbot: ChatbotDetails) => {
+    
     setEditingChatbotId(chatbot.id); // Set editing ID
     const formData = new FormData();
     formData.append("intent", "get-chatbot");
@@ -427,7 +430,7 @@ export default function DashboardRoute() {
           onStepChange={handleStepChange}
           onClose={() => {
             setIsWorkflowOpen(false);
-            setEditingChatbotId(null); // Reset editing state
+            setEditingChatbotId(null);
             setConfig({
               industry: "",
               type: "",
@@ -443,6 +446,7 @@ export default function DashboardRoute() {
           onSubmit={handleSubmit}
           existingFiles={files}
           isSubmitting={isSubmitting}
+          editingChatbotId={editingChatbotId}
         />
       )}
     </div>

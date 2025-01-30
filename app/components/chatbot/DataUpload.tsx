@@ -12,12 +12,12 @@ interface DataUploadProps {
   onChange: (files: FileSource[]) => void;
   onChangeDataSource: () => void;
   existingFiles: FileSource[];
+  chatbotId?: string;
 }
 
-export function DataUpload({ files = [], onChange, onChangeDataSource, existingFiles }: DataUploadProps) {
+export function DataUpload({ files = [], onChange, onChangeDataSource, existingFiles, chatbotId }: DataUploadProps) {
   const fetcher = useFetcher();
-  const [fileList, setFileList] = useState<FileSource[]>(existingFiles);
-
+  const [fileList, setFileList] = useState<FileSource[]>(existingFiles);  
   useEffect(() => {
     onChange(fileList);
   }, [fileList, onChange]);
@@ -68,6 +68,7 @@ export function DataUpload({ files = [], onChange, onChangeDataSource, existingF
       <FileUpload 
         onSuccess={handleSuccess}
         showBackButton={false}
+        chatbotId={chatbotId}
       />
 
       <div className="mt-6">
