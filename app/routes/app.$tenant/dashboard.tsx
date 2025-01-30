@@ -358,45 +358,32 @@ export default function DashboardRoute() {
   };
 
   const handleEdit = async (chatbot: ChatbotDetails) => {
-    setEditingChatbotId(chatbot.id);
-    setIsWorkflowOpen(true);
-    
-    // Set initial config from existing chatbot
-    setConfig({
-      industry: chatbot.industry ?? "",
-      type: chatbot.type ?? "",
-      skills: chatbot.skills ?? [],
-      scope: chatbot.scope ?? { purpose: "", audience: "", tone: "" },
-      dataSource: chatbot.dataSource ?? "",
-      trainingData: chatbot.trainingData ?? [],
-      files: chatbot.files ?? []
-    });
+    try {
+      // Get full chatbot details first
+      const formData = new FormData();
+      formData.append("intent", "get-chatbot");
+      formData.append("chatbotId", chatbot.id);
+      
+      // Set initial config from existing chatbot
+      setConfig({
+        industry: chatbot.industry ?? "",
+        type: chatbot.type ?? "",
+        skills: chatbot.skills ?? [],
+        scope: chatbot.scope ?? { purpose: "", audience: "", tone: "" },
+        dataSource: chatbot.dataSource ?? "",
+        trainingData: chatbot.trainingData ?? [],
+        files: chatbot.files ?? []
+      });
 
-    // Get full chatbot details
-    const formData = new FormData();
-    formData.append("intent", "get-chatbot");
-    formData.append("chatbotId", chatbot.id);
-    
-    await fetcher.submit(formData, { method: "POST" });
+      // Submit the request
+      await fetcher.submit(formData, { method: "POST" });
+
+    } catch (error) {
+      console.error("Error in handleEdit:", error);
+    }
   };
 
-  // Add effect to handle chatbot creation response
-  useEffect(() => {
-    if (fetcher.state === "idle" && (fetcher.data as FetcherData)?.success) {
-      setIsSubmitting(false);
-      
-      if ((fetcher.data as FetcherData)?.chatbot?.id) {
-        const newChatbotId = (fetcher.data as FetcherData).chatbot!.id;
-        setCreatedChatbotId(newChatbotId);
-        setEditingChatbotId(newChatbotId);
-        setCurrentStep((prev) => Math.min(steps.length, prev + 1));
-      }
-    } else if (fetcher.state === "idle" && !(fetcher.data as FetcherData)?.success) {
-      setIsSubmitting(false);
-    }
-  }, [fetcher.state, fetcher.data]);
-
-  // Separate effect for handling chatbot data response
+  // Update the effect to handle opening the workflow
   useEffect(() => {
     if (fetcher.state === "idle" && (fetcher.data as FetcherData)?.chatbot) {
       const chatbot = (fetcher.data as FetcherData).chatbot!;
@@ -414,6 +401,26 @@ export default function DashboardRoute() {
 
       const startStep = chatbot?.lastCompletedStep === 4 ? 5 : chatbot?.lastCompletedStep ?? 1;
       setCurrentStep(startStep);
+
+      // Open workflow after data is loaded
+      setEditingChatbotId(chatbot.id);
+      setIsWorkflowOpen(true);
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  // Add effect to handle chatbot creation response
+  useEffect(() => {
+    if (fetcher.state === "idle" && (fetcher.data as FetcherData)?.success) {
+      setIsSubmitting(false);
+      
+      if ((fetcher.data as FetcherData)?.chatbot?.id) {
+        const newChatbotId = (fetcher.data as FetcherData).chatbot!.id;
+        setCreatedChatbotId(newChatbotId);
+        setEditingChatbotId(newChatbotId);
+        setCurrentStep((prev) => Math.min(steps.length, prev + 1));
+      }
+    } else if (fetcher.state === "idle" && !(fetcher.data as FetcherData)?.success) {
+      setIsSubmitting(false);
     }
   }, [fetcher.state, fetcher.data]);
 
@@ -440,6 +447,7 @@ export default function DashboardRoute() {
           onEdit={handleEdit}
           tenantSlug={params.tenant ?? ''}
           navigate={navigate}
+          isLoading={fetcher.state !== "idle"}
         />
       ) : (
         <ChatbotWorkflow 

@@ -1,6 +1,6 @@
 import { Card, CardContent } from "~/components/ui/card";
 import { format } from "date-fns";
-import { Bot, Activity, Pause, Archive, Settings, Trash2, MoreVertical } from "lucide-react";
+import { Bot, Activity, Pause, Archive, Settings, Trash2, MoreVertical, Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "~/components/ui/dropdown-menu";
@@ -17,11 +17,29 @@ interface ChatbotCardProps {
   onNavigate: (path: string) => void;
   onEdit: (chatbot: ChatbotDetails) => void;
   tenantSlug: string;
+  isEditing?: boolean;
 }
 
-export function ChatbotCard({ chatbot, onStatusChange, onDelete, onNavigate, onEdit, tenantSlug }: ChatbotCardProps) {
+export function ChatbotCard({ 
+  chatbot, 
+  onStatusChange, 
+  onDelete, 
+  onNavigate, 
+  onEdit, 
+  tenantSlug,
+  isEditing = false 
+}: ChatbotCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200">
+    <Card className="hover:shadow-lg transition-shadow duration-200 relative">
+      {isEditing && (
+        <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="text-sm font-medium">Loading configuration...</span>
+          </div>
+        </div>
+      )}
+
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-6">
           {/* Left Section - Main Info */}

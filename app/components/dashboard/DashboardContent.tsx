@@ -2,6 +2,7 @@ import { ChatbotCard } from "./ChatbotCard";
 import { DashboardStats } from "./DashboardStats";
 import type { ChatbotDetails } from "~/types/chatbot";
 import { ChatbotStatus } from "@prisma/client";
+import { useState, useEffect } from "react";
 
 interface DashboardContentProps {
   chatbots: ChatbotDetails[];
@@ -14,6 +15,7 @@ interface DashboardContentProps {
   onEdit: (chatbot: ChatbotDetails) => void;
   tenantSlug: string;
   navigate: (path: string) => void;
+  isLoading?: boolean;
 }
 
 export function DashboardContent({
@@ -23,12 +25,27 @@ export function DashboardContent({
   onDelete,
   onEdit,
   tenantSlug,
-  navigate
+  navigate,
+  isLoading = false
 }: DashboardContentProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
   // Sort chatbots by createdAt in descending order
   const sortedChatbots = [...chatbots].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const handleEdit = async (chatbot: ChatbotDetails) => {
+    setEditingId(chatbot.id);
+    await onEdit(chatbot);
+  };
+
+  // Reset editingId when loading state changes
+  useEffect(() => {
+    if (!isLoading) {
+      setEditingId(null);
+    }
+  }, [isLoading]);
 
   return (
     <div className="p-8">
@@ -47,9 +64,10 @@ export function DashboardContent({
             chatbot={chatbot}
             onStatusChange={onStatusChange}
             onDelete={onDelete}
-            onEdit={onEdit}
+            onEdit={handleEdit}
             onNavigate={navigate}
             tenantSlug={tenantSlug}
+            isEditing={isLoading && editingId === chatbot.id}
           />
         ))}
 
