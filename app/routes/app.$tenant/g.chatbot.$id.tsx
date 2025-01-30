@@ -101,7 +101,7 @@ export default function ChatbotRoute() {
       isCompleted: false,
       action: "Customize",
       icon: <Settings className="h-4 w-4" />,
-      link: `/app/${params.tenant}/settings`
+      link: `/app/${params.tenant}/g/customize/${params.id}`
     },
     {
       id: 4,
