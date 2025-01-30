@@ -33,7 +33,6 @@ export default function FileUpload({
 }: FileUploadProps) {
   const fetcher = useFetcher<UploadResponse>();
   const [isUploading, setIsUploading] = useState(false);
-  const [isTraining, setIsTraining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<{
     name: string;
@@ -46,22 +45,24 @@ export default function FileUpload({
   const errorModal = useRef<any>(null);
 
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.success) {
-      setUploadedFile({
-        name: fetcher.data.data?.fileName || "",
-        size: fetcher.data.data?.fileSize || 0,
-        sourceId: fetcher.data.data?.sourceId,
-        file: fileRef.current || undefined
-      });
-      if (isTraining) {
-        successModal.current?.show("Success!", "File trained successfully");
-        setIsTraining(false);
-        onSuccess(fetcher.data.data);
+    if (fetcher.state === "idle" && fetcher.data) {
+      setIsUploading(false);
+      
+      if (fetcher.data.success) {
+        if (fetcher.data.data) {
+          setUploadedFile({
+            name: fetcher.data.data.fileName,
+            size: fetcher.data.data.fileSize,
+            sourceId: fetcher.data.data.sourceId,
+            file: fileRef.current || undefined
+          });
+          onSuccess(fetcher.data);
+        }
+      } else {
+        setError(fetcher.data.message || "Upload failed");
       }
-    } else if (fetcher.state === "idle" && !fetcher.data?.success) {
-      setError(fetcher.data?.message || "");
     }
-  }, [fetcher.state, fetcher.data, isTraining, onSuccess]);
+  }, [fetcher.state, fetcher.data]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,6 +70,7 @@ export default function FileUpload({
     
     fileRef.current = file;
     setIsUploading(true);
+    setError(null);
     
     const formData = new FormData();
     formData.append("file", file);
@@ -85,7 +87,7 @@ export default function FileUpload({
   const handleTrain = () => {
     if (!uploadedFile?.file) return;
     
-    setIsTraining(true);
+    setIsUploading(true);
     const formData = new FormData();
     formData.append("file", uploadedFile.file);
     formData.append("intent", "train");
@@ -184,10 +186,10 @@ export default function FileUpload({
             </button>
             <button
               onClick={handleTrain}
-              disabled={isTraining}
+              disabled={isUploading}
               className="px-4 py-2 text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isTraining ? (
+              {isUploading ? (
                 <div className="flex items-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

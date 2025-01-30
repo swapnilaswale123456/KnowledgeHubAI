@@ -174,7 +174,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (intent === "update-status") {
     const chatbotId = formData.get("chatbotId") as string;
     const status = formData.get("status") as ChatbotStatus;
-    await ChatbotStatusService.updateStatus(chatbotId, status);
+    await ChatbotStatusService.activateChatbot(chatbotId);
     return json({ success: true });
   }
 
@@ -347,7 +347,14 @@ export default function DashboardRoute() {
   };
 
   const handleStatusChange = async (chatbotId: string, status: ChatbotStatus) => {
-    // Implementation of handleStatusChange
+    const formData = new FormData();
+    formData.append("intent", "update-status");
+    formData.append("chatbotId", chatbotId);
+    formData.append("status", status); // Make sure to pass the actual enum value
+    
+    await fetcher.submit(formData, {
+      method: "POST"
+    });
   };
 
   const handleEdit = async (chatbot: ChatbotDetails) => {
@@ -414,7 +421,7 @@ export default function DashboardRoute() {
     return <Outlet />;
   }
 
-  return (
+    return (
     <div className="flex-1">
       <DashboardHeader 
         onNewChatbot={() => workflowState.setIsWorkflowOpen(true)}
@@ -445,8 +452,8 @@ export default function DashboardRoute() {
           editingChatbotId={editingChatbotId ?? ''}
         />
       )}
-    </div>
-  );
+      </div>
+    );
 }
 
 export function ErrorBoundary() {

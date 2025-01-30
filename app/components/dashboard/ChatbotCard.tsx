@@ -58,7 +58,7 @@ export function ChatbotCard({ chatbot, onStatusChange, onDelete, onNavigate, onE
               View Chatbot
             </Button>
             
-            {chatbot.status === ChatbotStatus.ARCHIVED && (
+            {(chatbot.status === ChatbotStatus.ACTIVE || chatbot.status === ChatbotStatus.ARCHIVED) && (
               <Button
                 className="flex-1"
                 variant="secondary"
@@ -68,6 +68,7 @@ export function ChatbotCard({ chatbot, onStatusChange, onDelete, onNavigate, onE
                 Edit
               </Button>
             )}
+
           </div>
         </div>
       </CardContent>
