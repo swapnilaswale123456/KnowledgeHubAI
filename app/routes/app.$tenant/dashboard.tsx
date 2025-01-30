@@ -246,7 +246,22 @@ export default function DashboardRoute() {
   };
 
   const handleDelete = async (chatbotId: string) => {
-    // Implementation of handleDelete
+    if (!confirm("Are you sure you want to delete this chatbot? This action cannot be undone.")) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("intent", "delete-chatbot");
+    formData.append("chatbotId", chatbotId);
+
+    await fetcher.submit(formData, {
+      method: "POST"
+    });
+
+    // Close workflow if open
+    if (editingChatbotId === chatbotId) {
+      resetWorkflowState();
+    }
   };
 
   const handleUpdateConfig = (field: keyof typeof config, value: any) => {
