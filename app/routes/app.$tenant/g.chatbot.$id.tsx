@@ -83,7 +83,7 @@ export default function ChatbotRoute() {
       isCompleted: false,
       action: "Train AI",
       icon: <Upload className="h-4 w-4" />,
-      link: `/app/${params.tenant}/dashboard/file`
+      link: `/app/${params.tenant}/g/data-sources/overview`
     },
     {
       id: 2,
