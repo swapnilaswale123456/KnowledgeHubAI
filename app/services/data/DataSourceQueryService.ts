@@ -13,6 +13,7 @@ export class DataSourceQueryService {
         sourceId: true,
         sourceDetails: true,
         createdAt: true,
+        chatbotId: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -24,7 +25,8 @@ export class DataSourceQueryService {
       fileName: (f.sourceDetails as any)?.fileName ?? 'Untitled',
       fileType: (f.sourceDetails as any)?.fileType ?? 'application/octet-stream',
       createdAt: new Date(f.createdAt),
-      isTrained: (f.sourceDetails as any)?.isTrained ?? true
+      isTrained: (f.sourceDetails as any)?.isTrained ?? true,
+      chatbotId: f.chatbotId
     }));
   }
 } 

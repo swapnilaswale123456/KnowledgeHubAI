@@ -18,11 +18,16 @@ interface DataUploadProps {
 export function DataUpload({ files = [], onChange, onChangeDataSource, existingFiles, chatbotId }: DataUploadProps) {
   const fetcher = useFetcher();
   const [fileList, setFileList] = useState<FileSource[]>(
-    chatbotId ? existingFiles.filter(f => f.chatbotId === chatbotId) : []
-  );  
+    existingFiles.filter(f => f.chatbotId === chatbotId)
+  );
+
   useEffect(() => {
     onChange(fileList);
   }, [fileList, onChange]);
+
+  useEffect(() => {
+    setFileList(existingFiles.filter(f => f.chatbotId === chatbotId));
+  }, [existingFiles, chatbotId]);
 
   useEffect(() => {
     if (chatbotId) {

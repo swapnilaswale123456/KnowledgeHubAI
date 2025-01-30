@@ -23,6 +23,7 @@ export interface FileSource {
   fileType: string;
   createdAt: Date | string;
   isTrained?: boolean;
+  chatbotId?: string;
 }
 
 interface FileListProps {
