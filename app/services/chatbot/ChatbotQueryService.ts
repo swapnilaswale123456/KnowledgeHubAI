@@ -1,6 +1,11 @@
 import { db } from "~/utils/db.server";
 import type { ChatbotDetails } from "~/utils/services/chatbots/chatbotService.server";
 
+interface ChatbotUpdateData {
+  theme?: any;
+  initialMessage?: string;
+}
+
 export class ChatbotQueryService {
   static async getChatbots(tenantId: string): Promise<ChatbotDetails[]> {
     const chatbots = await db.chatbot.findMany({
@@ -88,7 +93,7 @@ export class ChatbotQueryService {
     };
   }
 
-  static async updateChatbot(id: string, data: Partial<{ theme: any }>) {
+  static async updateChatbot(id: string, data: Partial<ChatbotUpdateData>) {
     return await db.chatbot.update({
       where: { id },
       data
