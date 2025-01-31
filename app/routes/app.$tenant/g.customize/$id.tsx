@@ -1,5 +1,5 @@
-import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { useLoaderData, useParams, Outlet } from "@remix-run/react";
+import { json, LoaderFunctionArgs, MetaFunction, redirect } from "@remix-run/node";
+import { useLoaderData, useParams, Outlet, useRouteError } from "@remix-run/react";
 import SidebarIconsLayout, { IconDto } from "~/components/ui/layouts/SidebarIconsLayout";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
@@ -14,8 +14,8 @@ interface LoaderData {
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-    { title: data?.title || "Customize | KnowledgeHub AI" }
-  ];
+  { title: data?.title || "Customize | KnowledgeHub AI" }
+];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
@@ -23,6 +23,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   if (!chatbotId) {
     throw new Error("Chatbot ID is required");
+  }
+
+  // Redirect to appearance tab if on base route
+  const url = new URL(request.url);
+  if (url.pathname === `/app/${params.tenant}/g/customize/${chatbotId}`) {
+    return redirect(`/app/${params.tenant}/g/customize/${chatbotId}/appearance`);
   }
 
   try {
@@ -43,19 +49,22 @@ const getTabs = (params: { tenant: string; id: string }): IconDto[] => {
       name: "Appearance",
       href: `/app/${params.tenant}/g/customize/${params.id}/appearance`,
       icon: <AppearanceIcon className="h-5 w-5" />,
-      iconSelected: <AppearanceIcon className="h-5 w-5" />
+      iconSelected: <AppearanceIcon className="h-5 w-5" />,
+      exact: true
     },
     {
       name: "Messages",
       href: `/app/${params.tenant}/g/customize/${params.id}/messages`,
       icon: <MessagesIcon className="h-5 w-5" />,
-      iconSelected: <MessagesIcon className="h-5 w-5" />
+      iconSelected: <MessagesIcon className="h-5 w-5" />,
+      exact: true
     },
     {
       name: "Language",
       href: `/app/${params.tenant}/g/customize/${params.id}/language`,
       icon: <LanguageIcon className="h-5 w-5" />,
-      iconSelected: <LanguageIcon className="h-5 w-5" />
+      iconSelected: <LanguageIcon className="h-5 w-5" />,
+      exact: true
     }
   ];
 };
@@ -67,7 +76,10 @@ export default function CustomizeChatbot() {
   return (
     <SidebarIconsLayout 
       label={{ align: "right" }} 
-      items={getTabs(params)}
+      items={getTabs({ 
+        tenant: params.tenant ?? "", 
+        id: params.id ?? "" 
+      })}
     >
       <div className="h-full">
         <Outlet />

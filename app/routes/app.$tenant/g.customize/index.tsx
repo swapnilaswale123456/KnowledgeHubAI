@@ -1,12 +1,8 @@
-import { LoaderFunctionArgs, redirect } from "@remix-run/node";
-import { useEffect } from "react";
+import { LoaderFunctionArgs } from "@remix-run/node";
 import { useNavigate, useParams } from "@remix-run/react";
-export async function loader({ params }: LoaderFunctionArgs) {
- 
-  return null;
-}
+import { useEffect } from "react";
 
-export default function CustomizeRoute() {
+export default function CustomizeIndex() {
   const navigate = useNavigate();
   const params = useParams();
 
@@ -20,4 +16,4 @@ export default function CustomizeRoute() {
   }, [navigate, params.tenant]);
 
   return null;
-}
+} 
