@@ -16,8 +16,12 @@ export interface Message {
 }
 
 export interface ChatSettings {
-  theme: 'light' | 'dark';
-  fontSize: 'small' | 'medium' | 'large';
+  theme?: {
+    headerColor?: string;
+    botMessageColor?: string;
+    userMessageColor?: string;
+  };
+  fontSize?: 'small' | 'medium' | 'large';
   messageAlignment: 'left' | 'right';
   soundEnabled: boolean;
 }

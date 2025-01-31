@@ -1,5 +1,5 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { json, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import { Card } from "~/components/ui/card";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
@@ -12,20 +12,34 @@ import {
   TooltipProvider 
 } from "~/components/ui/tooltip";
 import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HelpCircle, Undo2, Sun, Moon } from "lucide-react";
 import { ChatInterface } from "~/components/chat/ChatInterface";
 import type { Message, ChatSettings } from "~/types/chat";
+import { toast } from "sonner";
+
+interface ThemeSettings {
+  headerColor: string;
+  botMessageColor: string;
+  userMessageColor: string;
+  enabled: {
+    headerColor: boolean;
+    botMessageColor: boolean;
+    userMessageColor: boolean;
+  };
+}
 
 interface LoaderData {
   chatbot: {
     id: string;
-    theme: {
-      headerColor?: string;
-      botMessageColor?: string;
-      userMessageColor?: string;
-    };
+    theme: Partial<ThemeSettings>;
   };
+  theme: ThemeSettings;
+}
+
+interface ActionData {
+  success: boolean;
+  error?: string;
 }
 
 const defaultThemes = {
@@ -43,31 +57,101 @@ const defaultThemes = {
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const chatbot = await ChatbotQueryService.getChatbot(params.id!);
-  return json({ chatbot });
+  return json({ 
+    chatbot,
+    theme: chatbot?.theme || {
+      headerColor: defaultThemes.light.headerColor,
+      botMessageColor: defaultThemes.light.botMessageColor,
+      userMessageColor: defaultThemes.light.userMessageColor,
+      enabled: {
+        headerColor: true,
+        botMessageColor: true,
+        userMessageColor: true
+      }
+    }
+  });
+};
+
+export const action = async ({ request, params }: ActionFunctionArgs) => {
+  const formData = await request.formData();
+  const theme = JSON.parse(formData.get("theme") as string);
+  
+  try {
+    await ChatbotQueryService.updateChatbot(params.id!, {
+      theme: {
+        headerColor: theme.headerColor,
+        botMessageColor: theme.botMessageColor,
+        userMessageColor: theme.userMessageColor,
+        enabled: theme.enabled
+      }
+    });
+    return json({ success: true });
+  } catch (error) {
+    return json({ success: false, error: "Failed to save changes" }, { status: 400 });
+  }
 };
 
 export default function AppearanceTab() {
-  const { chatbot } = useLoaderData<LoaderData>();
+  const { chatbot, theme } = useLoaderData<LoaderData>();
+  const fetcher = useFetcher<ActionData>();
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [colors, setColors] = useState({
-    headerColor: chatbot.theme?.headerColor || defaultThemes.light.headerColor,
-    botMessageColor: chatbot.theme?.botMessageColor || defaultThemes.light.botMessageColor,
-    userMessageColor: chatbot.theme?.userMessageColor || defaultThemes.light.userMessageColor
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>({
+    headerColor: theme.headerColor || defaultThemes.light.headerColor,
+    botMessageColor: theme.botMessageColor || defaultThemes.light.botMessageColor,
+    userMessageColor: theme.userMessageColor || defaultThemes.light.userMessageColor,
+    enabled: theme.enabled || {
+      headerColor: true,
+      botMessageColor: true,
+      userMessageColor: true
+    }
   });
 
-  const handleColorChange = (key: string, value: string) => {
-    setColors(prev => ({ ...prev, [key]: value }));
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data) {
+      if (fetcher.data.success) {      
+        toast("Theme settings saved successfully", {
+          description: "Your changes have been applied",
+        });
+      } else {
+        toast("Failed to save changes", {
+          description: fetcher.data.error || "Please try again"         
+        });
+      }
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  const handleColorChange = (key: keyof Omit<ThemeSettings, 'enabled'>, value: string) => {
+    setThemeSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleToggleEnable = (key: keyof ThemeSettings['enabled']) => {
+    setThemeSettings(prev => ({
+      ...prev,
+      enabled: {
+        ...prev.enabled,
+        [key]: !prev.enabled[key]
+      }
+    }));
   };
 
   const resetColors = () => {
     const theme = isDarkMode ? defaultThemes.dark : defaultThemes.light;
-    setColors(theme);
+    setThemeSettings(prev => ({
+      ...theme,
+      enabled: prev.enabled
+    }));
   };
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
     const theme = !isDarkMode ? defaultThemes.dark : defaultThemes.light;
-    setColors(theme);
+    setThemeSettings(prev => ({
+      ...theme,
+      enabled: prev.enabled
+    }));
   };
 
   // Sample messages for preview
@@ -88,14 +172,45 @@ export default function AppearanceTab() {
     }
   ];
 
-  // Preview settings
-  const previewSettings: ChatSettings = {
-    theme: {
-      headerColor: colors.headerColor,
-      botMessageColor: colors.botMessageColor,
-      userMessageColor: colors.userMessageColor
-    },
-    fontSize: 'medium'
+  // Get the final theme settings for preview
+  const getPreviewSettings = (): ChatSettings => {
+    const defaultTheme = isDarkMode ? defaultThemes.dark : defaultThemes.light;
+    return {
+      theme: {
+        headerColor: themeSettings.enabled.headerColor ? themeSettings.headerColor : defaultTheme.headerColor,
+        botMessageColor: themeSettings.enabled.botMessageColor ? themeSettings.botMessageColor : defaultTheme.botMessageColor,
+        userMessageColor: themeSettings.enabled.userMessageColor ? themeSettings.userMessageColor : defaultTheme.userMessageColor
+      },
+      fontSize: 'medium',
+      messageAlignment: 'left',
+      soundEnabled: false
+    };
+  };
+
+  // Generate settings JSON for saving
+  const getSettingsJson = () => {
+    const settings = {
+      theme: {
+        ...Object.fromEntries(
+          Object.entries(themeSettings)
+            .filter(([key]) => key !== 'enabled')
+            .map(([key, value]) => [
+              key,
+              themeSettings.enabled[key as keyof ThemeSettings['enabled']] ? value : null
+            ])
+        ),
+        enabled: themeSettings.enabled
+      }
+    };
+    return settings;
+  };
+
+  const handleSaveChanges = () => {
+    const settings = getSettingsJson();
+    fetcher.submit(
+      { theme: JSON.stringify(settings.theme) },
+      { method: "POST" }
+    );
   };
 
   return (
@@ -147,21 +262,25 @@ export default function AppearanceTab() {
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="headerColor">Header Color</Label>
-                    <Switch defaultChecked />
+                    <Switch 
+                      checked={themeSettings.enabled.headerColor}
+                      onCheckedChange={() => handleToggleEnable('headerColor')}
+                    />
                   </div>
                   <div className="flex gap-2">
                     <div className="relative">
                       <Input 
                         type="color" 
                         id="headerColor"
-                        value={colors.headerColor}
+                        value={themeSettings.headerColor}
                         onChange={(e) => handleColorChange('headerColor', e.target.value)}
+                        disabled={!themeSettings.enabled.headerColor}
                         className="w-12 h-10 p-1 cursor-pointer border rounded-md focus:ring-2 focus:ring-primary"
                       />
                     </div>
                     <Input 
                       type="text" 
-                      value={colors.headerColor.toUpperCase()}
+                      value={themeSettings.headerColor.toUpperCase()}
                       onChange={(e) => handleColorChange('headerColor', e.target.value)}
                       className="flex-1 font-mono"
                       placeholder="#4F46E5"
@@ -189,19 +308,23 @@ export default function AppearanceTab() {
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="botMessageColor">Bot Message Color</Label>
-                    <Switch defaultChecked />
+                    <Switch 
+                      checked={themeSettings.enabled.botMessageColor}
+                      onCheckedChange={() => handleToggleEnable('botMessageColor')}
+                    />
                   </div>
                   <div className="flex gap-2">
                     <Input 
                       type="color" 
                       id="botMessageColor"
-                      value={colors.botMessageColor}
+                      value={themeSettings.botMessageColor}
                       onChange={(e) => handleColorChange('botMessageColor', e.target.value)}
+                      disabled={!themeSettings.enabled.botMessageColor}
                       className="w-12 h-10 p-1 cursor-pointer border rounded-md focus:ring-2 focus:ring-primary"
                     />
                     <Input 
                       type="text" 
-                      value={colors.botMessageColor.toUpperCase()}
+                      value={themeSettings.botMessageColor.toUpperCase()}
                       onChange={(e) => handleColorChange('botMessageColor', e.target.value)}
                       className="flex-1 font-mono"
                       placeholder="#F3F4F6"
@@ -213,19 +336,23 @@ export default function AppearanceTab() {
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="userMessageColor">User Message Color</Label>
-                    <Switch defaultChecked />
+                    <Switch 
+                      checked={themeSettings.enabled.userMessageColor}
+                      onCheckedChange={() => handleToggleEnable('userMessageColor')}
+                    />
                   </div>
                   <div className="flex gap-2">
                     <Input 
                       type="color" 
                       id="userMessageColor"
-                      value={colors.userMessageColor}
+                      value={themeSettings.userMessageColor}
                       onChange={(e) => handleColorChange('userMessageColor', e.target.value)}
+                      disabled={!themeSettings.enabled.userMessageColor}
                       className="w-12 h-10 p-1 cursor-pointer border rounded-md focus:ring-2 focus:ring-primary"
                     />
                     <Input 
                       type="text" 
-                      value={colors.userMessageColor.toUpperCase()}
+                      value={themeSettings.userMessageColor.toUpperCase()}
                       onChange={(e) => handleColorChange('userMessageColor', e.target.value)}
                       className="flex-1 font-mono"
                       placeholder="#EEF2FF"
@@ -241,8 +368,17 @@ export default function AppearanceTab() {
                     variant="default" 
                     size="sm"
                     className="text-xs"
+                    onClick={handleSaveChanges}
+                    disabled={fetcher.state !== "idle"}
                 >
-                    Save Changes
+                    {fetcher.state !== "idle" ? (
+                        <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Saving...
+                        </>
+                    ) : (
+                        'Save Changes'
+                    )}
                 </Button>
             </div>
 
@@ -255,7 +391,7 @@ export default function AppearanceTab() {
               <ChatInterface 
                 chatbotId={chatbot.id}
                 messages={previewMessages}
-                settings={previewSettings}
+                settings={getPreviewSettings()}
                 isTyping={false}
                 isMaximized={false}
                 onToggleMaximize={() => {}}

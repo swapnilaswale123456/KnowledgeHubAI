@@ -16,17 +16,26 @@ import type { MetaFunction } from "@remix-run/node";
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
   
-  // Load chatbot details
-  const chatbot = await ChatbotService.getChatbots(params.id!);
-  if (!chatbot) {
+  const chatbots = await ChatbotService.getChatbotDetails(params.id!);
+  //const chatbot = Array.isArray(chatbots) ? chatbots[0] : chatbots;
+  
+  if (!chatbots) {
     throw new Response("Chatbot not found", { status: 404 });
   }
+  //const chatbot = chatbots[0];
+ // Parse theme if it's a string
+  const theme = typeof chatbots.theme === 'string' 
+  ? JSON.parse(chatbots.theme) 
+  : chatbots.theme;
 
   return json({ 
-    chatbot,
-    title: "Chatbot | KnowledgeHub AI"
-  });
-};
+      chatbot: {
+        ...chatbots,
+        theme
+      },
+      title: "Chatbot | KnowledgeHub AI"
+    });
+  };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
   { title: data?.title || "Chatbot | KnowledgeHub AI" }
@@ -43,7 +52,11 @@ interface QuickStartStep {
 }
 
 const DEFAULT_SETTINGS: ChatSettings = {
-  theme: 'light',
+  theme: {
+    headerColor: "#4F46E5",
+    botMessageColor: "#F3F4F6",
+    userMessageColor: "#EEF2FF"
+  },
   fontSize: 'medium',
   messageAlignment: 'left',
   soundEnabled: true
@@ -66,7 +79,10 @@ export default function ChatbotRoute() {
     }
   ]);
   const [isTyping, setIsTyping] = useState(false);
-  const [settings] = useState<ChatSettings>(DEFAULT_SETTINGS);
+  const [settings] = useState<ChatSettings>({
+    ...DEFAULT_SETTINGS,
+    theme: chatbot.theme || DEFAULT_SETTINGS.theme
+  });
   const [chatContext, setChatContext] = useState<ChatContext>({
     conversationId: crypto.randomUUID(),
     previousMessages: [],

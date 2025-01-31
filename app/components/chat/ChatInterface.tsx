@@ -89,16 +89,39 @@ export function ChatInterface({
     // Implement voice record logic
   };
 
+  // Get theme styles
+  const getThemeStyles = () => {
+    const { theme } = settings;
+    return {
+      header: {
+        backgroundColor: theme?.headerColor || "#4F46E5"
+      },
+      botMessage: {
+        backgroundColor: theme?.botMessageColor || "#F3F4F6"
+      },
+      userMessage: {
+        backgroundColor: theme?.userMessageColor || "#EEF2FF",
+        color: theme?.userMessageColor ? "#FFFFFF" : "#000000" // Adjust text color based on background
+      }
+    };
+  };
+
+  const themeStyles = getThemeStyles();
+
   return (
     <div
       className={cn(
         "flex-1 flex flex-col",
-        "w-full h-[300px] sm:h-[400px] md:h-[500px]", // Adjust height for different breakpoints
+        "w-full h-[300px] sm:h-[400px] md:h-[500px]",
         "bg-white rounded-2xl shadow-xl overflow-hidden",
         !isMaximized && "md:max-w-[800px] h-[450px]"
       )}
     >
-      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+      {/* Header */}
+      <div 
+        className="flex items-center justify-between px-3 py-2 text-white"
+        style={themeStyles.header}
+      >
         <div className="flex items-center space-x-2">
           <div className="p-1.5 bg-white/10 rounded-full">
             <Bot className="w-4 h-4" />
@@ -118,21 +141,25 @@ export function ChatInterface({
         </button>
       </div>
 
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2 scroll-smooth">
         {messages.map((msg) => (
-          <MessageItem 
+          <div
             key={msg.id}
-            message={msg}
-            settings={{
-              ...settings,
-              fontSize: 'small'
-            }}
-          />
+            className={cn(
+              "rounded-lg p-3 max-w-[80%]",
+              msg.sender === 'user' && "ml-auto"
+            )}
+            style={msg.sender === 'user' ? themeStyles.userMessage : themeStyles.botMessage}
+          >
+            {msg.content}
+          </div>
         ))}
         {isTyping && <TypingIndicator />}
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input */}
       <div className="border-t p-2 bg-gray-50">
         <div className="flex items-center space-x-2">
           <input
@@ -150,9 +177,10 @@ export function ChatInterface({
               "p-2 rounded-full",
               "transition-colors duration-200",
               message.trim()
-                ? "bg-blue-500 text-white hover:bg-blue-600"
-                : "bg-gray-100 text-gray-400"
+                ? "text-white hover:opacity-90"
+                : "bg-gray-100 text-gray-400",
             )}
+            style={message.trim() ? themeStyles.header : undefined}
           >
             <Send className="w-4 h-4" />
           </button>

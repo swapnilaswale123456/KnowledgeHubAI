@@ -87,4 +87,11 @@ export class ChatbotQueryService {
       activeCount
     };
   }
+
+  static async updateChatbot(id: string, data: Partial<{ theme: any }>) {
+    return await db.chatbot.update({
+      where: { id },
+      data
+    });
+  }
 } 
