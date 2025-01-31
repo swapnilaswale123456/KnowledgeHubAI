@@ -17,6 +17,7 @@ import { HelpCircle, Undo2, Sun, Moon } from "lucide-react";
 import { ChatInterface } from "~/components/chat/ChatInterface";
 import type { Message, ChatSettings } from "~/types/chat";
 import { toast } from "sonner";
+import { THEME_COLORS } from "~/utils/theme/constants";
 
 interface ThemeSettings {
   headerColor: string;
@@ -42,34 +43,32 @@ interface ActionData {
   error?: string;
 }
 
-const defaultThemes = {
-  light: {
-    headerColor: "#4F46E5",
-    botMessageColor: "#F3F4F6",
-    userMessageColor: "#EEF2FF"
-  },
-  dark: {
-    headerColor: "#1F2937",
-    botMessageColor: "#374151",
-    userMessageColor: "#4B5563"
+// Default theme settings using THEME_COLORS
+const DEFAULT_THEME_SETTINGS: ThemeSettings = {
+  headerColor: THEME_COLORS.light.header,
+  botMessageColor: THEME_COLORS.light.messages.bot.text,
+  userMessageColor: THEME_COLORS.light.messages.user.text,
+  enabled: {
+    headerColor: true,
+    botMessageColor: true,
+    userMessageColor: true
   }
 };
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const chatbot = await ChatbotQueryService.getChatbot(params.id!);
-  return json({ 
-    chatbot,
-    theme: chatbot?.theme || {
-      headerColor: defaultThemes.light.headerColor,
-      botMessageColor: defaultThemes.light.botMessageColor,
-      userMessageColor: defaultThemes.light.userMessageColor,
-      enabled: {
-        headerColor: true,
-        botMessageColor: true,
-        userMessageColor: true
-      }
-    }
-  });
+  
+  // Parse theme from chatbot or use default
+  const savedTheme = typeof chatbot?.theme === 'string' 
+    ? JSON.parse(chatbot.theme) 
+    : chatbot?.theme;
+
+  const theme = {
+    ...DEFAULT_THEME_SETTINGS,
+    ...savedTheme
+  };
+
+  return json({ chatbot, theme });
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -95,15 +94,11 @@ export default function AppearanceTab() {
   const { chatbot, theme } = useLoaderData<LoaderData>();
   const fetcher = useFetcher<ActionData>();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // Initialize with saved theme or defaults
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>({
-    headerColor: theme.headerColor || defaultThemes.light.headerColor,
-    botMessageColor: theme.botMessageColor || defaultThemes.light.botMessageColor,
-    userMessageColor: theme.userMessageColor || defaultThemes.light.userMessageColor,
-    enabled: theme.enabled || {
-      headerColor: true,
-      botMessageColor: true,
-      userMessageColor: true
-    }
+    ...DEFAULT_THEME_SETTINGS,
+    ...theme
   });
 
   useEffect(() => {
@@ -138,18 +133,22 @@ export default function AppearanceTab() {
   };
 
   const resetColors = () => {
-    const theme = isDarkMode ? defaultThemes.dark : defaultThemes.light;
-    setThemeSettings(prev => ({
-      ...theme,
-      enabled: prev.enabled
-    }));
+    const currentTheme = isDarkMode ? THEME_COLORS.dark : THEME_COLORS.light;
+    setThemeSettings({
+      headerColor: currentTheme.header,
+      botMessageColor: currentTheme.messages.bot.text,
+      userMessageColor: currentTheme.messages.user.text,
+      enabled: DEFAULT_THEME_SETTINGS.enabled
+    });
   };
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
-    const theme = !isDarkMode ? defaultThemes.dark : defaultThemes.light;
+    const currentTheme = !isDarkMode ? THEME_COLORS.dark : THEME_COLORS.light;
     setThemeSettings(prev => ({
-      ...theme,
+      headerColor: currentTheme.header,
+      botMessageColor: currentTheme.messages.bot.text,
+      userMessageColor: currentTheme.messages.user.text,
       enabled: prev.enabled
     }));
   };
@@ -174,12 +173,12 @@ export default function AppearanceTab() {
 
   // Get the final theme settings for preview
   const getPreviewSettings = (): ChatSettings => {
-    const defaultTheme = isDarkMode ? defaultThemes.dark : defaultThemes.light;
+    const currentTheme = isDarkMode ? THEME_COLORS.dark : THEME_COLORS.light;
     return {
       theme: {
-        headerColor: themeSettings.enabled.headerColor ? themeSettings.headerColor : defaultTheme.headerColor,
-        botMessageColor: themeSettings.enabled.botMessageColor ? themeSettings.botMessageColor : defaultTheme.botMessageColor,
-        userMessageColor: themeSettings.enabled.userMessageColor ? themeSettings.userMessageColor : defaultTheme.userMessageColor
+        headerColor: themeSettings.enabled.headerColor ? themeSettings.headerColor : currentTheme.header,
+        botMessageColor: themeSettings.enabled.botMessageColor ? themeSettings.botMessageColor : currentTheme.messages.bot.text,
+        userMessageColor: themeSettings.enabled.userMessageColor ? themeSettings.userMessageColor : currentTheme.messages.user.text
       },
       fontSize: 'medium',
       messageAlignment: 'left',
@@ -327,7 +326,7 @@ export default function AppearanceTab() {
                       value={themeSettings.botMessageColor.toUpperCase()}
                       onChange={(e) => handleColorChange('botMessageColor', e.target.value)}
                       className="flex-1 font-mono"
-                      placeholder="#F3F4F6"
+                      placeholder="#000000"
                     />
                   </div>
                 </div>
@@ -355,7 +354,7 @@ export default function AppearanceTab() {
                       value={themeSettings.userMessageColor.toUpperCase()}
                       onChange={(e) => handleColorChange('userMessageColor', e.target.value)}
                       className="flex-1 font-mono"
-                      placeholder="#EEF2FF"
+                      placeholder="#000000"
                     />
                   </div>
                 </div>

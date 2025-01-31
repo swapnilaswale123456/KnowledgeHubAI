@@ -8,6 +8,7 @@ import { MessageItem } from "./MessageItem";
 import { TypingIndicator } from "./TypingIndicator";
 import { ChatInput } from "./ChatInput";
 import { useWebSocket } from "~/hooks/useWebSocket";
+import { THEME_COLORS } from "~/utils/theme/constants";
 
 interface ChatInterfaceProps {
   chatbotId: string;
@@ -18,6 +19,13 @@ interface ChatInterfaceProps {
   onToggleMaximize: () => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }
+
+// Add default theme settings
+const DEFAULT_THEME = {
+  headerColor: THEME_COLORS.light.header,
+  botMessageColor: THEME_COLORS.light.messages.bot.text,
+  userMessageColor: THEME_COLORS.light.messages.user.text
+};
 
 export function ChatInterface({ 
   chatbotId,
@@ -89,19 +97,20 @@ export function ChatInterface({
     // Implement voice record logic
   };
 
-  // Get theme styles
+  // Get theme styles with defaults
   const getThemeStyles = () => {
-    const { theme } = settings;
+    const { theme = DEFAULT_THEME } = settings;
     return {
       header: {
-        backgroundColor: theme?.headerColor || "#4F46E5"
+        backgroundColor: theme.headerColor || THEME_COLORS.light.header
       },
       botMessage: {
-        backgroundColor: theme?.botMessageColor || "#F3F4F6"
+        backgroundColor: THEME_COLORS.light.messages.bot.background,
+        color: theme.botMessageColor || THEME_COLORS.light.messages.bot.text
       },
       userMessage: {
-        backgroundColor: theme?.userMessageColor || "#EEF2FF",
-        color: theme?.userMessageColor ? "#FFFFFF" : "#000000" // Adjust text color based on background
+        backgroundColor: THEME_COLORS.light.messages.user.background,
+        color: theme.userMessageColor || THEME_COLORS.light.messages.user.text
       }
     };
   };

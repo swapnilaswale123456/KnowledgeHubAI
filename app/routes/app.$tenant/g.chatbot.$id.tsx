@@ -12,6 +12,7 @@ import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server"
 import { useLoaderData } from "@remix-run/react";
 import { useChatbot } from "~/context/ChatbotContext";
 import type { MetaFunction } from "@remix-run/node";
+import { THEME_COLORS } from "~/utils/theme/constants";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
@@ -53,9 +54,9 @@ interface QuickStartStep {
 
 const DEFAULT_SETTINGS: ChatSettings = {
   theme: {
-    headerColor: "#4F46E5",
-    botMessageColor: "#F3F4F6",
-    userMessageColor: "#EEF2FF"
+    headerColor: THEME_COLORS.light.header,
+    botMessageColor: THEME_COLORS.light.messages.bot.text,
+    userMessageColor: THEME_COLORS.light.messages.user.text
   },
   fontSize: 'medium',
   messageAlignment: 'left',
@@ -81,7 +82,11 @@ export default function ChatbotRoute() {
   const [isTyping, setIsTyping] = useState(false);
   const [settings] = useState<ChatSettings>({
     ...DEFAULT_SETTINGS,
-    theme: chatbot.theme || DEFAULT_SETTINGS.theme
+    theme: chatbot.theme ? {
+      headerColor: chatbot.theme.headerColor || THEME_COLORS.light.header,
+      botMessageColor: chatbot.theme.botMessageColor || THEME_COLORS.light.messages.bot.text,
+      userMessageColor: chatbot.theme.userMessageColor || THEME_COLORS.light.messages.user.text
+    } : DEFAULT_SETTINGS.theme
   });
   const [chatContext, setChatContext] = useState<ChatContext>({
     conversationId: crypto.randomUUID(),
