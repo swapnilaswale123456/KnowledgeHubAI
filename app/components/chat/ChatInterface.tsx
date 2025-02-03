@@ -57,7 +57,8 @@ export function ChatInterface({
     const success = sendMessage({
       type: 'message',
       content: message.trim(),
-      chatbot_id: chatbotId
+      chatbot_id: chatbotId,
+      user_id: "1"      
     });
 
     if (!success) {

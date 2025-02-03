@@ -5,9 +5,9 @@ type ConnectionStateHandler = (connected: boolean) => void;
 
 interface WebSocketMessage {
   type: string;
-  content: string;
+  content: string | null;
   chatbot_id?: string;
-  [key: string]: any;
+  user_id?: string;
 }
 
 export class WebSocketService {
@@ -166,25 +166,15 @@ export class WebSocketService {
   }
 
   sendMessage(message: WebSocketMessage) {
-    if (this.ws?.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket is not connected');
-      return false;
-    }
-
-    try {
+    if (this.ws?.readyState === WebSocket.OPEN) {
       const payload = {
         ...message,
-        chatbot_id: message.chatbot_id || this.chatbotId,
         timestamp: new Date().toISOString()
       };
-
-      console.log('Sending message:', payload);
       this.ws.send(JSON.stringify(payload));
       return true;
-    } catch (error) {
-      console.error('Error sending message:', error);
-      return false;
     }
+    return false;
   }
 
   addMessageHandler(handler: MessageHandler) {

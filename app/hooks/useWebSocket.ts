@@ -63,7 +63,7 @@ export function useWebSocket(chatbotId: string, setMessages: React.Dispatch<Reac
     };
   }, [chatbotId, handleMessage]);
 
-  const sendMessage = useCallback((message: string | { type: string; content: string; chatbot_id?: string }) => {
+  const sendMessage = useCallback((message: string | { type: string; content: string; chatbot_id?: string; user_id?: string }) => {
     if (!wsRef.current || !isConnected) {
       console.warn('Cannot send message: WebSocket not connected');
       return false;
@@ -75,7 +75,8 @@ export function useWebSocket(chatbotId: string, setMessages: React.Dispatch<Reac
         ? {
             type: 'message',
             content: message.trim(),
-            chatbot_id: chatbotId
+            chatbot_id: chatbotId,
+            user_id: "1"
           }
         : message;
 
