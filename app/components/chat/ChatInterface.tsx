@@ -82,23 +82,15 @@ export function ChatInterface({
             // Handle history message
             const data = parsedMsg.data;
             
-            if (data?.conversations) {
-              const appConversations = data.conversations
-                .filter((conv: any) => conv && conv.session_id)
-                .map((conv: any) => ChatHistoryService.convertToAppConversation(conv))
-                .filter(Boolean);
-              
-              if (appConversations.length > 0) {
-                setConversations(appConversations);
-                setActiveConversation(appConversations[0].sessionId);
-                setLocalMessages(appConversations[0].messages);
-                setParentMessages(appConversations[0].messages);
-              }
-            }
+            
           } else {
             // Handle normal message
-            const data = parsedMsg.data;
-            const messageContent = data?.content || data?.answer || data?.response || '';
+            const messageContent = parsedMsg.data?.content || 
+                                 parsedMsg.data?.answer || 
+                                 parsedMsg.data?.response || 
+                                 parsedMsg.content || 
+                                 parsedMsg.answer || 
+                                 parsedMsg.response || '';
             
             if (messageContent) {
               const newMessage: Message = {
@@ -106,11 +98,29 @@ export function ChatInterface({
                 content: messageContent,
                 sender: 'bot',
                 timestamp: new Date(),
-                status: 'sent'
+                status: 'sent',
+                isFormatted: messageContent.includes('<') // Handle formatted messages
               };
 
+              // Update local messages
               setLocalMessages(prev => [...prev, newMessage]);
               setParentMessages(prev => [...prev, newMessage]);
+
+              // Update active conversation
+              if (activeConversation) {
+                setConversations(prev => prev.map(conv => {
+                  if (conv.sessionId === activeConversation) {
+                    const updatedMessages = [...conv.messages, newMessage];
+                    return {
+                      ...conv,
+                      messages: updatedMessages,
+                      lastMessage: newMessage.content,
+                      timestamp: new Date()
+                    };
+                  }
+                  return conv;
+                }));
+              }
             }
           }
         } catch (error) {
@@ -174,7 +184,32 @@ export function ChatInterface({
       status: 'sending'
     };
 
-    // Update UI immediately
+    // Immediately update conversations and display
+    if (activeConversation) {
+      setConversations(prev => prev.map(conv => {
+        if (conv.sessionId === activeConversation) {
+          return {
+            ...conv,
+            messages: [...conv.messages, userMessage],
+            lastMessage: userMessage.content,
+            timestamp: new Date()
+          };
+        }
+        return conv;
+      }));
+    } else {
+      // Create new conversation if none active
+      const newConversation: Conversation = {
+        sessionId: crypto.randomUUID(),
+        messages: [userMessage],
+        lastMessage: userMessage.content,
+        timestamp: new Date()
+      };
+      setConversations(prev => [newConversation, ...prev]);
+      setActiveConversation(newConversation.sessionId);
+    }
+
+    // Update message displays
     setLocalMessages(prev => [...prev, userMessage]);
     setParentMessages(prev => [...prev, userMessage]);
 
