@@ -129,14 +129,14 @@ export function ChatInterface({
         const response = await chatHistoryService.getHistory("user", 5);
         console.log('API Response:', response);
         
-        if (!response?.conversations) {
+        if (!response?.data?.conversations) {
           console.error('Invalid response format:', response);
           setConversations(MOCK_CONVERSATIONS);
           setActiveConversation(MOCK_CONVERSATIONS[0].sessionId);
           return;
         }
 
-        const appConversations = response.conversations
+        const appConversations = response.data.conversations
           .filter(conv => conv && conv.session_id)
           .map(conv => {
             try {

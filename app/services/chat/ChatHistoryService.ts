@@ -21,8 +21,11 @@ interface Conversation {
 }
 
 interface ChatHistoryResponse {
-  conversations: Conversation[];
-  total_messages: number;
+  data: {
+    conversations: Conversation[];
+    total_messages: number;
+  };
+  status: string;
 }
 
 export class ChatHistoryService {
