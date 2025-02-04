@@ -61,100 +61,20 @@ export function ChatInterface({
   onToggleMaximize,
   setMessages: setParentMessages
 }: ChatInterfaceProps) {
-  const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
+  // Core states
+  const [message, setMessage] = useState("");
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
-  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocketService | null>(null);
 
-  // Initialize WebSocket once
+  // WebSocket setup
   useEffect(() => {
     if (!wsRef.current) {
       wsRef.current = new WebSocketService(chatbotId);
-      wsRef.current.addMessageHandler((msg: any) => {
-        console.log('WebSocket message received:', msg);
-        try {
-          // Clean the message content if needed
-          const content = msg.content.replace(/^```json\s*|\s*```$/g, '');
-          const parsedMsg = JSON.parse(content);
-          
-          if (parsedMsg.type === 'history') {
-            // Handle history message
-            const data = parsedMsg.data;
-            
-            
-          } else {
-            // Handle normal message
-            const messageContent = parsedMsg.data?.content || 
-                                 parsedMsg.data?.answer || 
-                                 parsedMsg.data?.response || 
-                                 parsedMsg.content || 
-                                 parsedMsg.answer || 
-                                 parsedMsg.response || '';
-            
-            if (messageContent) {
-              const newMessage: Message = {
-                id: crypto.randomUUID(),
-                content: messageContent,
-                sender: 'bot',
-                timestamp: new Date(),
-                status: 'sent',
-                isFormatted: messageContent.includes('<') // Handle formatted messages
-              };
-
-              // Update local messages
-              setLocalMessages(prev => [...prev, newMessage]);
-              setParentMessages(prev => [...prev, newMessage]);
-
-              // Update active conversation
-              if (activeConversation) {
-                setConversations(prev => prev.map(conv => {
-                  if (conv.sessionId === activeConversation) {
-                    const updatedMessages = [...conv.messages, newMessage];
-                    return {
-                      ...conv,
-                      messages: updatedMessages,
-                      lastMessage: newMessage.content,
-                      timestamp: new Date()
-                    };
-                  }
-                  return conv;
-                }));
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error processing WebSocket message:', error, 'Raw message:', msg);
-        }
-      });
+      wsRef.current.addMessageHandler(handleWebSocketMessage);
       wsRef.current.connect();
     }
-
-    // Load chat history
-    const loadChatHistory = async () => {
-      try {
-        const chatHistoryService = new ChatHistoryService();
-        const response = await chatHistoryService.getHistory("user", 5);
-        
-        if (response?.data?.conversations) {
-          const appConversations = response.data.conversations
-            .filter(conv => conv && conv.session_id)
-            .map(conv => ChatHistoryService.convertToAppConversation(conv))
-            .filter(Boolean);
-
-          if (appConversations.length > 0) {
-            setConversations(appConversations);
-            setActiveConversation(appConversations[0].sessionId);
-            setLocalMessages(appConversations[0].messages);
-            setParentMessages(appConversations[0].messages);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch conversations:', error);
-      }
-    };
-
-    loadChatHistory();
 
     return () => {
       if (wsRef.current) {
@@ -162,15 +82,74 @@ export function ChatInterface({
         wsRef.current = null;
       }
     };
-  }, [chatbotId, activeConversation, setParentMessages]);
+  }, [chatbotId]);
 
-  // Display messages
-  const displayMessages = activeConversation 
-    ? conversations.find(c => c.sessionId === activeConversation)?.messages || []
-    : localMessages;
+  // Handle WebSocket messages
+  const handleWebSocketMessage = (msg: any) => {
+    try {
+      const content = msg.content.replace(/^```json\s*|\s*```$/g, '');
+      const parsedMsg = JSON.parse(content);
+      
+      if (parsedMsg.type === 'session_created') {
+        handleNewSession(parsedMsg.session_id);
+      } else {
+        handleBotResponse(parsedMsg);
+      }
+    } catch (error) {
+      console.error('WebSocket message error:', error);
+    }
+  };
 
-  const [message, setMessage] = useState("");
-  const prevMessagesLengthRef = useRef(displayMessages.length);
+  // Handle new session creation
+  const handleNewSession = (sessionId: string) => {
+    const newConversation: Conversation = {
+      sessionId,
+      lastMessage: "New conversation",
+      timestamp: new Date(),
+      messages: []
+    };
+    setConversations(prev => [newConversation, ...prev]);
+    setActiveConversation(sessionId);
+    setParentMessages([]);
+  };
+
+  // Handle bot responses
+  const handleBotResponse = (parsedMsg: any) => {
+    if (!activeConversation) return;
+
+    const messageContent = parsedMsg.data?.content || 
+                         parsedMsg.data?.answer || 
+                         parsedMsg.data?.response || '';
+
+    if (messageContent) {
+      const botMessage: Message = {
+        id: crypto.randomUUID(),
+        content: messageContent,
+        sender: 'bot',
+        timestamp: new Date(),
+        status: 'sent'
+      };
+
+      updateConversationWithMessage(botMessage);
+    }
+  };
+
+  // Update conversation with new message
+  const updateConversationWithMessage = (newMessage: Message) => {
+    if (!activeConversation) return;
+
+    setConversations(prev => prev.map(conv => 
+      conv.sessionId === activeConversation 
+        ? {
+            ...conv,
+            messages: [...conv.messages, newMessage],
+            lastMessage: newMessage.content,
+            timestamp: new Date()
+          }
+        : conv
+    ));
+    setParentMessages(prev => [...prev, newMessage]);
+  };
 
   // Handle sending messages
   const handleSendMessage = () => {
@@ -184,79 +163,35 @@ export function ChatInterface({
       status: 'sending'
     };
 
-    // Immediately update conversations and display
-    if (activeConversation) {
-      setConversations(prev => prev.map(conv => {
-        if (conv.sessionId === activeConversation) {
-          return {
-            ...conv,
-            messages: [...conv.messages, userMessage],
-            lastMessage: userMessage.content,
-            timestamp: new Date()
-          };
-        }
-        return conv;
-      }));
+    if (!activeConversation) {
+      wsRef.current.sendMessage({ type: 'new_session', content: '' });
     } else {
-      // Create new conversation if none active
-      const newConversation: Conversation = {
-        sessionId: crypto.randomUUID(),
-        messages: [userMessage],
-        lastMessage: userMessage.content,
-        timestamp: new Date()
-      };
-      setConversations(prev => [newConversation, ...prev]);
-      setActiveConversation(newConversation.sessionId);
+      wsRef.current.sendMessage({
+        type: 'message',
+        content: message.trim(),
+        chatbot_id: chatbotId,
+        user_id: "1",
+        session_id: activeConversation
+      });
+      updateConversationWithMessage(userMessage);
     }
 
-    // Update message displays
-    setLocalMessages(prev => [...prev, userMessage]);
-    setParentMessages(prev => [...prev, userMessage]);
-
-    // Send via WebSocket
-    const success = wsRef.current.sendMessage({
-      type: 'message',
-      content: message.trim(),
-      chatbot_id: chatbotId,
-      user_id: "1"
-    });
-
-    // Update message status
-    const updateMessage = (prev: Message[]) => 
-      prev.map(m => m.id === userMessage.id ? 
-        { ...m, status: success ? 'sent' : 'error' } as Message : m
-      );
-
-    setLocalMessages(prev => updateMessage(prev));
-    setParentMessages(prev => updateMessage(prev));
     setMessage('');
   };
 
-  useEffect(() => {
-    // Only scroll if new messages are added
-    if (displayMessages.length > prevMessagesLengthRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-    prevMessagesLengthRef.current = displayMessages.length;
-  }, [displayMessages]);
-
-  const handleFileUpload = async (file: File) => {
-    // Implement file upload logic
-  };
-
-  const handleVoiceRecord = async () => {
-    // Implement voice record logic
-  };
+  // Start new conversation
   const startNewConversation = () => {
-    const newConversation: Conversation = {
-      sessionId: crypto.randomUUID(),
-      lastMessage: "",
-      timestamp: new Date(),
-      messages: []
-    };
-    setConversations(prev => [newConversation, ...prev]);
-    setActiveConversation(newConversation.sessionId);
+    if (!wsRef.current) return;
+    wsRef.current.sendMessage({ type: 'new_session', content: '' });
+    setActiveConversation(null);
+    setParentMessages([]);
   };
+
+  // Get current conversation messages
+  const currentMessages = activeConversation 
+    ? conversations.find(c => c.sessionId === activeConversation)?.messages || []
+    : [];
+
   // Get theme styles with defaults
   const getThemeStyles = () => {
     const { theme = DEFAULT_THEME } = settings;
@@ -276,6 +211,41 @@ export function ChatInterface({
   };
 
   const themeStyles = getThemeStyles();
+
+  // Add this after WebSocket setup useEffect
+  useEffect(() => {
+    // Load chat history
+    const loadChatHistory = async () => {
+      try {
+        const chatHistoryService = new ChatHistoryService();
+        const response = await chatHistoryService.getHistory("user", 5);
+        
+        if (response?.data?.conversations) {
+          const appConversations = response.data.conversations
+            .filter((conv: any) => conv && conv.session_id)
+            .map((conv: any) => ChatHistoryService.convertToAppConversation(conv))
+            .filter(Boolean);
+
+          if (appConversations.length > 0) {
+            setConversations(appConversations);
+            setActiveConversation(appConversations[0].sessionId);
+            setParentMessages(appConversations[0].messages);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch conversations:', error);
+      }
+    };
+
+    loadChatHistory();
+  }, []); // Run once on component mount
+
+  // Add scroll effect for new messages
+  useEffect(() => {
+    if (currentMessages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentMessages]);
 
   return (
     <div className={cn(
@@ -327,7 +297,6 @@ export function ChatInterface({
                 key={conv.sessionId}
                 onClick={() => {
                   setActiveConversation(conv.sessionId);
-                  setLocalMessages(conv.messages);
                   setParentMessages(conv.messages);
                 }}
                 className={cn(
@@ -354,7 +323,7 @@ export function ChatInterface({
         {/* Chat Area */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
-            {displayMessages.map((msg) => (
+            {currentMessages.map((msg) => (
               <MessageItem 
                 key={msg.id}
                 message={msg}

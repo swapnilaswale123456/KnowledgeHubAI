@@ -8,6 +8,7 @@ interface WebSocketMessage {
   content: string | null;
   chatbot_id?: string;
   user_id?: string;
+  session_id?: string;
 }
 
 export class WebSocketService {
