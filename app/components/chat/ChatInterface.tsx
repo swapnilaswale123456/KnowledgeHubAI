@@ -68,7 +68,7 @@ export function ChatInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocketService | null>(null);
 
-  // WebSocket setup
+  // WebSocket setup with session management
   useEffect(() => {
     if (!wsRef.current) {
       wsRef.current = new WebSocketService(chatbotId);
@@ -102,6 +102,13 @@ export function ChatInterface({
 
   // Handle new session creation
   const handleNewSession = (sessionId: string) => {
+    console.log('New session created:', sessionId);
+    
+    // Update WebSocket connection with new session
+    if (wsRef.current) {
+      wsRef.current.updateSessionId(sessionId);
+    }
+
     const newConversation: Conversation = {
       sessionId,
       lastMessage: "New conversation",
@@ -163,19 +170,16 @@ export function ChatInterface({
       status: 'sending'
     };
 
-    if (!activeConversation) {
-      wsRef.current.sendMessage({ type: 'new_session', content: '' });
-    } else {
-      wsRef.current.sendMessage({
-        type: 'message',
-        content: message.trim(),
-        chatbot_id: chatbotId,
-        user_id: "1",
-        session_id: activeConversation
-      });
-      updateConversationWithMessage(userMessage);
-    }
+    // Send message with current session
+    wsRef.current.sendMessage({
+      type: 'message',
+      content: message.trim(),
+      chatbot_id: chatbotId,
+      user_id: "user",
+      session_id: activeConversation || undefined
+    });
 
+    updateConversationWithMessage(userMessage);
     setMessage('');
   };
 

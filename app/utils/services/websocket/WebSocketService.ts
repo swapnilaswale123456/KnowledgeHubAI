@@ -20,13 +20,17 @@ export class WebSocketService {
   private messageHandlers: Set<MessageHandler> = new Set();
   private connectionStateHandlers: Set<ConnectionStateHandler> = new Set();
   private intentionalClose = false;
+  private userId: string = "user"; // Default user ID
 
-  constructor(private chatbotId: string) {}
+  constructor(
+    private chatbotId: string, 
+    private sessionId?: string
+  ) {}
 
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {
-        console.log('WebSocket already connected');
-        return;
+      console.log('WebSocket already connected');
+      return;
     }
 
     if (this.ws?.readyState === WebSocket.CONNECTING) {
@@ -37,9 +41,16 @@ export class WebSocketService {
     this.intentionalClose = false;
     
     try {
-      const wsUrl = getWebSocketUrl(this.chatbotId);
-      this.ws = new WebSocket(wsUrl);
+      // Construct WebSocket URL with query parameters
+      const baseUrl = getWebSocketUrl(this.chatbotId);
+      const params = new URLSearchParams({
+        user_id: this.userId,
+        ...(this.sessionId && { session_id: this.sessionId })
+      });
+      const wsUrl = `${baseUrl}?${params.toString()}`;
+      
       console.log('Connecting to WebSocket:', wsUrl);
+      this.ws = new WebSocket(wsUrl);
 
       // Set connection timeout
       this.connectionTimeout = setTimeout(() => {
@@ -211,5 +222,14 @@ export class WebSocketService {
 
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  // Method to update session ID
+  updateSessionId(sessionId: string) {
+    this.sessionId = sessionId;
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.disconnect();
+      this.connect(); // Reconnect with new session ID
+    }
   }
 } 
