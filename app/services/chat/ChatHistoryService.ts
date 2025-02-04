@@ -135,8 +135,11 @@ export class ChatHistoryService {
     return {
       sessionId: apiConversation.session_id,
       messages,
-      lastMessage: messages[messages.length - 1]?.content || '',
+      lastMessage: messages.length > 0 
+        ? messages[messages.length - 1].content.replace(/<\/?[^>]+(>|$)/g, "") 
+        : '',
       timestamp: new Date(messages[messages.length - 1]?.timestamp || new Date())
     };
+    
   }
 } 

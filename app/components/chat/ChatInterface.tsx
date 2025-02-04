@@ -113,40 +113,15 @@ export function ChatInterface({
   const handleWebSocketMessage = (msg: any) => {
     try {
       console.log('WebSocket message received:', msg);
-      if (!msg || !msg.content) {
-        console.warn('Received empty message');
-        return;
-      }
-
-      let content;
-
-        if (typeof msg.content === 'string') {
-            try {
-                // Remove Markdown-style JSON formatting markers
-                const cleanedContent = msg.content.replace(/^```json\s*|\s*```$/g, '');
-                
-                // Attempt to parse JSON
-                content = JSON.parse(cleanedContent);
-            } catch (error) {
-                console.error("Invalid JSON string:", error);
-                content = msg.content; // Fallback to the original string
-            }
-        } else if (typeof msg.content === 'object' && msg.content !== null) {
-            content = msg.content; // Already a parsed JSON object
-        } else {
-            console.warn("Unexpected msg.content type:", typeof msg.content);
-            content = msg.content; // Handle other unexpected types gracefully
-        }
-        
-        console.log(content);
-        
-      const parsedMsg = msg;        
-
+              
+      const parsedMsg = msg;
       
       if (parsedMsg.type === 'session_created') {
         handleNewSession(parsedMsg.session_id);
         setIsProcessing(false);
-      } else if (parsedMsg.type === 'message' || parsedMsg.type === 'response') {
+      } 
+      
+      else if (parsedMsg.type === 'message' || parsedMsg.type === 'response') {
         // Extract message content from different possible locations
         const messageContent = 
           parsedMsg.data?.content || 
@@ -159,22 +134,34 @@ export function ChatInterface({
         const sessionId = parsedMsg.session_id || activeConversation;
         
         if (messageContent && sessionId) {
+          // Generate a truly unique ID using timestamp + random
+          const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
           const botMessage: Message = {
-            id: crypto.randomUUID(),
+            id: uniqueId,
             content: messageContent,
             sender: 'bot',
             timestamp: new Date(),
             status: 'sent'
           };
 
-          // Update conversations state
+          // Update conversations state with check for duplicates
           setConversations(prev => prev.map(conv => {
             if (conv.sessionId === sessionId) {
+              // Check if message already exists
+              const messageExists = conv.messages.some(m => m.content === messageContent);
+              if (messageExists) {
+                return conv;
+              }
+
+              // Remove any HTML tags from messageContent
+              const plainTextMessage = messageContent.replace(/<\/?[^>]+(>|$)/g, "");
+
               const updatedMessages = [...conv.messages, botMessage];
               return {
                 ...conv,
                 messages: updatedMessages,
-                lastMessage: messageContent,
+                lastMessage: plainTextMessage,
                 timestamp: new Date()
               };
             }
@@ -183,14 +170,21 @@ export function ChatInterface({
 
           // Update current conversation messages if active
           if (sessionId === activeConversation) {
-            setParentMessages(prev => [...prev, botMessage]);
+            setParentMessages(prev => {
+              // Check if message already exists in parent messages
+              const messageExists = prev.some(m => m.content === messageContent);
+              if (messageExists) {
+                return prev;
+              }
+              return [...prev, botMessage];
+            });
+            
             // Scroll to bottom after a short delay
             setTimeout(() => {
               messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, 100);
           }
 
-          // Always reset processing state after receiving a message
           setIsProcessing(false);
         }
       }
@@ -206,12 +200,32 @@ export function ChatInterface({
     
     // Update WebSocket connection with new session
     if (wsRef.current) {
-      wsRef.current.updateSessionId(sessionId);
+      wsRef.current.updateSessionId(sessionId);      
     }
 
     const newConversation: Conversation = {
       sessionId,
       lastMessage: "New conversation",
+      timestamp: new Date(),
+      messages: []
+    };
+    setConversations(prev => [newConversation, ...prev]);
+    setActiveConversation(sessionId);
+    setParentMessages([]);
+  };
+
+  // Handle onload session creation
+  const handleOnloadSession = (sessionId: string) => {
+    console.log('initial session created:', sessionId);
+    
+    // Update WebSocket connection with new session
+    if (wsRef.current) {
+      wsRef.current.updateSessionId(sessionId);
+    }
+
+    const newConversation: Conversation = {
+      sessionId,
+      lastMessage: "Welcome! How can I help you today?",
       timestamp: new Date(),
       messages: []
     };
@@ -307,10 +321,12 @@ export function ChatInterface({
     if (activeConversation) {
       setConversations(prev => prev.map(conv => {
         if (conv.sessionId === activeConversation) {
+           // Remove any HTML tags from messageContent
+          const plainTextMessage = message.replace(/<\/?[^>]+(>|$)/g, "");
           return {
             ...conv,
             messages: [...conv.messages, userMessage],
-            lastMessage: userMessage.content,
+            lastMessage: plainTextMessage,
             timestamp: new Date()
           };
         }
