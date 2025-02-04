@@ -124,7 +124,7 @@ export class WebSocketService {
           const finalMessage = {
             type: rawMessage.type,
             session_id: rawMessage.session_id,
-            content: parsedContent.response || parsedContent.content || parsedContent.answer || ''
+            content: parsedContent.response || parsedContent.content || parsedContent.answer || parsedContent.message || ''
           };
           console.log('Step 3: Final processed message:', finalMessage);
           

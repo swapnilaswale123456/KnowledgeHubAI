@@ -238,6 +238,7 @@ export function ChatInterface({
   const startNewConversation = () => {
     if (!wsRef.current) return;
     wsRef.current.sendMessage({ type: 'new_session', content: '' });
+    
     setActiveConversation(null);
     setParentMessages([]);
   };
