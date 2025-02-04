@@ -14,15 +14,22 @@ interface MessagePair {
   timestamp: string;
 }
 
-interface Conversation {
+interface ApiConversation {
   session_id: string;
   message_pairs: MessagePair[];
   message_count: number;
 }
 
+interface AppConversation {
+  sessionId: string;
+  lastMessage: string;
+  timestamp: Date;
+  messages: Message[];
+}
+
 interface ChatHistoryResponse {
   data: {
-    conversations: Conversation[];
+    conversations: ApiConversation[];
     total_messages: number;
   };
   status: string;
@@ -71,7 +78,7 @@ export class ChatHistoryService {
     }
   }
 
-  async getHistoryBySessionId(sessionId: string): Promise<Conversation | null> {
+  async getHistoryBySessionId(sessionId: string): Promise<ApiConversation | null> {
     try {
       const response = await fetch(
         `${this.baseUrl}/chat/history/${sessionId}`,
@@ -96,57 +103,40 @@ export class ChatHistoryService {
     }
   }
 
-  // Helper method to convert API response to our app's Conversation format
-  static convertToAppConversation(apiConversation: Conversation): {
-    sessionId: string;
-    lastMessage: string;
-    timestamp: Date;
-    messages: Message[];
-  } {
-    if (!apiConversation?.message_pairs) {
-      console.warn('Invalid conversation format:', apiConversation);
-      return {
-        sessionId: apiConversation?.session_id || crypto.randomUUID(),
-        lastMessage: '',
-        timestamp: new Date(),
-        messages: []
-      };
-    }
+  static convertToAppMessage(apiMessage: { message: string; timestamp: number; role: string }): Message {
+    return {
+      id: crypto.randomUUID(),
+      content: apiMessage.message,
+      sender: apiMessage.role === 'assistant' ? 'bot' : 'user',
+      timestamp: new Date(apiMessage.timestamp),
+      status: 'sent'
+    };
+  }
 
+  static convertToAppConversation(apiConversation: ApiConversation): AppConversation {
     const messages: Message[] = [];
-    apiConversation.message_pairs.forEach(pair => {
-      // Add user message
+    apiConversation.message_pairs.forEach((pair: any) => {
       if (pair.user) {
-        messages.push({
-          id: crypto.randomUUID(),
-          content: pair.user.message,
-          sender: 'user',
-          timestamp: new Date(pair.user.timestamp),
-          status: 'sent',
-          isFormatted: false
-        });
+        messages.push(this.convertToAppMessage({
+          message: pair.user.message,
+          timestamp: new Date(pair.user.timestamp).getTime(),
+          role: 'user'
+        }));
       }
-
-      // Add assistant message
       if (pair.assistant) {
-        messages.push({
-          id: crypto.randomUUID(),
-          content: pair.assistant.message,
-          sender: 'bot',
-          timestamp: new Date(typeof pair.assistant.timestamp === 'number' 
-            ? pair.assistant.timestamp * 1000 
-            : pair.assistant.timestamp),
-          status: 'sent',
-          isFormatted: pair.assistant.message.includes('<') // Check if message contains HTML
-        });
+        messages.push(this.convertToAppMessage({
+          message: pair.assistant.message,
+          timestamp: new Date(pair.assistant.timestamp * 1000).getTime(),
+          role: 'assistant'
+        }));
       }
     });
 
     return {
       sessionId: apiConversation.session_id,
+      messages,
       lastMessage: messages[messages.length - 1]?.content || '',
-      timestamp: new Date(messages[messages.length - 1]?.timestamp || new Date()),
-      messages
+      timestamp: new Date(messages[messages.length - 1]?.timestamp || new Date())
     };
   }
 } 
