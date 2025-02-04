@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Maximize2, Minimize2, Bot, Send, MessageSquare } from "lucide-react";
 import IconBot from "~/assets/img/bot-avatar.png";
@@ -67,36 +67,136 @@ export function ChatInterface({
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocketService | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Move handler outside useEffect to prevent recreation
+  const messageHandler = useCallback((msg: any) => {
+    console.log('Message handler called:', msg);
+    handleWebSocketMessage(msg);
+  }, []);
 
   // WebSocket setup with session management
   useEffect(() => {
+    console.log('Setting up WebSocket connection');
+    
     if (!wsRef.current) {
       wsRef.current = new WebSocketService(chatbotId);
-      wsRef.current.addMessageHandler(handleWebSocketMessage);
+      wsRef.current.addMessageHandler(messageHandler);
       wsRef.current.connect();
     }
 
     return () => {
       if (wsRef.current) {
+        wsRef.current.removeMessageHandler(messageHandler);
         wsRef.current.disconnect();
         wsRef.current = null;
       }
     };
-  }, [chatbotId]);
+  }, [chatbotId, messageHandler]);
 
-  // Handle WebSocket messages
+  // Handle conversation selection
+  const handleConversationSelect = (sessionId: string, messages: Message[]) => {
+    setActiveConversation(sessionId);
+    setParentMessages(messages);
+
+    // Reconnect WebSocket with new session ID
+    if (wsRef.current) {
+      wsRef.current.updateSessionId(sessionId);
+    } else {
+      wsRef.current = new WebSocketService(chatbotId, sessionId);
+      wsRef.current.addMessageHandler(handleWebSocketMessage);
+      wsRef.current.connect();
+    }
+  };
+
+  // Handle WebSocket messages with immediate updates
   const handleWebSocketMessage = (msg: any) => {
     try {
-      const content = msg.content.replace(/^```json\s*|\s*```$/g, '');
-      const parsedMsg = JSON.parse(content);
+      console.log('WebSocket message received:', msg);
+      if (!msg || !msg.content) {
+        console.warn('Received empty message');
+        return;
+      }
+
+      let content;
+
+        if (typeof msg.content === 'string') {
+            try {
+                // Remove Markdown-style JSON formatting markers
+                const cleanedContent = msg.content.replace(/^```json\s*|\s*```$/g, '');
+                
+                // Attempt to parse JSON
+                content = JSON.parse(cleanedContent);
+            } catch (error) {
+                console.error("Invalid JSON string:", error);
+                content = msg.content; // Fallback to the original string
+            }
+        } else if (typeof msg.content === 'object' && msg.content !== null) {
+            content = msg.content; // Already a parsed JSON object
+        } else {
+            console.warn("Unexpected msg.content type:", typeof msg.content);
+            content = msg.content; // Handle other unexpected types gracefully
+        }
+        
+        console.log(content);
+        
+      const parsedMsg = msg;        
+
       
       if (parsedMsg.type === 'session_created') {
         handleNewSession(parsedMsg.session_id);
-      } else {
-        handleBotResponse(parsedMsg);
+        setIsProcessing(false);
+      } else if (parsedMsg.type === 'message' || parsedMsg.type === 'response') {
+        // Extract message content from different possible locations
+        const messageContent = 
+          parsedMsg.data?.content || 
+          parsedMsg.data?.answer || 
+          parsedMsg.data?.response || 
+          parsedMsg.content || 
+          parsedMsg.answer || 
+          parsedMsg.response || '';
+        
+        const sessionId = parsedMsg.session_id || activeConversation;
+        
+        if (messageContent && sessionId) {
+          const botMessage: Message = {
+            id: crypto.randomUUID(),
+            content: messageContent,
+            sender: 'bot',
+            timestamp: new Date(),
+            status: 'sent'
+          };
+
+          // Update conversations state
+          setConversations(prev => prev.map(conv => {
+            if (conv.sessionId === sessionId) {
+              const updatedMessages = [...conv.messages, botMessage];
+              return {
+                ...conv,
+                messages: updatedMessages,
+                lastMessage: messageContent,
+                timestamp: new Date()
+              };
+            }
+            return conv;
+          }));
+
+          // Update current conversation messages if active
+          if (sessionId === activeConversation) {
+            setParentMessages(prev => [...prev, botMessage]);
+            // Scroll to bottom after a short delay
+            setTimeout(() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }
+
+          // Always reset processing state after receiving a message
+          setIsProcessing(false);
+        }
       }
     } catch (error) {
-      console.error('WebSocket message error:', error);
+      console.error('WebSocket message error:', error, 'Raw message:', msg);
+      setIsProcessing(false);
     }
   };
 
@@ -118,69 +218,6 @@ export function ChatInterface({
     setConversations(prev => [newConversation, ...prev]);
     setActiveConversation(sessionId);
     setParentMessages([]);
-  };
-
-  // Handle bot responses
-  const handleBotResponse = (parsedMsg: any) => {
-    if (!activeConversation) return;
-
-    const messageContent = parsedMsg.data?.content || 
-                         parsedMsg.data?.answer || 
-                         parsedMsg.data?.response || '';
-
-    if (messageContent) {
-      const botMessage: Message = {
-        id: crypto.randomUUID(),
-        content: messageContent,
-        sender: 'bot',
-        timestamp: new Date(),
-        status: 'sent'
-      };
-
-      updateConversationWithMessage(botMessage);
-    }
-  };
-
-  // Update conversation with new message
-  const updateConversationWithMessage = (newMessage: Message) => {
-    if (!activeConversation) return;
-
-    setConversations(prev => prev.map(conv => 
-      conv.sessionId === activeConversation 
-        ? {
-            ...conv,
-            messages: [...conv.messages, newMessage],
-            lastMessage: newMessage.content,
-            timestamp: new Date()
-          }
-        : conv
-    ));
-    setParentMessages(prev => [...prev, newMessage]);
-  };
-
-  // Handle sending messages
-  const handleSendMessage = () => {
-    if (!message.trim() || !wsRef.current) return;
-
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      content: message.trim(),
-      sender: 'user',
-      timestamp: new Date(),
-      status: 'sending'
-    };
-
-    // Send message with current session
-    wsRef.current.sendMessage({
-      type: 'message',
-      content: message.trim(),
-      chatbot_id: chatbotId,
-      user_id: "user",
-      session_id: activeConversation || undefined
-    });
-
-    updateConversationWithMessage(userMessage);
-    setMessage('');
   };
 
   // Start new conversation
@@ -251,6 +288,49 @@ export function ChatInterface({
     }
   }, [currentMessages]);
 
+  // Add this before the return statement
+  const handleSendMessage = () => {
+    if (!message.trim() || !wsRef.current || isProcessing) return;
+
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      content: message.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+      status: 'sending'
+    };
+
+    // Set processing state
+    setIsProcessing(true);
+
+    // Update conversation with user message
+    if (activeConversation) {
+      setConversations(prev => prev.map(conv => {
+        if (conv.sessionId === activeConversation) {
+          return {
+            ...conv,
+            messages: [...conv.messages, userMessage],
+            lastMessage: userMessage.content,
+            timestamp: new Date()
+          };
+        }
+        return conv;
+      }));
+      setParentMessages(prev => [...prev, userMessage]);
+    }
+
+    // Send message
+    wsRef.current.sendMessage({
+      type: 'message',
+      content: message.trim(),
+      chatbot_id: chatbotId,
+      user_id: "user",
+      session_id: activeConversation || undefined
+    });
+
+    setMessage('');
+  };
+
   return (
     <div className={cn(
       "flex flex-col",
@@ -299,10 +379,7 @@ export function ChatInterface({
             {conversations.map((conv) => (
               <button
                 key={conv.sessionId}
-                onClick={() => {
-                  setActiveConversation(conv.sessionId);
-                  setParentMessages(conv.messages);
-                }}
+                onClick={() => handleConversationSelect(conv.sessionId, conv.messages)}
                 className={cn(
                   "w-full p-4 text-left hover:bg-gray-100 border-b",
                   activeConversation === conv.sessionId && "bg-blue-50"
@@ -334,32 +411,37 @@ export function ChatInterface({
                 settings={settings}
               />
             ))}
-            {isTyping && <TypingIndicator />}
+            {isProcessing && (
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className="animate-pulse">Analyzing...</div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
           <div className="border-t p-2 bg-gray-50">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <input
-                type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Type your message..."
-                className="flex-1 px-3 py-1.5 text-sm rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder={isProcessing ? "Processing..." : "Type your message..."}
+                disabled={isProcessing}
+                className={cn(
+                  "flex-1 px-3 py-1.5 text-sm rounded-full border",
+                  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                  isProcessing && "bg-gray-100"
+                )}
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!message.trim()}
+                disabled={isProcessing || !message.trim()}
                 className={cn(
                   "p-2 rounded-full",
-                  "transition-colors duration-200",
-                  message.trim()
-                    ? "text-white hover:opacity-90"
-                    : "bg-gray-100 text-gray-400",
+                  !isProcessing && message.trim() ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-400"
                 )}
-                style={message.trim() ? themeStyles.header : undefined}
               >
                 <Send className="w-4 h-4" />
               </button>

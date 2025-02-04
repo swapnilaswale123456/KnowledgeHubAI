@@ -45,12 +45,13 @@ export class WebSocketService {
       const baseUrl = getWebSocketUrl(this.chatbotId);
       const params = new URLSearchParams({
         user_id: this.userId,
-        ...(this.sessionId && { session_id: this.sessionId })
+        session_id: this.sessionId || '' // Always include session_id
       });
       const wsUrl = `${baseUrl}?${params.toString()}`;
       
-      console.log('Connecting to WebSocket:', wsUrl);
+      console.log('Step 1: Connecting to WebSocket:', wsUrl);
       this.ws = new WebSocket(wsUrl);
+      console.log('Step 2: WebSocket instance created');
 
       // Set connection timeout
       this.connectionTimeout = setTimeout(() => {
@@ -60,12 +61,19 @@ export class WebSocketService {
         }
       }, WS_CONFIG.CONNECTION_TIMEOUT);
 
+      // Ensure proper binding of event handlers
+      this.ws.onmessage = (event) => {
+        console.log('Step 3: Message received, calling handler');
+        this.handleMessage(event);
+      };
       this.ws.onopen = this.handleOpen.bind(this);
-      this.ws.onmessage = this.handleMessage.bind(this);
       this.ws.onclose = this.handleClose.bind(this);
       this.ws.onerror = this.handleError.bind(this);
+
+      // Log connection status
+      console.log('WebSocket handlers attached');
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      console.error('Connection failed:', error);
       this.handleReconnection();
     }
   }
@@ -80,38 +88,75 @@ export class WebSocketService {
 
   private handleMessage(event: MessageEvent) {
     try {
-      console.log('Raw WebSocket message:', event.data);
-      let parsedData;
-      
-      try {
-        parsedData = JSON.parse(event.data);
-      } catch (e) {
-        // If not JSON, treat as plain text
-        parsedData = { content: event.data, type: 'text' };
-      }
-
-      if (parsedData.type === 'pong') {
+      if (!event.data) {
+        console.warn('Received empty message data');
         return;
       }
 
-      // Normalize the response structure
-      let messageContent;
-      if (typeof parsedData === 'string') {
-        messageContent = { content: parsedData, type: 'text' };
-      } else if (parsedData.answer) {
-        messageContent = { content: parsedData.answer, type: 'text' };
-      } else if (parsedData.response) {
-        messageContent = { content: parsedData.response, type: 'text' };
-      } else if (parsedData.content) {
-        messageContent = parsedData;
-      } else {
-        messageContent = { content: JSON.stringify(parsedData), type: 'text' };
+      console.log('Step 1: Raw WebSocket message received:', event.data);
+      
+      // Parse the raw message first
+      const rawMessage = JSON.parse(event.data);
+      if (!rawMessage) {
+        console.warn('Failed to parse message data');
+        return;
       }
 
-      console.log('Processed message content:', messageContent);
-      this.messageHandlers.forEach(handler => handler(messageContent));
+      console.log('Step 2: Parsed raw message:', rawMessage);
+      console.log('Current handlers count:', this.messageHandlers.size);
+      
+      // Call handlers with raw message if no content
+      if (!rawMessage.content) {
+        if (this.messageHandlers.size > 0) {
+          for (const handler of this.messageHandlers) {
+            handler(rawMessage);
+          }
+        }
+        return;
+      }
+
+      // If content is JSON string, parse it
+      if (typeof rawMessage.content === 'string' && rawMessage.content.includes('```json')) {
+        const contentStr = rawMessage.content.replace(/^```json\s*|\s*```$/g, '');
+        try {
+          const parsedContent = JSON.parse(contentStr);
+          // Construct final message object
+          const finalMessage = {
+            type: rawMessage.type,
+            session_id: rawMessage.session_id,
+            content: parsedContent.response || parsedContent.content || parsedContent.answer || ''
+          };
+          console.log('Step 3: Final processed message:', finalMessage);
+          
+          // Call each handler directly
+          if (this.messageHandlers.size > 0) {
+            for (const handler of this.messageHandlers) {
+              try {
+                console.log('Step 4: Calling handler directly');
+                handler(finalMessage);
+                console.log('Step 5: Handler called successfully');
+              } catch (error) {
+                console.error('Handler execution error:', error);
+              }
+            }
+          } else {
+            console.warn('No message handlers registered');
+          }
+        } catch (contentError) {
+          console.error('Content parsing error:', contentError);
+          // Fall back to raw message
+          for (const handler of this.messageHandlers) {
+            handler(rawMessage);
+          }
+        }
+      } else {
+        // Handle plain messages
+        for (const handler of this.messageHandlers) {
+          handler(rawMessage);
+        }
+      }
     } catch (error) {
-      console.error('Error handling message:', error, event.data);
+      console.error('Message parsing error:', error);
     }
   }
 
@@ -190,7 +235,13 @@ export class WebSocketService {
   }
 
   addMessageHandler(handler: MessageHandler) {
+    if (!handler) {
+      console.error('Attempted to add null handler');
+      return;
+    }
+    console.log('Adding new message handler');
     this.messageHandlers.add(handler);
+    console.log('Updated handlers count:', this.messageHandlers.size);
   }
 
   removeMessageHandler(handler: MessageHandler) {
@@ -216,7 +267,6 @@ export class WebSocketService {
       this.ws.close(WS_CONFIG.CLOSE_CODES.NORMAL);
       this.ws = null;
     }
-    this.messageHandlers.clear();
     this.connectionStateHandlers.clear();
   }
 
@@ -224,12 +274,28 @@ export class WebSocketService {
     return this.ws?.readyState === WebSocket.OPEN;
   }
 
-  // Method to update session ID
   updateSessionId(sessionId: string) {
+    if (this.sessionId === sessionId) return;
+    
+    console.log('Updating WebSocket session:', sessionId);
     this.sessionId = sessionId;
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.disconnect();
-      this.connect(); // Reconnect with new session ID
-    }
+    
+    // Store current handlers
+    const currentHandlers = new Set(this.messageHandlers);
+    
+    // Disconnect and reconnect
+    this.disconnect();
+    
+    // Restore handlers
+    this.messageHandlers = currentHandlers;
+    
+    this.connect();
+  }
+
+  private logHandlers() {
+    console.log('Current handlers:', {
+      count: this.messageHandlers.size,
+      handlers: Array.from(this.messageHandlers).map(h => h.name || 'anonymous')
+    });
   }
 } 
