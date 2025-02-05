@@ -73,6 +73,9 @@ export function ChatInterface({
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocketService | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Update ref type
@@ -108,43 +111,40 @@ export function ChatInterface({
 
   // Handle conversation selection with improved state management
   const handleConversationSelect = (sessionId: string, messages: Message[]) => {
-    // Update session ref
-    sessionRef.current = {
-      sessionId,
-      conversations: sessionRef.current.conversations.map(conv => {
-        if (conv.sessionId === sessionId) {
-          return {
-            ...conv,
-            messages: messages // Ensure messages are up to date
-          };
-        }
-        return conv;
-      })
-    };
+    setIsLoadingMessages(true);
+    
+    try {
+      sessionRef.current = {
+        sessionId,
+        conversations: sessionRef.current.conversations.map(conv => {
+          if (conv.sessionId === sessionId) {
+            return {
+              ...conv,
+              messages: messages
+            };
+          }
+          return conv;
+        })
+      };
 
-    // Update React state
-    setActiveConversation(sessionId);
-    setParentMessages(messages);
+      setActiveConversation(sessionId);
+      setParentMessages(messages);
 
-    // Update WebSocket connection
-    if (wsRef.current) {
-      wsRef.current.updateSessionId(sessionId);
-      wsRef.current.connect(); // Ensure connection is active
-    } else {
-      // Create new WebSocket if none exists
-      wsRef.current = new WebSocketService(chatbotId, sessionId);
-      wsRef.current.addMessageHandler(handleWebSocketMessage);
-      wsRef.current.connect();
+      if (wsRef.current) {
+        wsRef.current.updateSessionId(sessionId);
+        wsRef.current.connect();
+      } else {
+        wsRef.current = new WebSocketService(chatbotId, sessionId);
+        wsRef.current.addMessageHandler(handleWebSocketMessage);
+        wsRef.current.connect();
+      }
+
+      setIsProcessing(false);
+    } catch (error) {
+      console.error('Error selecting conversation:', error);
+    } finally {
+      setIsLoadingMessages(false);
     }
-
-    // Reset processing state
-    setIsProcessing(false);
-
-    console.log('Selected conversation:', {
-      sessionId,
-      messagesCount: messages.length,
-      wsConnected: !!wsRef.current
-    });
   };
 
   // Handle new session creation
@@ -344,7 +344,13 @@ export function ChatInterface({
       sessionId: tempSessionId,
       lastMessage: "Starting new conversation...",
       timestamp: new Date(),
-      messages: []
+      messages: [{
+        id: "welcome-msg",
+        content: "Welcome! How can I help you today?",
+        sender: 'bot',
+        timestamp: new Date(),
+        status: 'sent'
+      }]
     };
 
     // Update ref and state
@@ -393,6 +399,8 @@ export function ChatInterface({
   useEffect(() => {
     // Load chat history
     const loadChatHistory = async () => {
+      setIsLoading(true);
+      setIsLoadingHistory(true);
       try {
         const chatHistoryService = new ChatHistoryService();
         const response = await chatHistoryService.getHistory("user", 5);
@@ -435,6 +443,9 @@ export function ChatInterface({
           sessionId: null,
           conversations: []
         };
+      } finally {
+        setIsLoading(false);
+        setIsLoadingHistory(false);
       }
     };
 
@@ -577,84 +588,89 @@ export function ChatInterface({
           <div className="p-4 border-b">
             <button
               onClick={startNewConversation}
-              className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              disabled={isProcessing}
+              className={cn(
+                "w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg",
+                isProcessing ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
+              )}
             >
-              New Chat
+              {isProcessing ? "Creating..." : "New Chat"}
             </button>
           </div>
           
           <div className="flex-1 overflow-y-auto">
-            {sessionRef.current.conversations.map((conv) => (
-              <button
-                key={conv.sessionId}
-                onClick={() => handleConversationSelect(conv.sessionId, conv.messages)}
-                className={cn(
-                  "w-full p-4 text-left hover:bg-gray-100 border-b",
-                  activeConversation === conv.sessionId && "bg-blue-50"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="w-5 h-5 text-gray-500" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {conv.lastMessage || "New Conversation"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {format(new Date(conv.timestamp), 'MMM d, h:mm a')}
-                    </p>
+            {isLoadingHistory ? (
+              <div className="flex items-center justify-center h-20">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+              </div>
+            ) : (
+              sessionRef.current.conversations.map((conv) => (
+                <button
+                  key={conv.sessionId}
+                  onClick={() => handleConversationSelect(conv.sessionId, conv.messages)}
+                  disabled={isLoadingMessages}
+                  className={cn(
+                    "w-full p-4 text-left hover:bg-gray-100 border-b",
+                    activeConversation === conv.sessionId && "bg-blue-50",
+                    isLoadingMessages && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-5 h-5 text-gray-500" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {conv.lastMessage || "New Conversation"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {format(new Date(conv.timestamp), 'MMM d, h:mm a')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            )}
           </div>
         </div>
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col">
-          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
-            {currentMessages.map((msg) => (
-              <MessageItem 
-                key={msg.id}
-                message={msg}
-                settings={settings}
-              />
-            ))}
-            {isProcessing && (
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <div className="animate-pulse">Analyzing...</div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          <div className="border-t p-2 bg-gray-50">
-            <div className="flex items-center gap-2">
-              <input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder={isProcessing ? "Processing..." : "Type your message..."}
-                disabled={isProcessing}
-                className={cn(
-                  "flex-1 px-3 py-1.5 text-sm rounded-full border",
-                  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                  isProcessing && "bg-gray-100"
-                )}
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={isProcessing || !message.trim()}
-                className={cn(
-                  "p-2 rounded-full",
-                  !isProcessing && message.trim() ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-400"
-                )}
-              >
-                <Send className="w-4 h-4" />
-              </button>
+          {isLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
+                {currentMessages.map((msg) => (
+                  <MessageItem 
+                    key={msg.id}
+                    message={msg}
+                    settings={settings}
+                  />
+                ))}
+                {isProcessing && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <div className="animate-pulse">Analyzing...</div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className="border-t p-2 bg-gray-50">
+                <ChatInput
+                  message={message}
+                  setMessage={setMessage}
+                  onSend={handleSendMessage}
+                  disabled={isProcessing || isLoadingMessages}
+                  onFileUpload={(file) => console.log('File upload:', file)}
+                  onVoiceRecord={() => console.log('Voice record')}
+                  onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

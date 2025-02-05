@@ -4,17 +4,19 @@ import { EmojiPicker } from './EmojiPicker';
 
 interface ChatInputProps {
   message: string;
-  onMessageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSendMessage: () => void;
-  onFileUpload: (file: File) => void;
-  onVoiceRecord: () => void;
-  onEmojiSelect: (emoji: string) => void;
+  setMessage: React.Dispatch<React.SetStateAction<string>>;
+  onSend: () => void;
+  disabled?: boolean;
+  onFileUpload?: (file: File) => void;
+  onVoiceRecord?: () => void;
+  onEmojiSelect?: (emoji: string) => void;
 }
 
 export function ChatInput({
   message,
-  onMessageChange,
-  onSendMessage,
+  setMessage,
+  onSend,
+  disabled,
   onFileUpload,
   onVoiceRecord,
   onEmojiSelect
@@ -29,16 +31,16 @@ export function ChatInput({
           <input
             type="text"
             value={message}
-            onChange={onMessageChange}
+            onChange={(e) => setMessage(e.target.value)}
             placeholder="Type your message..."
             className="flex-1 border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            onKeyPress={(e) => e.key === 'Enter' && onSendMessage()}
+            onKeyPress={(e) => e.key === 'Enter' && onSend()}
           />
           <input
             type="file"
             ref={fileInputRef}
             className="hidden"
-            onChange={(e) => e.target.files && onFileUpload(e.target.files[0])}
+            onChange={(e) => e.target.files && onFileUpload && onFileUpload(e.target.files[0])}
             accept=".pdf,.doc,.docx,.txt"
           />
           <button 
@@ -65,7 +67,7 @@ export function ChatInput({
             )}
           </button>
           <button 
-            onClick={onSendMessage}
+            onClick={onSend}
             className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
           >
             <Send className="h-4 w-4" />
