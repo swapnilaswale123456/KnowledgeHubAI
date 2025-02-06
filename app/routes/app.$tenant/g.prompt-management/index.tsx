@@ -1,15 +1,18 @@
-import { LoaderFunctionArgs, json } from "@remix-run/node";
+import { LoaderFunctionArgs, MetaFunction, json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { Card } from "~/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
 import { 
   Bot, Code, FileJson, Settings, Workflow, Wrench, MessageSquare,
-  Shield, AlertTriangle, MessageCircle, Plus, Pencil
+  Shield, AlertTriangle, MessageCircle, Plus, Pencil, Sparkles, Loader2, Save, Wand2
 } from "lucide-react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Switch } from "~/components/ui/switch";
+import { Badge } from "~/components/ui/badge";
+import { toast } from "sonner";
+import { Toaster } from "react-hot-toast";
 
 interface ComplianceConfig {
   industry: string;
@@ -69,8 +72,74 @@ interface Skill {
   sample_prompts: SkillPrompt[];
 }
 
+// First, add this interface for chatbot types
+interface ChatbotTypeOption {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  examples: string[];
+}
+
+// Add this component for reusability
+function AiTextArea({ 
+  value, 
+  rows = 2,
+  placeholder,
+  className = "",
+  onGenerate
+}: { 
+  value: string, 
+  rows?: number,
+  placeholder?: string,
+  className?: string,
+  onGenerate?: () => void 
+}) {
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      await onGenerate?.();
+      toast.success("Generated content successfully!");
+    } catch (error) {
+      toast.error("Failed to generate content");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <textarea
+        className={`w-full p-2 border rounded-md text-sm pr-10 ${className}`}
+        defaultValue={value}
+        rows={rows}
+        placeholder={placeholder}
+      />
+      <Button
+        size="sm"
+        variant="ghost"
+        className="absolute right-2 top-2 text-blue-600 hover:text-blue-800"
+        onClick={handleGenerate}
+        disabled={isGenerating}
+      >
+        {isGenerating ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Sparkles className="h-4 w-4" />
+        )}
+      </Button>
+    </div>
+  );
+}
+export const meta: MetaFunction<typeof loader> = ({ data }) => [
+    { title: data?.title || "Prompt Management | KnowledgeHub AI" }
+  ];
+
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return json({
+    title: "Prompt Management | KnowledgeHub AI",
     config: {
       industry: "healthcare",
       chatbot_type: "customer_support_bot",
@@ -155,15 +224,102 @@ export default function PromptManagementIndex() {
   const { config, compliance, negative_handling, response_settings, workflows_data, skills_data } = useLoaderData<typeof loader>();
   const [activeTab, setActiveTab] = useState("config");
   const [jsonView, setJsonView] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleIndustryChange = (value: string) => {
+    console.log('Industry changed:', value);
+    // Add your industry change logic here
+  };
+
+  // Update industries data with proper typing
+  const industries = [
+    { 
+      id: "healthcare", 
+      name: "Healthcare",
+      icon: "🏥",
+      description: "AI-powered healthcare solutions",
+      examples: ["Patient Support", "Medical Records", "Appointment Scheduling"]
+    },
+    { 
+      id: "finance", 
+      name: "Finance",
+      icon: "💰",
+      description: "AI-powered financial solutions",
+      examples: ["Account Management", "Transaction Analysis", "Risk Assessment"]
+    },
+    { 
+      id: "ecommerce", 
+      name: "E-commerce",
+      icon: "🛍️",
+      description: "AI-powered shopping solutions",
+      examples: ["Product Recommendations", "Cart Recovery", "Customer Support"]
+    }
+  ] as const;
+
+  const chatbotTypes: ChatbotTypeOption[] = [
+    {
+      id: "customer_support_bot",
+      name: "Customer Support",
+      icon: "🎯",
+      description: "AI-powered customer service automation",
+      examples: ["FAQ Handling", "Issue Resolution", "Support Tickets"]
+    },
+    {
+      id: "sales_bot",
+      name: "Sales Bot",
+      icon: "💼",
+      description: "Automated sales and lead generation",
+      examples: ["Lead Qualification", "Product Recommendations", "Sales Follow-up"]
+    },
+    {
+      id: "appointment_bot",
+      name: "Appointment Bot",
+      icon: "📅",
+      description: "Scheduling and booking automation",
+      examples: ["Calendar Management", "Reminders", "Booking Confirmation"]
+    }
+  ];
+
+  const handleChatbotTypeChange = (value: string) => {
+    console.log('Chatbot type changed:', value);
+    // Add your chatbot type change logic here
+  };
+
+  const handleGenerateAll = async () => {
+    setIsGenerating(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success("Generated new configurations successfully!");
+    } catch (error) {
+      toast.error("Failed to generate configurations");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success("Changes saved successfully!");
+    } catch (error) {
+      toast.error("Failed to save changes");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
       <div className="border-b p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Prompt Management</h1>
-            <p className="text-sm text-gray-500">Configure your chatbot behavior</p>
-          </div>
+            <h1 className="text font-semibold">Configure your chatbot behavior</h1>
+                    
+            </div>
           <Button
             variant="outline"
             onClick={() => setJsonView(!jsonView)}
@@ -228,27 +384,37 @@ export default function PromptManagementIndex() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium mb-1 block">Industry</label>
-                        <Select defaultValue={config.industry}>
+                        <Select value={config.industry} onValueChange={handleIndustryChange}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="healthcare">Healthcare</SelectItem>
-                            <SelectItem value="finance">Finance</SelectItem>
-                            <SelectItem value="ecommerce">E-commerce</SelectItem>
+                            {industries.map((industry) => (
+                              <SelectItem key={industry.id} value={industry.id}>
+                                <div className="flex items-center gap-2">
+                                  <span>{industry.icon}</span>
+                                  <span>{industry.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
                         <label className="text-sm font-medium mb-1 block">Chatbot Type</label>
-                        <Select defaultValue={config.chatbot_type}>
+                        <Select value={config.chatbot_type} onValueChange={handleChatbotTypeChange}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="customer_support_bot">Customer Support</SelectItem>
-                            <SelectItem value="sales_bot">Sales Bot</SelectItem>
-                            <SelectItem value="appointment_bot">Appointment Bot</SelectItem>
+                            {chatbotTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                <div className="flex items-center gap-2">
+                                  <span>{type.icon}</span>
+                                  <span>{type.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -256,10 +422,10 @@ export default function PromptManagementIndex() {
 
                     <div>
                       <label className="text-sm font-medium mb-1 block">Description</label>
-                      <textarea 
-                        className="w-full p-2 border rounded-md text-sm"
+                      <AiTextArea 
+                        value={config.description}
                         rows={3}
-                        defaultValue={config.description}
+                        onGenerate={() => console.log('Generate description')}
                       />
                     </div>
 
@@ -314,10 +480,9 @@ export default function PromptManagementIndex() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           </div>
-                          <textarea
-                            className="w-full p-2 border rounded-md text-sm"
-                            defaultValue={value}
-                            rows={2}
+                          <AiTextArea 
+                            value={value}
+                            onGenerate={() => console.log('Generate compliance rule for:', key)}
                           />
                         </div>
                       ))}
@@ -349,10 +514,10 @@ export default function PromptManagementIndex() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           </div>
-                          <textarea
-                            className="w-full p-2 border rounded-md text-sm bg-white"
-                            defaultValue={value}
-                            rows={2}
+                          <AiTextArea 
+                            value={value}
+                            className="bg-white"
+                            onGenerate={() => console.log('Generate negative handling for:', key)}
                           />
                         </div>
                       ))}
@@ -399,10 +564,9 @@ export default function PromptManagementIndex() {
                           <span className="text-sm font-medium">Enable User History</span>
                           <Switch />
                         </div>
-                        <textarea
-                          className="w-full p-2 border rounded-md text-sm mt-2"
-                          placeholder="Define personalization rules..."
-                          rows={3}
+                        <AiTextArea 
+                          value={response_settings.personalization}
+                          onGenerate={() => console.log('Generate personalization')}
                         />
                       </div>
                     </div>
@@ -440,10 +604,9 @@ export default function PromptManagementIndex() {
                                 {step.step}
                               </div>
                               <div className="flex-1">
-                                <textarea
-                                  className="w-full p-2 border rounded-md text-sm"
-                                  defaultValue={step.description}
-                                  rows={2}
+                                <AiTextArea 
+                                  value={step.description}
+                                  onGenerate={() => console.log('Generate workflow step:', step.step)}
                                 />
                               </div>
                             </div>
@@ -486,10 +649,9 @@ export default function PromptManagementIndex() {
                           {skill.sample_prompts.map((prompt, index) => (
                             <div key={index} className="bg-gray-50 rounded-lg p-4">
                               <div className="text-sm font-medium mb-2">{prompt.intent}</div>
-                              <textarea
-                                className="w-full p-2 border rounded-md text-sm"
-                                defaultValue={prompt.prompt}
-                                rows={2}
+                              <AiTextArea 
+                                value={prompt.prompt}
+                                onGenerate={() => console.log('Generate prompt for:', prompt.intent)}
                               />
                             </div>
                           ))}
@@ -503,6 +665,43 @@ export default function PromptManagementIndex() {
           )}
         </div>
       </Tabs>
+
+      <div className="border-t bg-gray-50/80 p-4 sticky bottom-0">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span>Last saved: 2 minutes ago</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleGenerateAll}
+              disabled={isGenerating}
+              className="gap-2"
+            >
+              {isGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4" />
+              )}
+              {isGenerating ? "Generating..." : "Generate All"}
+            </Button>
+            <Button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="gap-2"
+            >
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Toaster position="top-right" />
     </div>
   );
 } 
