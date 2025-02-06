@@ -84,6 +84,9 @@ export function ChatInterface({
     conversations: []
   });
 
+  // Add loading ref at the top with other refs
+  const isLoadingHistoryRef = useRef(false);
+
   // Move handler outside useEffect to prevent recreation
   const messageHandler = useCallback((msg: any) => {
     console.log('Message handler called:', msg);
@@ -275,7 +278,7 @@ export function ChatInterface({
             if (!existingConv) {
               const newConv: Conversation = {
                 sessionId,
-                lastMessage: messageContent.replace(/<\/?[^>]+(>|$)/g, ""),
+                lastMessage: messageContent?.replace(/<\/?[^>]+(>|$)/g, ""),
                 timestamp: new Date(),
                 messages: [botMessage]
               };
@@ -294,7 +297,7 @@ export function ChatInterface({
                 const updated = {
                   ...conv,
                   messages: [...conv.messages, botMessage],
-                  lastMessage: messageContent.replace(/<\/?[^>]+(>|$)/g, ""),
+                  lastMessage: messageContent?.replace(/<\/?[^>]+(>|$)/g, ""),
                   timestamp: new Date()
                 };
                 return updated;
@@ -395,62 +398,55 @@ export function ChatInterface({
 
   const themeStyles = getThemeStyles();
 
-  // Add this after WebSocket setup useEffect
+  // Update the loadChatHistory useEffect
   useEffect(() => {
-    // Load chat history
     const loadChatHistory = async () => {
+      // Prevent duplicate calls
+      if (isLoadingHistoryRef.current) return;
+      isLoadingHistoryRef.current = true;
+
       setIsLoading(true);
       setIsLoadingHistory(true);
       try {
         const chatHistoryService = new ChatHistoryService();
-        const response = await chatHistoryService.getHistory("user", 5);
+        const response = await chatHistoryService.getHistory("user", 8);
         
-        if (response?.data?.conversations) {
+        if (response?.data?.conversations?.length > 0) {
           const appConversations = response.data.conversations
             .filter((conv: any) => conv && conv.session_id)
             .map((conv: any) => ChatHistoryService.convertToAppConversation(conv))
             .filter(Boolean);
 
           if (appConversations.length > 0) {
-            // Update sessionRef with chat history
             sessionRef.current = {
-              sessionId: appConversations[0].sessionId, // Set most recent conversation as active
+              sessionId: appConversations[0].sessionId,
               conversations: appConversations
             };
 
-            // Update React state
             setConversations(appConversations);
             setActiveConversation(appConversations[0].sessionId);
             setParentMessages(appConversations[0].messages);
 
-            // Update WebSocket with active session
             if (wsRef.current && appConversations[0].sessionId) {
               wsRef.current.updateSessionId(appConversations[0].sessionId);
             }
-
-            console.log('Chat history loaded:', {
-              sessionId: appConversations[0].sessionId,
-              conversationsCount: appConversations.length,
-              messages: appConversations[0].messages.length
-            });
           }
+        } else {
+          console.log('No chat history found, starting new conversation');
+          startNewConversation();
         }
       } catch (error) {
         console.error('Failed to fetch conversations:', error);
-        
-        // Initialize with empty state if loading fails
-        sessionRef.current = {
-          sessionId: null,
-          conversations: []
-        };
+        sessionRef.current = { sessionId: null, conversations: [] };
       } finally {
         setIsLoading(false);
         setIsLoadingHistory(false);
+        isLoadingHistoryRef.current = false;
       }
     };
 
     loadChatHistory();
-  }, []); // Run once on component mount
+  }, []);
 
   // Add scroll effect for new messages
   useEffect(() => {
