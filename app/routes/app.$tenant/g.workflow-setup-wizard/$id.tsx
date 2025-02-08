@@ -22,13 +22,7 @@ export default function WorkflowSetupLayout() {
       </div>
 
       <Tabs defaultValue="steps" className="flex-1">
-        <div className="border-b px-6">
-          <TabsList>
-            <TabsTrigger value="steps">Steps</TabsTrigger>
-            <TabsTrigger value="rules">Rules</TabsTrigger>
-            <TabsTrigger value="actions">Actions</TabsTrigger>
-          </TabsList>
-        </div>
+        
         <Outlet />
       </Tabs>
     </div>

@@ -2,27 +2,26 @@ import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { Bot, ArrowRight } from "lucide-react";
+import { Bot, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Progress } from "~/components/ui/progress";
 
 const WORKFLOW_STEPS = [
-  { id: 1, title: "Select Skills", description: "Define your chatbot's capabilities" },
-  { id: 2, title: "Generate Workflow", description: "AI-powered workflow creation" },
-  { id: 3, title: "Connect APIs", description: "Set up integrations" },
-  { id: 4, title: "Review & Launch", description: "Final configuration and deployment" }
+  { id: 1, title: "Select Skills", description: "Choose from recommended AI capabilities" },
+  { id: 2, title: "Generate Workflow", description: "Auto-generate your workflow" },
+  { id: 3, title: "Connect APIs", description: "Quick API setup" },
+  { id: 4, title: "Launch", description: "Go live with your chatbot" }
 ];
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   return json({
     workflowId: params.id,
-    currentStep: 1,
-    totalSteps: WORKFLOW_STEPS.length,
+    totalSteps: 4,
     chatbotType: "ecommerce" // This would come from your database based on chatbotId
   });
 };
 
 export default function Steps() {
-  const { chatbotType } = useLoaderData<typeof loader>();
+  const { chatbotType, totalSteps } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
   const handleStart = () => {
@@ -43,51 +42,75 @@ export default function Steps() {
     <div className="h-[calc(100vh-6rem)] flex flex-col p-4">
       {/* Progress Bar */}
       <div className="mb-3">
-        <div className="flex justify-between text-xs text-gray-600 mb-1.5">
-          <span>Getting Started</span>
-          <span>0% Complete</span>
+        <div className="flex items-center justify-between text-xs text-gray-600 mb-1.5">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Setup Progress</span>
+            <span className="text-gray-400">•</span>
+            <span>Step 0 of {totalSteps}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+            <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+            <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+            <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+          </div>
         </div>
-        <Progress value={0} className="h-1.5" />
+        <Progress value={0} max={100} className="h-1.5" />
       </div>
 
       {/* Main Content */}
       <Card className="flex-1 p-4 overflow-hidden flex flex-col">
         {/* Welcome Section */}
-        <div className="flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto text-center px-4">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 mb-6">
+        <div className="flex-1 flex flex-col items-center justify-center max-w-xl mx-auto text-center">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 mb-4">
             <Bot className="h-8 w-8 text-blue-600" />
           </div>
           <h1 className="text-2xl font-semibold mb-2">Configure Your {getChatbotTypeLabel(chatbotType)}</h1>
-          <p className="text-gray-600 mb-8 text-sm">
-            Let's set up your chatbot's capabilities and workflow. Follow our step-by-step wizard to create the perfect solution.
+          <p className="text-gray-600 mb-6 text-sm">
+            Quick 4-step setup to get your AI assistant up and running
           </p>
 
-          {/* Steps Preview */}
-          <div className="w-full bg-gray-50 rounded-lg p-4 mb-8">
-            <h3 className="text-sm font-medium mb-3">Setup Process</h3>
-            <div className="grid gap-2">
+          {/* Primary Action */}
+          <Button 
+            size="lg" 
+            className="gap-2 mb-8"
+            onClick={handleStart}
+          >
+            Start Configuration
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+
+          {/* Steps Preview - More Compact */}
+          <div className="w-full bg-gray-50 rounded-lg p-3">
+            <div className="grid grid-cols-2 gap-2">
               {WORKFLOW_STEPS.map((step) => (
-                <div key={step.id} className="flex items-start gap-3 text-left">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-medium">
+                <div key={step.id} className="flex items-center gap-2 p-2">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-medium">
                     {step.id}
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">{step.title}</div>
-                    <div className="text-xs text-gray-500">{step.description}</div>
+                  <div className="text-left">
+                    <div className="text-xs font-medium">{step.title}</div>
+                    <div className="text-[10px] text-gray-500">{step.description}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <Button 
-            size="lg" 
-            className="gap-2"
-            onClick={handleStart}
-          >
-            Start Configuration
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+          {/* Quick Benefits */}
+          <div className="mt-6 grid grid-cols-2 gap-3 text-left">
+            {[
+              "AI-powered skill recommendations",
+              "Automated workflow generation",
+              "Pre-configured API templates",
+              "5-minute setup process"
+            ].map((benefit, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs text-gray-600">
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                <span>{benefit}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Footer */}
