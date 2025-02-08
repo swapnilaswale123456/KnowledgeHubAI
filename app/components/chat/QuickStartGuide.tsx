@@ -32,7 +32,7 @@ export function QuickStartGuide({ steps, onClose }: QuickStartGuideProps) {
         </div>
       </div>
 
-      <div className="p-6 space-y-4 overflow-y-auto h-[calc(100%-5rem)]">
+      <div className="p-2 space-y-4 overflow-y-auto h-[calc(100%-5rem)]">
         {steps.map((step) => (
           <div key={step.id} className="group">
             <div className="flex items-start gap-3 mb-2">

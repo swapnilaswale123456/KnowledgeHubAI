@@ -395,6 +395,7 @@ export default function AppearanceTab() {
                 isMaximized={false}
                 onToggleMaximize={() => {}}
                 setMessages={() => {}}
+                showConversations={false}
               />
             </div>
           </div>

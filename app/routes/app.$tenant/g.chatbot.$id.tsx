@@ -288,6 +288,7 @@ export default function ChatbotRoute() {
           onVoiceRecord={handleVoiceRecord}
           onEmojiSelect={handleEmojiSelect}
           setMessages={setMessages}
+          showConversations={true}
         />
 
         {showGuide && (

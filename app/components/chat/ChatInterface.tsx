@@ -26,6 +26,7 @@ interface ChatInterfaceProps {
   settings: ChatSettings;
   isTyping: boolean;
   isMaximized: boolean;
+  showConversations: boolean;
   onToggleMaximize: () => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }
@@ -64,6 +65,7 @@ export function ChatInterface({
   settings,
   isTyping,
   isMaximized,
+  showConversations,
   onToggleMaximize,
   setMessages: setParentMessages
 }: ChatInterfaceProps) {
@@ -579,54 +581,55 @@ export function ChatInterface({
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Conversations Sidebar */}
-        <div className="w-64 border-r bg-gray-50 flex flex-col">
-          <div className="p-4 border-b">
-            <button
-              onClick={startNewConversation}
-              disabled={isProcessing}
-              className={cn(
-                "w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg",
-                isProcessing ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
-              )}
-            >
-              {isProcessing ? "Creating..." : "New Chat"}
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto">
-            {isLoadingHistory ? (
-              <div className="flex items-center justify-center h-20">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
-              </div>
-            ) : (
-              sessionRef.current.conversations.map((conv) => (
-                <button
-                  key={conv.sessionId}
-                  onClick={() => handleConversationSelect(conv.sessionId, conv.messages)}
-                  disabled={isLoadingMessages}
-                  className={cn(
-                    "w-full p-4 text-left hover:bg-gray-100 border-b",
-                    activeConversation === conv.sessionId && "bg-blue-50",
-                    isLoadingMessages && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="w-5 h-5 text-gray-500" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {conv.lastMessage || "New Conversation"}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {format(new Date(conv.timestamp), 'MMM d, h:mm a')}
-                      </p>
+        {showConversations && (
+          <div className="w-64 border-r bg-gray-50 flex flex-col">
+            <div className="p-4 border-b">
+              <button
+                onClick={startNewConversation}
+                disabled={isProcessing}
+                className={cn(
+                  "w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg",
+                  isProcessing ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
+                )}
+              >
+                {isProcessing ? "Creating..." : "New Chat"}
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto">
+              {isLoadingHistory ? (
+                <div className="flex items-center justify-center h-20">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+                </div>
+              ) : (
+                sessionRef.current.conversations.map((conv) => (
+                  <button
+                    key={conv.sessionId}
+                    onClick={() => handleConversationSelect(conv.sessionId, conv.messages)}
+                    disabled={isLoadingMessages}
+                    className={cn(
+                      "w-full p-4 text-left hover:bg-gray-100 border-b",
+                      activeConversation === conv.sessionId && "bg-blue-50",
+                      isLoadingMessages && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className="w-5 h-5 text-gray-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {conv.lastMessage || "New Conversation"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {format(new Date(conv.timestamp), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))
-            )}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col">
@@ -659,7 +662,7 @@ export function ChatInterface({
                   message={message}
                   setMessage={setMessage}
                   onSend={handleSendMessage}
-                  disabled={isProcessing || isLoadingMessages}
+                  disabled={isProcessing || isLoadingMessages || !wsRef.current?.isConnected}
                   onFileUpload={(file) => console.log('File upload:', file)}
                   onVoiceRecord={() => console.log('Voice record')}
                   onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)}
