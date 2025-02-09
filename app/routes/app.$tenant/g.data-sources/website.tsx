@@ -30,13 +30,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const intent = formData.get("intent");
     const tenantId = await getTenantIdFromUrl(params);
     const webssiteUploadService = getWebsiteUploadService();
-  
     if (intent === "delete") {
       const sourceId = formData.get("sourceId") as string;
       const result = await webssiteUploadService.deleteDataSource(parseInt(sourceId));
       return json(result);
     }
-  
     if (intent === "train") {
       const sourceId = formData.get("sourceId") as string;
       const url = formData.get("url") as string;
@@ -63,13 +61,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const fetcher = useFetcher();
   
     const handleSuccess = () => {
-      setTimeout(() => {
-        navigate(`/app/${params.tenant}/g/chatbot`);
-      }, 2000);
+      // setTimeout(() => {
+      //   navigate(`/app/${params.tenant}/g/chatbot`);
+      // }, 2000);
     };
   
     const handleDelete = (sourceId: number) => {
-      if (!confirm("Are you sure you want to delete this file?")) return;
+      if (!confirm("Are you sure you want to delete this url?")) return;
       
       const formData = new FormData();
       formData.append("intent", "delete");

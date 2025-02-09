@@ -6,7 +6,7 @@ export class WebsiteQueryService {
     const files = await db.dataSources.findMany({
       where: {
         tenantId,
-        sourceTypeId: 2,
+        sourceTypeId: 3,
         ...(chatbotId && { chatbotId })
       },
       select: {

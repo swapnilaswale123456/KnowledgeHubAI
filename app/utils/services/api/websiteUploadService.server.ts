@@ -57,13 +57,14 @@ export class WebsiteUploadService {
 
   async uploadWebsite(url: string, tenantId: string, request: Request, isTrain = false, chatbotId: string | null = null) {
     try {
-      this.chatbotIdlocal = chatbotId;
+      this.chatbotIdlocal = '6f299c82-d052-4fab-9fee-17a1e8e9e1b9';
+      chatbotId = '6f299c82-d052-4fab-9fee-17a1e8e9e1b9';
       const formData = new FormData();
       formData.append('url', url);
       formData.append('chatbotId', this.chatbotIdlocal ?? '');     
       if (isTrain) {
         // Training flow
-        const response = await fetch(`${this.baseUrl}/website/upload/v2/website`, {
+        const response = await fetch(`${this.baseUrl}/web/upload/v2/website`, {
           method: 'POST',
           body: formData,
           headers: {
@@ -91,20 +92,20 @@ export class WebsiteUploadService {
           };
         }
 
-        const chatbot = await ChatbotQueryService.getChatbot(chatbotId);
-        if (!chatbot) {
-          return {
-            success: false,
-            message: 'Invalid chatbot ID'
-          };
-        }
-        this.chatbotIdlocal = chatbot.id;
-        formData.append('chatbotId', this.chatbotIdlocal ?? '');
+        // const chatbot = await ChatbotQueryService.getChatbot(chatbotId);
+        // if (!chatbot) {
+        //   return {
+        //     success: false,
+        //     message: 'Invalid chatbot ID'
+        //   };
+        // }
+        // this.chatbotIdlocal = chatbot.id;
+        formData.append('chatbotId', '6f299c82-d052-4fab-9fee-17a1e8e9e1b9');
         // Create DataSource record using Prisma instead of raw query
         const dataSource = await db.dataSources.create({
           data: {
-            chatbotId: chatbot.id,
-            sourceTypeId: 2,
+            chatbotId: '6f299c82-d052-4fab-9fee-17a1e8e9e1b9',
+            sourceTypeId: 3,
             tenantId: tenantId,
             sourceDetails: {
               url: url,
@@ -120,7 +121,7 @@ export class WebsiteUploadService {
           data: {
             sourceId: dataSource.sourceId,
             url: url,
-            chatbotId: chatbot.id,
+            chatbotId: '6f299c82-d052-4fab-9fee-17a1e8e9e1b9',
             isTrain: isTrain
           }
         };

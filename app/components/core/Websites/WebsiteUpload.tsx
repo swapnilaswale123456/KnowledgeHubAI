@@ -1,5 +1,5 @@
 import { useFetcher } from "@remix-run/react";
-import { useState, useEffect, useRef } from "react";
+import React,{ useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "~/components/ui/card";
 import ErrorModal from "~/components/ui/modals/ErrorModal";
 import SuccessModal, { RefSuccessModal } from "~/components/ui/modals/SuccessModal";
@@ -29,6 +29,7 @@ export default function WebsiteUpload({
   title = "Upload Website",
   chatbotId
 }: WebsiteUploadProps) {
+ 
   const fetcher = useFetcher<UploadResponse>();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,8 @@ export default function WebsiteUpload({
   const fileRef = useRef<File | null>(null);
   const successModal = useRef<RefSuccessModal>(null);
   const errorModal = useRef<any>(null);
-
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputHiddenRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data) {
       setIsUploading(false);
@@ -58,16 +60,14 @@ export default function WebsiteUpload({
     }
   }, [fetcher.state, fetcher.data]);
 
-  const handleWebsiteUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    fileRef.current = file;
+  const handleWebsiteUpload = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const url = inputRef?.current?.value;
+    if (!url) return;
     setIsUploading(true);
     setError(null);
-    
+    chatbotId = inputHiddenRef?.current?.value;
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("url", url);
     if (chatbotId) {
       formData.append("chatbotId", chatbotId);
     }
@@ -126,11 +126,20 @@ export default function WebsiteUpload({
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         {isUploading ? "Uploading..." : "Enter website url to upload"}
                         <input
-                    type="text"
-                    className="form-control w-full"
-                    onChange={handleWebsiteUpload}
-                    disabled={isUploading}
+                        id="websiteUrl" 
+                        ref={inputRef}
+                        type="text"
+                        className="form-control w-full"
+                        disabled={isUploading}
                   />
+                  <input
+                        id="websiteUrl" 
+                        ref={inputHiddenRef}
+                        type="hidden"
+                        className="form-control w-full"
+                        value="Javascript:localStorage.getItem('selectedChatbotId')"
+                  />
+                  <button type="button" onClick={handleWebsiteUpload} className="px-4 py-2 text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed" >Submit</button>
                   </div>
                   
                 </label>
