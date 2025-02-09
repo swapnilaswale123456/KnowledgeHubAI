@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Paperclip, Mic, Smile, Send } from 'lucide-react';
+import { Paperclip, Mic, Smile, Send, Zap } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 
 interface ChatInputProps {
@@ -10,6 +10,7 @@ interface ChatInputProps {
   onFileUpload?: (file: File) => void;
   onVoiceRecord?: () => void;
   onEmojiSelect?: (emoji: string) => void;
+  onQuickResponsesToggle?: () => void;
 }
 
 export function ChatInput({
@@ -19,7 +20,8 @@ export function ChatInput({
   disabled,
   onFileUpload,
   onVoiceRecord,
-  onEmojiSelect
+  onEmojiSelect,
+  onQuickResponsesToggle
 }: ChatInputProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +68,16 @@ export function ChatInput({
               </div>
             )}
           </button>
+          {onQuickResponsesToggle && (
+            <button
+              type="button"
+              onClick={onQuickResponsesToggle}
+              className="p-2 hover:bg-gray-100 rounded-full"
+              title="Quick Responses"
+            >
+              <Zap className="h-4 w-4 text-gray-500" />
+            </button>
+          )}
           <button 
             onClick={onSend}
             className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"

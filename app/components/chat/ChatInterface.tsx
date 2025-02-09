@@ -13,11 +13,18 @@ import { ChatHistoryService } from "~/services/chat/ChatHistoryService";
 import { format } from "date-fns";
 import { WebSocketService } from "~/utils/services/websocket/WebSocketService";
 
+interface QuickResponse {
+  id: string;
+  text: string;
+  category: string;
+}
+
 interface Conversation {
   sessionId: string;
   lastMessage: string;
   timestamp: Date;
   messages: Message[];
+  tags?: string[];
 }
 
 interface ChatInterfaceProps {
@@ -59,6 +66,14 @@ interface SessionState {
   conversations: Conversation[];
 }
 
+// Add mock quick responses
+const QUICK_RESPONSES: QuickResponse[] = [
+  { id: '1', text: 'What are your business hours?', category: 'general' },
+  { id: '2', text: 'How can I track my order?', category: 'orders' },
+  { id: '3', text: 'I need help with a refund', category: 'support' },
+  { id: '4', text: 'What payment methods do you accept?', category: 'payments' }
+];
+
 export function ChatInterface({ 
   chatbotId,
   messages: initialMessages,
@@ -73,6 +88,8 @@ export function ChatInterface({
   const [message, setMessage] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
+  const [isTypingResponse, setIsTypingResponse] = useState(false);
+  const [showQuickResponses, setShowQuickResponses] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocketService | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -327,6 +344,12 @@ export function ChatInterface({
 
           setIsProcessing(false);
         }
+      }
+
+      if (parsedMsg.type === 'typing_start') {
+        setIsTypingResponse(true);
+      } else if (parsedMsg.type === 'typing_end') {
+        setIsTypingResponse(false);
       }
     } catch (error) {
       console.error('WebSocket message error:', error);
@@ -595,38 +618,32 @@ export function ChatInterface({
                 {isProcessing ? "Creating..." : "New Chat"}
               </button>
             </div>
-            
+
+            {/* Simplified conversation list without folders */}
             <div className="flex-1 overflow-y-auto">
-              {isLoadingHistory ? (
-                <div className="flex items-center justify-center h-20">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
-                </div>
-              ) : (
-                sessionRef.current.conversations.map((conv) => (
-                  <button
-                    key={conv.sessionId}
-                    onClick={() => handleConversationSelect(conv.sessionId, conv.messages)}
-                    disabled={isLoadingMessages}
-                    className={cn(
-                      "w-full p-4 text-left hover:bg-gray-100 border-b",
-                      activeConversation === conv.sessionId && "bg-blue-50",
-                      isLoadingMessages && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <MessageSquare className="w-5 h-5 text-gray-500" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {conv.lastMessage || "New Conversation"}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {format(new Date(conv.timestamp), 'MMM d, h:mm a')}
-                        </p>
-                      </div>
+              {sessionRef.current.conversations.map(conv => (
+                <button
+                  key={conv.sessionId}
+                  onClick={() => handleConversationSelect(conv.sessionId, conv.messages)}
+                  className={cn(
+                    "w-full p-4 text-left hover:bg-gray-100 border-b",
+                    activeConversation === conv.sessionId && "bg-blue-50",
+                    isLoadingMessages && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-5 h-5 text-gray-500" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {conv.lastMessage || "New Conversation"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {format(new Date(conv.timestamp), 'MMM d, h:mm a')}
+                      </p>
                     </div>
-                  </button>
-                ))
-              )}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -656,8 +673,18 @@ export function ChatInterface({
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input */}
+              {/* Input Area with Quick Responses Toggle */}
               <div className="border-t p-2 bg-gray-50">
+                {isTypingResponse && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span>AI is typing...</span>
+                  </div>
+                )}
                 <ChatInput
                   message={message}
                   setMessage={setMessage}
@@ -666,6 +693,7 @@ export function ChatInterface({
                   onFileUpload={(file) => console.log('File upload:', file)}
                   onVoiceRecord={() => console.log('Voice record')}
                   onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)}
+                  onQuickResponsesToggle={() => setShowQuickResponses(prev => !prev)}
                 />
               </div>
             </>
