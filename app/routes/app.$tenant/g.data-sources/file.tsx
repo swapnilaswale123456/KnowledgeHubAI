@@ -10,6 +10,9 @@ import { DataSourceQueryService } from "~/services/data/DataSourceQueryService";
 import { useTranslation } from "react-i18next";
 import { useChatbot } from "~/contexts/ChatbotContext";
 import { getSelectedChatbot, setSelectedChatbot,commitSession } from "~/utils/session.server";
+import { toast } from "sonner";
+import { useRef, useState } from "react";
+import ConfirmModal, { RefConfirmModal } from "~/components/ui/modals/ConfirmModal";
 
 type LoaderData = {
   files: FileSource[];
@@ -41,9 +44,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const tenantId = await getTenantIdFromUrl(params);
   const fileUploadService = getFileUploadService(); 
   const selectedChatbotId = formData.get("chatbotId") as string;
+  const sourceId = formData.get("sourceId") as string;
   
   if (intent === "delete") {
-    const sourceId = formData.get("sourceId") as string;
     const result = await fileUploadService.deleteDataSource(parseInt(sourceId));
     return json(result);
   }
@@ -58,7 +61,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     tenantId, 
     request, 
     intent === "train",
-    selectedChatbotId
+    selectedChatbotId,
+    sourceId
   );
   return json(result);
 };
@@ -69,22 +73,40 @@ export default function FileRoute() {
   const params = useParams();
   const navigate = useNavigate();
   const fetcher = useFetcher();
+  const confirmModal = useRef<RefConfirmModal>(null);
+  const [sourceIdToDelete, setSourceIdToDelete] = useState<number | null>(null);
 
   const handleSuccess = () => {
-   
+   toast.success("File uploaded successfully and is ready for training",{
+    description: "Your file has been uploaded and is ready for training.",
+    duration: 3000,
+    position: "top-center",
+   });     
   };
 
   const handleDelete = (sourceId: number) => {
-    if (!confirm("Are you sure you want to delete this file?")) return;
+    setSourceIdToDelete(sourceId);
+    confirmModal.current?.show(
+      "Delete File", 
+      "Delete", 
+      "Cancel", 
+      "Are you sure you want to delete this file? This action cannot be undone."
+    );
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!sourceIdToDelete) return;
     
     const formData = new FormData();
     formData.append("intent", "delete");
-    formData.append("sourceId", sourceId.toString());
+    formData.append("sourceId", sourceIdToDelete.toString());
     formData.append("chatbotId", chatbotId);
     
     fetcher.submit(formData, {
       method: "POST"
     });
+
+    setSourceIdToDelete(null); // Reset after delete
   };
 
   if (!chatbotId) {
@@ -103,6 +125,7 @@ export default function FileRoute() {
         files={files as unknown as FileSource[]}
         onDelete={handleDelete}
       />
+      <ConfirmModal ref={confirmModal} onYes={handleDeleteConfirm} destructive/>
     </div>
   );
 }

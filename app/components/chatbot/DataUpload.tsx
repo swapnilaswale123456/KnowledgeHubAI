@@ -85,7 +85,7 @@ export function DataUpload({ files = [], onChange, onChangeDataSource, existingF
       <FileUpload 
         onSuccess={handleSuccess}
         showBackButton={false}
-        chatbotId={chatbotId}
+        chatbotId={chatbotId ?? ""}
       />
 
       <div className="mt-6">

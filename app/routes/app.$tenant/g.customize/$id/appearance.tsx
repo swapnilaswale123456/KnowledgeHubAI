@@ -106,10 +106,14 @@ export default function AppearanceTab() {
       if (fetcher.data.success) {      
         toast("Theme settings saved successfully", {
           description: "Your changes have been applied",
+          duration: 3000,
+          position: "top-center",
         });
       } else {
         toast("Failed to save changes", {
-          description: fetcher.data.error || "Please try again"         
+          description: fetcher.data.error || "Please try again",
+          duration: 3000,
+          position: "top-center",
         });
       }
     }

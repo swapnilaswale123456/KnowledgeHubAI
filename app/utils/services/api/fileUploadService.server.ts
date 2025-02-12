@@ -57,12 +57,13 @@ export class FileUploadService {
     this.apiKey = process.env.PYTHON_API_KEY || '';
   }
 
-  async uploadFile(file: File, tenantId: string, request: Request, isTrain = false, chatbotId: string | null = null) {
+  async uploadFile(file: File, tenantId: string, request: Request, isTrain = false, chatbotId: string | null = null, sourceId: string | null = null) {
     try {
       this.chatbotIdlocal = chatbotId;
       const formData = new FormData();
       formData.append('file', file);
       formData.append('chatbot_id', this.chatbotIdlocal ?? '');     
+    
       if (isTrain) {
         // Training flow
         const response = await fetch(`${this.baseUrl}/api/v1/files/upload/v2`, {
@@ -74,16 +75,26 @@ export class FileUploadService {
         });
         
         if (!response.ok) {
+         
           return {
             success: false,
             message: `Upload failed: ${response.statusText}`
           };
         }
-
-        return {
-          success: true,
-          message: 'File trained successfully'
-        };
+        if(response.ok){
+           // Update training status
+           await fileUploadService.updateDataSource(parseInt(sourceId ?? '0'), {
+            sourceDetails: {
+              isTrained: true,
+              status: 'TRAINED',
+              message: 'Training completed'
+            }
+          });
+          return {
+            success: true,
+            message: 'File trained successfully'
+          };
+        }
       } else {
         // Regular upload flow
         if (!chatbotId) {
@@ -113,10 +124,12 @@ export class FileUploadService {
               fileSize: file.size,
               fileType: file.type,
               uploadedBy: tenantId,
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              isTrained: isTrain
             }
           }
         });
+        formData.append('sourceId', dataSource.sourceId.toString());
 
         return {
           success: true,
@@ -216,6 +229,51 @@ export class FileUploadService {
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Delete failed'
+      };
+    }
+  }
+
+  async updateDataSource(sourceId: number, updates: Partial<{
+    sourceDetails: {
+      fileName?: string;
+      fileSize?: number;
+      fileType?: string;
+      isTrained?: boolean;
+      status?: string;
+      message?: string;
+      updatedAt?: string;
+    }
+  }>) {
+    try {
+      const dataSource = await db.dataSources.findUnique({
+        where: { sourceId }
+      });
+
+      if (!dataSource) {
+        throw new Error('Data source not found');
+      }
+
+      const updatedDataSource = await db.dataSources.update({
+        where: { sourceId },
+        data: {
+          sourceDetails: {
+            ...(dataSource.sourceDetails as any),
+            ...updates.sourceDetails,
+            updatedAt: new Date().toISOString()
+          }
+        }
+      });
+
+      return {
+        success: true,
+        message: 'Data source updated successfully',
+        data: updatedDataSource
+      };
+    } catch (error) {
+      console.error('Update error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Update failed'
       };
     }
   }

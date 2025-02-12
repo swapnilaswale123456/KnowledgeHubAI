@@ -13,7 +13,7 @@ export class DataSourceQueryService {
         sourceId: true,
         sourceDetails: true,
         createdAt: true,
-        chatbotId: true
+        chatbotId: true,
       },
       orderBy: {
         createdAt: 'desc'

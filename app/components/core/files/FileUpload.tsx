@@ -89,7 +89,8 @@ export default function FileUpload({
     const formData = new FormData();
     formData.append("file", uploadedFile.file);
     formData.append("intent", "train");
-    formData.append("chatbotId", chatbotId);
+    formData.append("chatbotId", chatbotId);    
+    formData.append("sourceId", uploadedFile.sourceId?.toString() || "");
     fetcher.submit(formData, {
       method: "post",
       encType: "multipart/form-data"

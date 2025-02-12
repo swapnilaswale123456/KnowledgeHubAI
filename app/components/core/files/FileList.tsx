@@ -108,7 +108,7 @@ export function FileList({ files, onDelete }: FileListProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={file.isTrained ? "success" : "warning"}>
+                  <Badge variant={file.isTrained ? "default" : "secondary"}>
                     {file.isTrained ? "Trained" : "Pending"}
                   </Badge>
                 </TableCell>
