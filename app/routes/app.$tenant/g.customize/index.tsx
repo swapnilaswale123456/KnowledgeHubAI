@@ -3,7 +3,7 @@ import { getSelectedChatbot, setSelectedChatbot ,commitSession} from "~/utils/se
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
-  console.log("url", url);
+
   const searchParams = new URLSearchParams(url.search);
   const chatbotId = await getSelectedChatbot(request) || searchParams.get("chatbotId");
 

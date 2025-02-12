@@ -5,7 +5,7 @@ import SidebarIconsLayout, { IconDto } from "~/components/ui/layouts/SidebarIcon
 import { requireAuth } from "~/utils/loaders.middleware";
 import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
 import { AppearanceIcon, MessagesIcon, LanguageIcon } from "~/components/icons/customize";
-import { getSelectedChatbot, setSelectedChatbot, commitSession, getUserSession } from "~/utils/session.server";
+import { getSelectedChatbot, setSelectedChatbot, commitSession, getUserSession, requireSelectedChatbot } from "~/utils/session.server";
 
 interface LoaderData {
   chatbotId: string;
@@ -20,27 +20,29 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => [
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const chatbotId = await getSelectedChatbot(request);
+  await requireSelectedChatbot(request, { tenant: params.tenant ?? "" });
+  const chatbotId = params.id;
   
-  if (!chatbotId || chatbotId !== params.id) {
-    const session = await getUserSession(request);
-    session.set("selectedChatbotId", params.id);
-    
-    // Get chatbot details for the title
-    const chatbot = await ChatbotQueryService.getChatbot(params.id || "");
-    
-    return json(
-      { chatbotId: params.id, chatbot },
-      {
-        headers: {
-          "Set-Cookie": await commitSession(session)
-        }
-      }
-    );
+  if (!chatbotId) {
+    return redirect(`/app/${params.tenant}/dashboard`);
   }
-  
+
   const chatbot = await ChatbotQueryService.getChatbot(chatbotId);
-  return json({ chatbotId, chatbot });
+  if (!chatbot) {
+    throw new Response("Chatbot not found", { status: 404 });
+  }
+
+  const session = await getUserSession(request);
+  session.set("selectedChatbotId", chatbotId);
+  
+  return json(
+    { chatbotId, chatbot },
+    {
+      headers: {
+        "Set-Cookie": await commitSession(session)
+      }
+    }
+  );
 };
 
 const getTabs = (params: { tenant: string; id: string }): IconDto[] => {

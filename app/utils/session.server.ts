@@ -174,3 +174,11 @@ export async function setSelectedChatbot(request: Request, chatbotId: string | n
   }
   return session;
 }
+
+export async function requireSelectedChatbot(request: Request, params: { tenant: string }) {
+  const chatbotId = await getSelectedChatbot(request);
+  if (!chatbotId) {
+    throw redirect(`/app/${params.tenant}/dashboard`);
+  }
+  return chatbotId;
+}

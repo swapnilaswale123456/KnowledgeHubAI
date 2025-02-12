@@ -32,7 +32,7 @@ import { ChatbotWorkflow } from "~/components/dashboard/ChatbotWorkflow";
 import { useWorkflowState } from "~/hooks/useWorkflowState";
 import { useChatbotActions } from "~/hooks/useChatbotActions";
 import { DashboardContent } from "~/components/dashboard/DashboardContent";
-import { getSelectedChatbot, setSelectedChatbot, getUserSession, storage } from "~/utils/session.server";
+import { getSelectedChatbot, setSelectedChatbot, getUserSession, storage, commitSession } from "~/utils/session.server";
 
 export { serverTimingHeaders as headers };
 
@@ -131,7 +131,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     dashboardStats,
   };
 
-  return json(data, { headers: getServerTimingHeader() });
+  // Clear selected chatbot when entering dashboard
+  const session = await getUserSession(request);
+  session.unset("selectedChatbotId");
+  
+  return json(
+    { ...data },
+    {
+      headers: {
+        "Set-Cookie": await commitSession(session)
+      }
+    }
+  );
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: data?.title }];
