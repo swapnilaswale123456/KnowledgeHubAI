@@ -62,10 +62,10 @@ export class FileUploadService {
       this.chatbotIdlocal = chatbotId;
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('chatbotId', this.chatbotIdlocal ?? '');     
+      formData.append('chatbot_id', this.chatbotIdlocal ?? '');     
       if (isTrain) {
         // Training flow
-        const response = await fetch(`${this.baseUrl}/file/upload/v2/file`, {
+        const response = await fetch(`${this.baseUrl}/api/v1/files/upload/v2`, {
           method: 'POST',
           body: formData,
           headers: {

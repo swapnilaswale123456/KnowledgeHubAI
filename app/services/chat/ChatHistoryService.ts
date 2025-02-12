@@ -51,7 +51,7 @@ export class ChatHistoryService {
       }
       queryParams.append('user_id', userId);
 
-      const url = `${this.baseUrl}/ask/chat/history?${queryParams.toString()}`;
+      const url = `${this.baseUrl}/api/v1/chat/history?${queryParams.toString()}`;
       console.log('Fetching chat history from:', url);
 
       const response = await fetch(url, {

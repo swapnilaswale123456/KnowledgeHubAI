@@ -50,7 +50,7 @@ export default function DataSourcesRoute() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-
+  const selectedChatbotId = localStorage.getItem('selectedChatbotId');
   // Define tabs dynamically from dataSourceTypes
   const getTabs = () => {
     const iconMap: Record<string, { icon: React.ReactNode; iconSelected: React.ReactNode }> = {
@@ -82,7 +82,7 @@ export default function DataSourcesRoute() {
 
     return data.dataSourceTypes.map((type): IconDto => ({
       name: type.sourceName,
-      href: UrlUtils.currentTenantUrl(params, `g/data-sources/${type.sourceKey}`),
+      href: UrlUtils.currentTenantUrl(params, `g/data-sources/${type.sourceKey}/${selectedChatbotId}`),
       icon: iconMap[type.sourceKey]?.icon,
       iconSelected: iconMap[type.sourceKey]?.iconSelected
     }));

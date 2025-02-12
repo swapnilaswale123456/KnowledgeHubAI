@@ -29,8 +29,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
   const tenantId = await getTenantIdFromUrl(params);
-  const fileUploadService = getFileUploadService();
-
+  const fileUploadService = getFileUploadService(); 
+  const selectedChatbotId = params.id;
+  
   if (intent === "delete") {
     const sourceId = formData.get("sourceId") as string;
     const result = await fileUploadService.deleteDataSource(parseInt(sourceId));
@@ -43,7 +44,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     if (!file) {
       return json({ success: false, message: "No file provided for training" });
     }
-    const result = await fileUploadService.uploadFile(file, tenantId, request, true);
+    const result = await fileUploadService.uploadFile(file, tenantId, request, true, selectedChatbotId);
     return json(result);
   }
 
@@ -52,7 +53,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     return json({ success: false, message: "No file uploaded" });
   }
 
-  const result = await fileUploadService.uploadFile(file, tenantId, request);
+  const result = await fileUploadService.uploadFile(file, tenantId, request, false, selectedChatbotId);
   return json(result);
 };
 
