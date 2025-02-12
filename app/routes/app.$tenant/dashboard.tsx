@@ -15,7 +15,7 @@ import { getTenant } from "~/utils/db/tenants.db.server";
 import { useState, useEffect } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { ChatbotDetails } from "~/utils/services/chatbots/chatbotService.server";
-import { useChatbot } from "~/context/ChatbotContext";
+import { useChatbot } from "~/contexts/ChatbotContext";
 import { steps } from "~/components/chatbot/WorkflowSteps";
 import { getFileUploadService } from "~/utils/services/api/fileUploadService.server";
 import type { FileSource } from "~/components/core/files/FileList";
@@ -32,6 +32,7 @@ import { ChatbotWorkflow } from "~/components/dashboard/ChatbotWorkflow";
 import { useWorkflowState } from "~/hooks/useWorkflowState";
 import { useChatbotActions } from "~/hooks/useChatbotActions";
 import { DashboardContent } from "~/components/dashboard/DashboardContent";
+import { getSelectedChatbot, setSelectedChatbot, getUserSession, storage } from "~/utils/session.server";
 
 export { serverTimingHeaders as headers };
 
@@ -204,6 +205,22 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const chatbots = await ChatbotQueryService.getChatbots(tenantId);
     return json({ success: true, chatbots });
   }
+
+  if (intent === "select-chatbot") {
+    console.log("Selecting chatbot in dashboard:", chatbotId);
+    
+    const session = await storage.getSession(request.headers.get("Cookie"));
+    session.set("selectedChatbotId", chatbotId);
+    
+    return json(
+      { success: true },
+      {
+        headers: {
+          "Set-Cookie": await storage.commitSession(session)
+        }
+      }
+    );
+  }
  
   const file = formData.get("file") as File;
   if (!file) {
@@ -224,6 +241,7 @@ export default function DashboardRoute() {
   
   const workflowState = useWorkflowState();
   const { fetcher, handleChatbotAction, handleTraining, handleStatusUpdate } = useChatbotActions();
+  const { clearSelectedChatbot } = useChatbot();
   
   const {
     isWorkflowOpen,
@@ -241,8 +259,13 @@ export default function DashboardRoute() {
     setCreatedChatbotId
   } = workflowState;
 
-  const handleSelectChatbot = (chatbotId: string) => {
-    // Implementation of handleSelectChatbot
+  const handleSelectChatbot = async (chatbotId: string) => {
+    const formData = new FormData();
+    formData.append("intent", "select-chatbot");
+    formData.append("chatbotId", chatbotId);
+    
+    await fetcher.submit(formData, { method: "post" });
+    navigate(`/app/${params.tenant}/g/chatbot/${chatbotId}`);
   };
 
   const handleDelete = async (chatbotId: string) => {
@@ -423,6 +446,13 @@ export default function DashboardRoute() {
       setIsSubmitting(false);
     }
   }, [fetcher.state, fetcher.data]);
+
+  // Move useEffect after all hooks
+  useEffect(() => {
+    if (typeof clearSelectedChatbot === 'function') {
+      clearSelectedChatbot();
+    }
+  }, [clearSelectedChatbot]); // Add clearSelectedChatbot to dependency array
 
   if (isChildRoute) {
     return <Outlet />;

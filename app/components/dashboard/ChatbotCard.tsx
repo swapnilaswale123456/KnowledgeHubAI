@@ -18,6 +18,7 @@ interface ChatbotCardProps {
   onEdit: (chatbot: ChatbotDetails) => void;
   tenantSlug: string;
   isEditing?: boolean;
+  onSelect: (id: string) => void;
 }
 
 export function ChatbotCard({ 
@@ -27,10 +28,17 @@ export function ChatbotCard({
   onNavigate, 
   onEdit, 
   tenantSlug,
-  isEditing = false 
+  isEditing = false,
+  onSelect
 }: ChatbotCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 relative">
+    <Card 
+      className="hover:shadow-lg transition-shadow duration-200 relative" 
+      onClick={(e) => {
+        e.preventDefault();
+        onSelect(chatbot.id);
+      }}
+    >
       {isEditing && (
         <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
           <div className="flex items-center space-x-2">

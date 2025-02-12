@@ -1,4 +1,4 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { useParams } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
@@ -10,36 +10,59 @@ import { Message, ChatSettings, ChatContext } from "~/types/chat";
 import { WebSocketService } from '~/utils/services/websocket/WebSocketService';
 import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
 import { useLoaderData } from "@remix-run/react";
-import { useChatbot } from "~/context/ChatbotContext";
+import { useChatbot } from "~/contexts/ChatbotContext";
 import type { MetaFunction } from "@remix-run/node";
 import { THEME_COLORS } from "~/utils/theme/constants";
+import { setSelectedChatbot, commitSession } from "~/utils/session.server";
+
+type LoaderData = {
+  chatbot: {
+    id: string;
+    name: string;
+    theme: any;
+    initialMessage?: string;
+    // ... other chatbot properties
+  };
+};
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  await requireAuth({ request, params });
+  const chatbotId = params.id;
   
-  const chatbots = await ChatbotService.getChatbotDetails(params.id!);
-  //const chatbot = Array.isArray(chatbots) ? chatbots[0] : chatbots;
+  if (!chatbotId) {
+    return redirect(`/app/${params.tenant}/dashboard`);
+  }
+
+  // Get chatbot details
+  const chatbot = await ChatbotService.getChatbotDetails(chatbotId);
   
-  if (!chatbots) {
+  if (!chatbot) {
     throw new Response("Chatbot not found", { status: 404 });
   }
-  //const chatbot = chatbots[0];
- // Parse theme if it's a string
-  const theme = typeof chatbots.theme === 'string' 
-  ? JSON.parse(chatbots.theme) 
-  : chatbots.theme;
 
-  return json({ 
+  // Parse theme if it's a string
+  const theme = typeof chatbot.theme === 'string' 
+    ? JSON.parse(chatbot.theme) 
+    : chatbot.theme;
+
+  const session = await setSelectedChatbot(request, chatbotId);
+  
+  return json(
+    { 
       chatbot: {
-        ...chatbots,
+        ...chatbot,
         theme
-      },
-      title: "Chatbot | KnowledgeHub AI"
-    });
-  };
+      }
+    },
+    {
+      headers: {
+        "Set-Cookie": await commitSession(session)
+      }
+    }
+  );
+};
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: data?.title || "Chatbot | KnowledgeHub AI" }
+  { title: data?.chatbot?.name || "Chatbot | KnowledgeHub AI" }
 ];
 
 interface QuickStartStep {
@@ -66,17 +89,17 @@ const DEFAULT_SETTINGS: ChatSettings = {
 export default function ChatbotRoute() {
   const { selectedChatbotId, setSelectedChatbotId } = useChatbot();
   const params = useParams();
-  const { chatbot } = useLoaderData<typeof loader>();
+  const { chatbot } = useLoaderData<LoaderData>();
   const [showGuide, setShowGuide] = useState(true);
   const [message, setMessage] = useState("");
   const [isMaximized, setIsMaximized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      content: chatbot.initialMessage || 'Hi! I am KnowledgeAI, Ask me about anything!',
-      sender: 'bot',
+      id: "welcome",
+      content: chatbot.initialMessage || "Hello! How can I help you today?",
+      sender: "bot",
       timestamp: new Date(),
-      status: 'sent' as const
+      status: "sent"
     }
   ]);
   const [isTyping, setIsTyping] = useState(false);
@@ -275,8 +298,8 @@ export default function ChatbotRoute() {
         isMaximized ? "w-full h-full" : "max-w-[1000px] max-h-[700px] mx-auto"
       )}>
         <ChatInterface 
-          chatbotId={params.id!}
-          message={message}
+          chatbotId={chatbot.id}
+          currentMessage={message}
           isMaximized={isMaximized}
           messages={messages}
           settings={settings}

@@ -9,7 +9,7 @@ interface FileUploadProps {
   showBackButton?: boolean;
   backButtonComponent?: React.ReactNode;
   title?: string;
-  chatbotId?: string;
+  chatbotId: string;
 }
 
 interface UploadResponse {
@@ -74,9 +74,7 @@ export default function FileUpload({
     
     const formData = new FormData();
     formData.append("file", file);
-    if (chatbotId) {
-      formData.append("chatbotId", chatbotId);
-    }
+    formData.append("chatbotId", chatbotId);
     
     fetcher.submit(formData, {
       method: "post",
@@ -91,9 +89,7 @@ export default function FileUpload({
     const formData = new FormData();
     formData.append("file", uploadedFile.file);
     formData.append("intent", "train");
-    if (chatbotId) {
-      formData.append("chatbotId", chatbotId);
-    }
+    formData.append("chatbotId", chatbotId);
     fetcher.submit(formData, {
       method: "post",
       encType: "multipart/form-data"

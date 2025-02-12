@@ -66,7 +66,7 @@ export const storage = createCookieSessionStorage({
   },
 });
 
-export function getUserSession(request: Request) {
+export async function getUserSession(request: Request) {
   return storage.getSession(request.headers.get("Cookie"));
 }
 
@@ -155,4 +155,22 @@ export async function validateCSRFToken(request: Request) {
   if (!body.csrf) throw new Error("CSRF Request Token not included.");
   if (body.csrf !== session.get("csrf")) throw new Error("CSRF tokens do not match, try refreshing the page.");
   // we don't need to return anything, if the validation fail it will throw an error
+}
+
+export async function getSelectedChatbot(request: Request) {
+  const session = await getUserSession(request);
+  const chatbotId = session.get("selectedChatbotId");
+  //console.log("Getting chatbot ID from session:", chatbotId);
+  return chatbotId;
+}
+
+export async function setSelectedChatbot(request: Request, chatbotId: string | null) {
+  //console.log("Setting chatbot ID in session:", chatbotId);
+  const session = await getUserSession(request);
+  if (chatbotId) {
+    session.set("selectedChatbotId", chatbotId);
+  } else {
+    session.unset("selectedChatbotId");
+  }
+  return session;
 }

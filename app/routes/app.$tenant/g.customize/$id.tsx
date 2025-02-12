@@ -1,46 +1,46 @@
 import { json, LoaderFunctionArgs, MetaFunction, redirect } from "@remix-run/node";
-import { useLoaderData, useParams, Outlet, useRouteError } from "@remix-run/react";
+import { useLoaderData, useParams, Outlet, useRouteError, useNavigate, useLocation } from "@remix-run/react";
+import { useEffect } from "react";
 import SidebarIconsLayout, { IconDto } from "~/components/ui/layouts/SidebarIconsLayout";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
 import { AppearanceIcon, MessagesIcon, LanguageIcon } from "~/components/icons/customize";
+import { getSelectedChatbot, setSelectedChatbot, commitSession, getUserSession } from "~/utils/session.server";
 
 interface LoaderData {
-  chatbot: {
+  chatbotId: string;
+  chatbot?: {
     id: string;
     name: string;    
   };
-  title: string;
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: data?.title || "Customize | KnowledgeHub AI" }
+  { title: data?.chatbot?.name ? `Customize ${data.chatbot.name} | KnowledgeHub AI` : "Customize Chatbot | KnowledgeHub AI" }
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  await requireAuth({ request, params });
-  const chatbotId = params.id;
-
-  if (!chatbotId) {
-    throw new Error("Chatbot ID is required");
+  const chatbotId = await getSelectedChatbot(request);
+  
+  if (!chatbotId || chatbotId !== params.id) {
+    const session = await getUserSession(request);
+    session.set("selectedChatbotId", params.id);
+    
+    // Get chatbot details for the title
+    const chatbot = await ChatbotQueryService.getChatbot(params.id || "");
+    
+    return json(
+      { chatbotId: params.id, chatbot },
+      {
+        headers: {
+          "Set-Cookie": await commitSession(session)
+        }
+      }
+    );
   }
-
-  // Redirect to appearance tab if on base route
-  const url = new URL(request.url);
-  if (url.pathname === `/app/${params.tenant}/g/customize/${chatbotId}`) {
-    return redirect(`/app/${params.tenant}/g/customize/${chatbotId}/appearance`);
-  }
-
-  try {
-    const chatbot = await ChatbotQueryService.getChatbot(chatbotId);
-    return json({ 
-      chatbot,
-      title: `Customize | KnowledgeHub AI`
-    });
-  } catch (error) {
-    console.error("Error loading chatbot:", error);
-    throw new Error("Failed to load chatbot");
-  }
+  
+  const chatbot = await ChatbotQueryService.getChatbot(chatbotId);
+  return json({ chatbotId, chatbot });
 };
 
 const getTabs = (params: { tenant: string; id: string }): IconDto[] => {
@@ -70,8 +70,17 @@ const getTabs = (params: { tenant: string; id: string }): IconDto[] => {
 };
 
 export default function CustomizeChatbot() {
-  const { chatbot } = useLoaderData<LoaderData>();
+  const { chatbotId, chatbot } = useLoaderData<LoaderData>();
   const params = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect to appearance tab if on base route
+  useEffect(() => {
+    if (location.pathname === `/app/${params.tenant}/g/customize/${params.id}`) {
+      navigate(`/app/${params.tenant}/g/customize/${params.id}/appearance`);
+    }
+  }, [location.pathname, params.tenant, params.id, navigate]);
 
   return (
     <SidebarIconsLayout 

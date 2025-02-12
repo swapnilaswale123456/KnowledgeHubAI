@@ -1,23 +1,24 @@
 import { LoaderFunctionArgs, redirect } from "@remix-run/node";
-import { useEffect } from "react";
-import { useNavigate, useParams } from "@remix-run/react";
-export async function loader({ params }: LoaderFunctionArgs) {
+import { Outlet } from "@remix-run/react";
+import { getSelectedChatbot } from "~/utils/session.server";
+
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+  const chatbotId = await getSelectedChatbot(request);
  
+
+  if (!chatbotId) {
+    return redirect(`/app/${params.tenant}/dashboard`);
+  }
+  
+  // If we're on the base route, redirect to the chatbot ID route
+  const url = new URL(request.url);
+  if (url.pathname === `/app/${params.tenant}/g/chatbot`) {
+    return redirect(`/app/${params.tenant}/g/chatbot/${chatbotId}`);
+  }
+  
   return null;
-}
+};
 
 export default function ChatbotRoute() {
-  const navigate = useNavigate();
-  const params = useParams();
-
-  useEffect(() => {
-    const selectedChatbotId = localStorage.getItem('selectedChatbotId');
-    if (selectedChatbotId) {
-      navigate(`/app/${params.tenant}/g/chatbot/${selectedChatbotId}`);
-    } else {
-      navigate(`/app/${params.tenant}/dashboard`);
-    }
-  }, [navigate, params.tenant]);
-
-  return null;
+  return <Outlet />;
 }

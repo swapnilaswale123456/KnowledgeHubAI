@@ -4,7 +4,7 @@ import { EntitySimple } from "~/utils/db/entities/entities.db.server";
 import { TFunction } from "i18next";
 import { EntityGroupWithDetails } from "~/utils/db/entities/entityGroups.db.server";
 import { AppConfiguration } from "~/utils/db/appConfiguration.db.server";
-import { useChatbot } from "~/context/ChatbotContext";
+import { useChatbot } from "~/contexts/ChatbotContext";
 
 type Props = {
   t: TFunction;
