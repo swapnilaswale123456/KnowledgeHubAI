@@ -60,12 +60,14 @@ export class FileUploadService {
   async uploadFile(file: File, tenantId: string, request: Request, isTrain = false, chatbotId: string | null = null, sourceId: string | null = null) {
     try {
       this.chatbotIdlocal = chatbotId;
+      console.log('chatbotId', this.chatbotIdlocal);
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('chatbot_id', this.chatbotIdlocal ?? '');     
     
       if (isTrain) {
-        // Training flow
+        // Training flow        
         const response = await fetch(`${this.baseUrl}/api/v1/files/upload/v2`, {
           method: 'POST',
           body: formData,
@@ -85,14 +87,14 @@ export class FileUploadService {
            // Update training status
            await fileUploadService.updateDataSource(parseInt(sourceId ?? '0'), {
             sourceDetails: {
-              isTrained: true,
-              status: 'TRAINED',
-              message: 'Training completed'
+              isTrained: false,
+              status: 'Processing',
+              message: 'Training in progress'
             }
           });
           return {
             success: true,
-            message: 'File trained successfully'
+            message: 'File uploaded successfully and is ready for training'
           };
         }
       } else {

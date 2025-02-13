@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "~/components/ui/card";
 import ErrorModal from "~/components/ui/modals/ErrorModal";
 import SuccessModal, { RefSuccessModal } from "~/components/ui/modals/SuccessModal";
+import { toast } from "sonner";
 
 interface FileUploadProps {
   onSuccess: (result: any) => void;
@@ -57,9 +58,22 @@ export default function FileUpload({
             file: fileRef.current || undefined
           });
           onSuccess(fetcher.data);
+        } else {
+          // Training success case
+          toast.success("Training completed successfully", {           
+            description: "Your file has been trained and is ready to use.",
+            duration: 3000,
+            position: "top-center",
+          });
+          setUploadedFile(null); // Reset form after training
         }
       } else {
         setError(fetcher.data.message || "Upload failed");
+        toast.error(fetcher.data.message || "Training failed", {
+          description: "Please try again or contact support if the issue persists.",
+          duration: 3000,
+          position: "top-center",
+        });
       }
     }
   }, [fetcher.state, fetcher.data]);
