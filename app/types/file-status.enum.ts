@@ -1,0 +1,6 @@
+export enum FileTrainingStatus {
+  TRAINED = 'TRAINED',
+  PENDING = 'PENDING_TRAIN',
+  PROCESSING = 'TRAINING_IN_PROGRESS',
+  FAILED = 'TRAINING_FAILED'
+} 

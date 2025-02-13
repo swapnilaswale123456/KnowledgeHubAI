@@ -16,6 +16,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "~/components/ui/pagination";
+import { FileTrainingStatus } from "~/types/file-status.enum";
 
 export interface FileSource {
   sourceId: number;
@@ -24,6 +25,10 @@ export interface FileSource {
   createdAt: Date | string;
   isTrained?: boolean;
   chatbotId?: string;
+  sourceDetails?: {
+    status: FileTrainingStatus;
+    message?: string;
+  };
 }
 
 interface FileListProps {
@@ -42,6 +47,34 @@ function getFileFormat(fileType: string): string {
   };
   return formatMap[format] || format.toUpperCase();
 }
+
+const getStatusConfig = (status: FileTrainingStatus): { variant: "default" | "secondary" | "destructive" | "outline"; className: string } => {
+  switch (status) {
+    case FileTrainingStatus.TRAINED:
+      return { variant: "default", className: "bg-green-100 text-green-800 hover:bg-green-100" };
+    case FileTrainingStatus.PROCESSING:
+      return { variant: "secondary", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" };
+    case FileTrainingStatus.FAILED:
+      return { variant: "destructive", className: "bg-red-100 text-red-800 hover:bg-red-100" };
+    default:
+      return { variant: "outline", className: "bg-gray-100 text-gray-800 hover:bg-gray-100" };
+  }
+};
+
+const getStatusDisplay = (status: FileTrainingStatus) => {
+  switch (status) {
+    case FileTrainingStatus.TRAINED:
+      return "Trained";
+    case FileTrainingStatus.PENDING:
+      return "Ready to Train";
+    case FileTrainingStatus.PROCESSING:
+      return "Training...";
+    case FileTrainingStatus.FAILED:
+      return "Training Failed";
+    default:
+      return "Unknown";
+  }
+};
 
 export function FileList({ files, onDelete }: FileListProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -108,8 +141,11 @@ export function FileList({ files, onDelete }: FileListProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={file.isTrained ? "default" : "secondary"}>
-                    {file.isTrained ? "Trained" : "Processing"}
+                  <Badge 
+                    variant={getStatusConfig(file.sourceDetails?.status ?? FileTrainingStatus.PENDING).variant}
+                    className={getStatusConfig(file.sourceDetails?.status ?? FileTrainingStatus.PENDING).className}
+                  >
+                    {getStatusDisplay(file.sourceDetails?.status ?? FileTrainingStatus.PENDING)}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">

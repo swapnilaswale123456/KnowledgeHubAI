@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatbotStatus } from "@prisma/client";
 import { ChatbotSetupService } from "~/services/chatbot/ChatbotSetupService";
 import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
+import { FileTrainingStatus } from "~/types/file-status.enum";
 
 interface FileUploadResponse {
   success: boolean;
@@ -85,10 +86,9 @@ export class FileUploadService {
         }
         if(response.ok){
            // Update training status
-           await fileUploadService.updateDataSource(parseInt(sourceId ?? '0'), {
+           await this.updateDataSource(parseInt(sourceId ?? '0'), {
             sourceDetails: {
-              isTrained: false,
-              status: 'Processing',
+              status: FileTrainingStatus.PROCESSING,
               message: 'Training in progress'
             }
           });
@@ -127,7 +127,8 @@ export class FileUploadService {
               fileType: file.type,
               uploadedBy: tenantId,
               createdAt: new Date().toISOString(),
-              isTrained: isTrain
+              status: FileTrainingStatus.PENDING,
+              message: 'Ready to train'
             }
           }
         });
