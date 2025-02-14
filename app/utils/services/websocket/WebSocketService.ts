@@ -42,7 +42,7 @@ export class WebSocketService {
     
     try {
       // Construct WebSocket URL with query parameters
-      const baseUrl = getWebSocketUrl(this.chatbotId);
+      const baseUrl = getWebSocketUrl(this.chatbotId);     
       const params = new URLSearchParams({
         user_id: this.userId,
         session_id: this.sessionId || '' // Always include session_id

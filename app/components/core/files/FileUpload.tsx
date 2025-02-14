@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "~/componen
 import ErrorModal from "~/components/ui/modals/ErrorModal";
 import SuccessModal, { RefSuccessModal } from "~/components/ui/modals/SuccessModal";
 import { toast } from "sonner";
+import { FileStatusMonitor } from "~/utils/services/status/FileStatusMonitor";
 
 interface FileUploadProps {
   onSuccess: (result: any) => void;
@@ -44,6 +45,7 @@ export default function FileUpload({
   const fileRef = useRef<File | null>(null);
   const successModal = useRef<RefSuccessModal>(null);
   const errorModal = useRef<any>(null);
+  const statusMonitor = useRef<FileStatusMonitor>(new FileStatusMonitor(chatbotId));
 
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data) {
@@ -77,6 +79,30 @@ export default function FileUpload({
       }
     }
   }, [fetcher.state, fetcher.data]);
+
+  useEffect(() => {
+    if (isUploading && chatbotId) {
+      const monitor = statusMonitor.current;
+      
+      monitor.on('onCompleted', (data) => {
+        setIsUploading(false);
+        toast.success("Training completed successfully");
+      });
+
+      monitor.on('onError', (data) => {
+        setIsUploading(false);
+        toast.error(data.message || "Training failed");
+      });
+
+      monitor.on('onProcessing', (data) => {
+        // Update progress UI if needed
+        console.log('Processing:', data.message);
+      });
+
+      const cleanup = monitor.startMonitoring();
+      return cleanup;
+    }
+  }, [isUploading, chatbotId]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

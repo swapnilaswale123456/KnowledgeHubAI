@@ -21,3 +21,10 @@ export function getWebSocketUrl(chatbotId: string): string {
   const port = process.env.NODE_ENV === 'production' ? '' : ':8000';
   return `${protocol}//${host}${port}/ws/chat/${chatbotId}`;
 } 
+
+export function getTrainingWebSocketUrl(chatbotId: string): string {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.hostname;
+  const port = process.env.NODE_ENV === 'production' ? '' : ':8000';
+  return `${protocol}//${host}${port}/ws/status/${chatbotId}`;
+} 
