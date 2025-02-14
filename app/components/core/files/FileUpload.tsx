@@ -17,6 +17,7 @@ interface FileUploadProps {
 interface UploadResponse {
   success: boolean;
   message: string;
+  intent?: string;
   data?: {
     sourceId: number;
     fileName: string;
@@ -53,29 +54,26 @@ export default function FileUpload({
       
       if (fetcher.data.success) {
         if (fetcher.data.data) {
-          setUploadedFile({
-            name: fetcher.data.data.fileName,
-            size: fetcher.data.data.fileSize,
-            sourceId: fetcher.data.data.sourceId,
-            file: fileRef.current || undefined
-          });
-          onSuccess(fetcher.data);
+          if (!fetcher.data.intent || fetcher.data.intent !== "update-status") {
+            setUploadedFile({
+              name: fetcher.data.data.fileName,
+              size: fetcher.data.data.fileSize,
+              sourceId: fetcher.data.data.sourceId,
+              file: fileRef.current || undefined
+            });
+            onSuccess(fetcher.data);
+          }
         } else {
-          // Training success case
-          toast.success("Training completed successfully", {           
-            description: "Your file has been trained and is ready to use.",
+          toast.success("Your file has been sent for training", {           
+            description: "",
             duration: 3000,
             position: "top-center",
           });
-          setUploadedFile(null); // Reset form after training
+          setUploadedFile(null);
         }
       } else {
         setError(fetcher.data.message || "Upload failed");
-        toast.error(fetcher.data.message || "Training failed", {
-          description: "Please try again or contact support if the issue persists.",
-          duration: 3000,
-          position: "top-center",
-        });
+        toast.error(fetcher.data.message || "Training failed");
       }
     }
   }, [fetcher.state, fetcher.data]);
@@ -84,18 +82,32 @@ export default function FileUpload({
     if (isUploading && chatbotId) {
       const monitor = statusMonitor.current;
       
-      monitor.on('onCompleted', (data) => {
-        setIsUploading(false);
-        toast.success("Training completed successfully");
+      monitor.on('onCompleted', async (data) => {
+        console.log('Training completed:', data);        
+        toast.success("Training for your file has been completed successfully",{
+          description: "",
+          duration: 3000,
+          position: "top-center",
+         });
+        if (data.sourceId) {
+          const formData = new FormData();
+          formData.append("intent", "update-status");
+          formData.append("sourceId", data.sourceId.toString());
+          formData.append("status", "TRAINED");
+          formData.append("message", "Training completed successfully");
+          
+          await fetcher.submit(formData, {
+            method: "post",
+            encType: "multipart/form-data"
+          });
+        }        
       });
 
-      monitor.on('onError', (data) => {
-        setIsUploading(false);
+      monitor.on('onError', (data) => {        
         toast.error(data.message || "Training failed");
       });
 
-      monitor.on('onProcessing', (data) => {
-        // Update progress UI if needed
+      monitor.on('onProcessing', (data) => {       
         console.log('Processing:', data.message);
       });
 

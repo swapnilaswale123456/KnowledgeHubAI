@@ -13,6 +13,7 @@ import { getSelectedChatbot, setSelectedChatbot,commitSession } from "~/utils/se
 import { toast } from "sonner";
 import { useRef, useState } from "react";
 import ConfirmModal, { RefConfirmModal } from "~/components/ui/modals/ConfirmModal";
+import { FileTrainingStatus } from "~/types/file-status.enum";
 
 type LoaderData = {
   files: FileSource[];
@@ -51,6 +52,24 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     return json(result);
   }
 
+  if (intent === "update-status") {
+    const status = FileTrainingStatus.TRAINED;
+    const message = formData.get("message") as string;
+
+    const result = await fileUploadService.updateDataSource(parseInt(sourceId), {
+      sourceDetails: {
+        status,
+        message,
+        isTrained: true
+      }
+    });
+    return json({ 
+      success: true, 
+      message: "Status updated",
+      intent: "update-status"
+    });
+  }
+
   const file = formData.get("file") as File;
   if (!file) {
     return json({ success: false, message: "No file uploaded" });
@@ -64,7 +83,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     selectedChatbotId,
     sourceId
   );
-  return json(result);
+  return json({
+    success: true,
+    message: "File processed",
+    intent: intent?.toString(),
+    data: result.data
+  });
 };
 
 export default function FileRoute() {

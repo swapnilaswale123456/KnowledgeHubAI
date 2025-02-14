@@ -65,7 +65,8 @@ export class FileUploadService {
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('chatbot_id', this.chatbotIdlocal ?? '');     
+      formData.append('chatbot_id', this.chatbotIdlocal ?? '');  
+      formData.append("sourceId", sourceId ?? "");   
     
       if (isTrain) {
         // Training flow        
