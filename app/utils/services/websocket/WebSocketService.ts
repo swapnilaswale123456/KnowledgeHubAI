@@ -21,11 +21,15 @@ export class WebSocketService {
   private connectionStateHandlers: Set<ConnectionStateHandler> = new Set();
   private intentionalClose = false;
   private userId: string = "user"; // Default user ID
+  private tenantId: string;
 
   constructor(
-    private chatbotId: string, 
+    private chatbotId: string,
+    tenantId: string,
     private sessionId?: string
-  ) {}
+  ) {
+    this.tenantId = tenantId;
+  }
 
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {
@@ -44,7 +48,7 @@ export class WebSocketService {
       // Construct WebSocket URL with query parameters
       const baseUrl = getWebSocketUrl(this.chatbotId);     
       const params = new URLSearchParams({
-        user_id: this.userId,
+        user_id: this.tenantId,       
         session_id: this.sessionId || '' // Always include session_id
       });
       const wsUrl = `${baseUrl}?${params.toString()}`;

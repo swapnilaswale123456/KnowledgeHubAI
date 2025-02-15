@@ -1,19 +1,18 @@
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { useParams } from "@remix-run/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { MessageSquare, Code, Upload, Settings } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { ChatInterface } from "~/components/chat/ChatInterface";
 import { QuickStartGuide } from "~/components/chat/QuickStartGuide";
 import { Message, ChatSettings, ChatContext } from "~/types/chat";
-import { WebSocketService } from '~/utils/services/websocket/WebSocketService';
 import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
 import { useLoaderData } from "@remix-run/react";
 import { useChatbot } from "~/contexts/ChatbotContext";
 import type { MetaFunction } from "@remix-run/node";
 import { THEME_COLORS } from "~/utils/theme/constants";
-import { setSelectedChatbot, commitSession } from "~/utils/session.server";
+import { setSelectedChatbot, commitSession, getUserSession } from "~/utils/session.server";
 
 type LoaderData = {
   chatbot: {
@@ -23,17 +22,22 @@ type LoaderData = {
     initialMessage?: string;
     // ... other chatbot properties
   };
+  userId: string;
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const chatbotId = params.id;
+  const sessionUser = await getUserSession(request);
+  const userId = sessionUser.get("userId");
   
-  if (!chatbotId) {
-    return redirect(`/app/${params.tenant}/dashboard`);
+  if (!userId) {
+    throw redirect("/login");
   }
 
+  const chatbotId = params.id;
+  const session = await setSelectedChatbot(request, chatbotId || null);
+
   // Get chatbot details
-  const chatbot = await ChatbotService.getChatbotDetails(chatbotId);
+  const chatbot = await ChatbotService.getChatbotDetails(chatbotId || "");
   
   if (!chatbot) {
     throw new Response("Chatbot not found", { status: 404 });
@@ -44,15 +48,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     ? JSON.parse(chatbot.theme) 
     : chatbot.theme;
 
-  const session = await setSelectedChatbot(request, chatbotId);
-  
   return json(
     { 
-      chatbot: {
-        ...chatbot,
-        theme
-      }
-    },
+      chatbot,
+      userId,
+      theme
+    }, 
     {
       headers: {
         "Set-Cookie": await commitSession(session)
@@ -89,7 +90,7 @@ const DEFAULT_SETTINGS: ChatSettings = {
 export default function ChatbotRoute() {
   const { selectedChatbotId, setSelectedChatbotId } = useChatbot();
   const params = useParams();
-  const { chatbot } = useLoaderData<LoaderData>();
+  const { chatbot, userId } = useLoaderData<typeof loader>();
   const [showGuide, setShowGuide] = useState(true);
   const [message, setMessage] = useState("");
   const [isMaximized, setIsMaximized] = useState(false);
@@ -157,8 +158,6 @@ export default function ChatbotRoute() {
       link: `/app/${params.tenant}/settings/embed`
     }
   ]);
-  const [ws, setWs] = useState<WebSocketService | null>(null);
-  const [connected, setConnected] = useState(false);
 
   // Update selected chatbot when route changes
   useEffect(() => {
@@ -166,33 +165,6 @@ export default function ChatbotRoute() {
       setSelectedChatbotId(params.id);
     }
   }, [params.id, setSelectedChatbotId]);
-
-  useEffect(() => {
-    if (!params.id) return;
-
-    const wsService = new WebSocketService(params.id);
-    
-    wsService.addMessageHandler((data) => {
-      if (data.type === 'typing') {
-        setIsTyping(data.isTyping);
-      } else if (data.type === 'message') {
-        setMessages(prev => [...prev, {
-          id: crypto.randomUUID(),
-          content: data.content,
-          sender: 'bot',
-          timestamp: new Date(),
-          status: 'sent'
-        }]);
-      }
-    });
-
-    wsService.connect();
-    setWs(wsService);
-
-    return () => {
-      wsService.disconnect();
-    };
-  }, [params.id]);
 
   const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(e.target.value);
@@ -301,6 +273,7 @@ export default function ChatbotRoute() {
           chatbotId={chatbot.id}
           currentMessage={message}
           isMaximized={isMaximized}
+          userId={userId}
           messages={messages}
           settings={settings}
           isTyping={isTyping}

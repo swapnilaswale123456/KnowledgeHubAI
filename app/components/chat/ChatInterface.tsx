@@ -12,6 +12,7 @@ import { THEME_COLORS } from "~/utils/theme/constants";
 import { ChatHistoryService } from "~/services/chat/ChatHistoryService";
 import { format } from "date-fns";
 import { WebSocketService } from "~/utils/services/websocket/WebSocketService";
+import { getUserSession } from "~/utils/session.server";
 
 interface QuickResponse {
   id: string;
@@ -29,12 +30,19 @@ interface Conversation {
 
 interface ChatInterfaceProps {
   chatbotId: string;
+  userId: string;
+  currentMessage: string;
   messages: Message[];
   settings: ChatSettings;
   isTyping: boolean;
   isMaximized: boolean;
   showConversations: boolean;
+  onMessageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSendMessage: () => void;
   onToggleMaximize: () => void;
+  onFileUpload: (file: File) => void;
+  onVoiceRecord: () => void;
+  onEmojiSelect: (emoji: string) => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }
 
@@ -76,12 +84,19 @@ const QUICK_RESPONSES: QuickResponse[] = [
 
 export function ChatInterface({ 
   chatbotId,
+  userId,
+  currentMessage,
   messages: initialMessages,
   settings,
   isTyping,
   isMaximized,
   showConversations,
+  onMessageChange,
+  onSendMessage,
   onToggleMaximize,
+  onFileUpload,
+  onVoiceRecord,
+  onEmojiSelect,
   setMessages: setParentMessages
 }: ChatInterfaceProps) {
   // Core states
@@ -117,7 +132,7 @@ export function ChatInterface({
     console.log('Setting up WebSocket connection');
     
     if (!wsRef.current) {
-      wsRef.current = new WebSocketService(chatbotId);
+      wsRef.current = new WebSocketService(chatbotId, userId);
       wsRef.current.addMessageHandler(messageHandler);
       wsRef.current.connect();
     }
@@ -129,7 +144,7 @@ export function ChatInterface({
         wsRef.current = null;
       }
     };
-  }, [chatbotId, messageHandler]);
+  }, [chatbotId, userId, messageHandler]);
 
   // Handle conversation selection with improved state management
   const handleConversationSelect = (sessionId: string, messages: Message[]) => {
