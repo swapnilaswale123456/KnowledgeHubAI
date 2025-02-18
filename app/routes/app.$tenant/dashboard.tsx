@@ -35,7 +35,11 @@ import { DashboardContent } from "~/components/dashboard/DashboardContent";
 import { getSelectedChatbot, setSelectedChatbot, getUserSession, storage, commitSession } from "~/utils/session.server";
 import { DashboardMetrics } from "~/components/dashboard/DashboardMetrics";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
-import { MessageSquare, Zap } from "lucide-react";
+import { MessageSquare, Zap, Users, Clock, MoreVertical, Settings, Trash2 } from "lucide-react";
+import { cn } from "~/lib/utils";
+import { Button } from "~/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
+import { formatDistanceToNow } from "date-fns";
 
 export { serverTimingHeaders as headers };
 
@@ -78,6 +82,11 @@ type LoaderData = DashboardLoaderData & {
       sessions: {
         recent: Session[];
       };
+      chatbots: Array<{
+        id: string;
+        total_messages: number;
+        total_sessions: number;
+      }>;
     };
   };
 };
@@ -176,7 +185,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       },
       sessions: {
         recent: []
-      }
+      },
+      chatbots: []
     }
   };
 
@@ -548,7 +558,7 @@ export default function DashboardRoute() {
   }
 
     return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-2">
       <DashboardHeader 
         onNewChatbot={() => workflowState.setIsWorkflowOpen(true)}
         onDataSources={() => navigate(`/app/${params.tenant}/g/data-sources`)}
@@ -558,25 +568,98 @@ export default function DashboardRoute() {
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Chatbots</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recent Chatbots</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {chatbots.length} total chatbots
+              </p>
+            </div>
+            
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {chatbots.map(chatbot => (
-                <ChatbotCard 
-                  key={chatbot.id} 
-                  chatbot={chatbot}
-                  onStatusChange={handleStatusUpdate}
-                  onDelete={handleDelete}
-                  onNavigate={handleSelectChatbot}
-                  onEdit={(id) => {
-                    setEditingChatbotId(id);
-                    setIsWorkflowOpen(true);
-                  }}
-                  isProcessing={fetcher.state !== "idle"}
-                />
-              ))}
+              {chatbots.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No chatbots created yet</p>
+                </div>
+              ) : (
+                chatbots.map(chatbot => (
+                  <div 
+                    key={chatbot.id}
+                    className="flex items-start space-x-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium leading-none">{chatbot.name}</h3>
+                        <div className="flex items-center space-x-2">
+                          <span className={cn(
+                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                            chatbot.status === "ACTIVE" && "bg-green-100 text-green-800",
+                            chatbot.status === "INACTIVE" && "bg-yellow-100 text-yellow-800",
+                            chatbot.status === "TRAINING" && "bg-blue-100 text-blue-800"
+                          )}>
+                            {chatbot.status.toLowerCase()}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <MessageSquare className="w-4 h-4 mr-1" />
+                          {metrics.data.chatbots.find(c => c.id === chatbot.id)?.total_messages || 0} messages
+                        </div>
+                        <div className="flex items-center">
+                          <Users className="w-4 h-4 mr-1" />
+                          {metrics.data.chatbots.find(c => c.id === chatbot.id)?.total_sessions || 0} sessions
+                        </div>
+                        <div className="flex items-center">
+                          <Clock className="w-4 h-4 mr-1" />
+                          {formatDistanceToNow(new Date(chatbot.updatedAt), { addSuffix: true })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSelectChatbot(chatbot.id)}
+                      >
+                        View
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleSelectChatbot(chatbot.id)}>
+                            <MessageSquare className="w-4 h-4 mr-2" />
+                            Open Chat
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setEditingChatbotId(chatbot.id);
+                            setIsWorkflowOpen(true);
+                          }}>
+                            <Settings className="w-4 h-4 mr-2" />
+                            Settings
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleDelete(chatbot.id)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
