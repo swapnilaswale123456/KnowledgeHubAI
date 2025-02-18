@@ -33,8 +33,19 @@ import { useWorkflowState } from "~/hooks/useWorkflowState";
 import { useChatbotActions } from "~/hooks/useChatbotActions";
 import { DashboardContent } from "~/components/dashboard/DashboardContent";
 import { getSelectedChatbot, setSelectedChatbot, getUserSession, storage, commitSession } from "~/utils/session.server";
+import { DashboardMetrics } from "~/components/dashboard/DashboardMetrics";
+import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
+import { MessageSquare, Zap } from "lucide-react";
 
 export { serverTimingHeaders as headers };
+
+interface Session {
+  session_id: string;
+  message_count: number;
+  token_usage: number;
+  last_activity: string;
+  created_at: string;
+}
 
 type LoaderData = DashboardLoaderData & {
   title: string;
@@ -45,6 +56,30 @@ type LoaderData = DashboardLoaderData & {
   chatbotTypes: { id: number; name: string }[];
   skills: { id: number; name: string }[];
   dashboardStats: { totalDataSources: number; activeCount: number };
+  metrics: {
+    data: {
+      overview: {
+        total_sessions: number;
+        active_sessions: number;
+        total_messages: number;
+        total_tokens: number;
+      };
+      performance: {
+        response_times: {
+          average: number;
+          completion_time: number;
+        };
+        token_metrics: {
+          average_per_message: number;
+          input_tokens: number;
+          output_tokens: number;
+        };
+      };
+      sessions: {
+        recent: Session[];
+      };
+    };
+  };
 };
 
 interface ActionData {
@@ -119,6 +154,48 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     ? await getSkillsByChatbotType(firstChatbotType.id)
     : [];
 
+  // Get metrics from API with proper error handling
+  let metricsData = {
+    data: {
+      overview: {
+        total_sessions: 0,
+        active_sessions: 0,
+        total_messages: 0,
+        total_tokens: 0
+      },
+      performance: {
+        response_times: {
+          average: 0,
+          completion_time: 0
+        },
+        token_metrics: {
+          average_per_message: 0,
+          input_tokens: 0,
+          output_tokens: 0
+        }
+      },
+      sessions: {
+        recent: []
+      }
+    }
+  };
+
+  try {
+    const metricsResponse = await fetch(`http://localhost:5000/dashboard/chatbot?consolidated=true`, {
+      headers: {        
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (metricsResponse.ok) {
+      metricsData = await metricsResponse.json();
+    } else {
+      console.error('Failed to fetch metrics:', await metricsResponse.text());
+    }
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
+  }
+
   const data: LoaderData = {
     title: `${t("app.sidebar.dashboard")} | ${process.env.APP_NAME}`,
     ...dashboardData,
@@ -129,6 +206,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     chatbotTypes,
     skills,
     dashboardStats,
+    metrics: metricsData
   };
 
   // Clear selected chatbot when entering dashboard
@@ -247,7 +325,7 @@ export default function DashboardRoute() {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { chatbots, files, dashboardStats } = useLoaderData<typeof loader>();
+  const { chatbots, files, dashboardStats, metrics } = useLoaderData<typeof loader>();
   const isChildRoute = location.pathname.includes('/create') || location.pathname.includes('/file');
   
   const workflowState = useWorkflowState();
@@ -470,42 +548,67 @@ export default function DashboardRoute() {
   }
 
     return (
-    <div className="flex-1">
-       {/* Only show header when workflow is not open */}
-       {!isWorkflowOpen && (
-        <DashboardHeader 
-          onNewChatbot={() => workflowState.setIsWorkflowOpen(true)}
-          onDataSources={() => navigate(`/app/${params.tenant}/g/data-sources`)}
-        />
-      )}
-
-      {!isWorkflowOpen ? (
-        <DashboardContent 
-          chatbots={chatbots}
-          dashboardStats={dashboardStats}
-          onStatusChange={handleStatusChange}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
-          tenantSlug={params.tenant ?? ''}
-          navigate={navigate}
-          isLoading={fetcher.state !== "idle"}
-        />
-      ) : (
-        <ChatbotWorkflow 
-          currentStep={currentStep}
-          config={config}
-          onStepChange={handleStepChange}
-          onClose={resetWorkflowState}
-          onUpdateConfig={handleUpdateConfig}
-          onNext={handleNext}
-          onSubmit={handleSubmit}
-          existingFiles={files}
-          isSubmitting={isSubmitting}
-          editingChatbotId={editingChatbotId ?? ''}
-        />
-      )}
+    <div className="space-y-6 p-6">
+      <DashboardHeader 
+        onNewChatbot={() => workflowState.setIsWorkflowOpen(true)}
+        onDataSources={() => navigate(`/app/${params.tenant}/g/data-sources`)}
+      />
+      
+      <DashboardMetrics metrics={metrics.data} />
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Recent Chatbots</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {chatbots.map(chatbot => (
+                <ChatbotCard 
+                  key={chatbot.id} 
+                  chatbot={chatbot}
+                  onStatusChange={handleStatusUpdate}
+                  onDelete={handleDelete}
+                  onNavigate={handleSelectChatbot}
+                  onEdit={(id) => {
+                    setEditingChatbotId(id);
+                    setIsWorkflowOpen(true);
+                  }}
+                  isProcessing={fetcher.state !== "idle"}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Recent Sessions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {metrics.data.sessions.recent.map(session => (
+                <div key={session.session_id} className="flex items-center p-3 border rounded-lg">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Session {session.session_id.slice(-8)}</p>
+                    <div className="flex items-center text-sm text-muted-foreground space-x-2">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>{session.message_count} messages</span>
+                      <Zap className="h-4 w-4 ml-2" />
+                      <span>{session.token_usage} tokens</span>
+                    </div>
+                  </div>
+                  <div className="ml-auto text-sm text-muted-foreground">
+                    {new Date(session.last_activity).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    );
+    </div>
+  );
 }
 
 export function ErrorBoundary() {
