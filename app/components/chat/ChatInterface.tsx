@@ -243,6 +243,7 @@ export function ChatInterface({
             
       const parsedMsg = msg;
       
+      
       if (parsedMsg.type === 'session_created') {
         // Replace temporary session with real one
         const realSessionId = parsedMsg.session_id;
@@ -278,15 +279,20 @@ export function ChatInterface({
         return;
       } 
       
-      if (parsedMsg.type === 'message' || parsedMsg.type === 'response') {
-        const messageContent = 
-          parsedMsg.data?.content || 
-          parsedMsg.data?.answer || 
-          parsedMsg.data?.response || 
-          parsedMsg.content || 
-          parsedMsg.answer || 
-          parsedMsg.response || '';
-        
+      if (parsedMsg.type === 'message' || parsedMsg.type === 'response' || parsedMsg.type === 'error') {
+        const messageContent = parsedMsg.type === 'error' 
+          ? (parsedMsg.data?.message || 
+             parsedMsg.data?.error || 
+             parsedMsg.message || 
+             parsedMsg.error || 
+             "Sorry, I encountered an error. Please try again.")
+          : (parsedMsg.data?.content || 
+             parsedMsg.data?.answer || 
+             parsedMsg.data?.response || 
+             parsedMsg.content || 
+             parsedMsg.answer || 
+             parsedMsg.response || '');
+
         const sessionId = parsedMsg.session_id || sessionRef.current.sessionId;
         
         if (!sessionId) {
@@ -295,13 +301,12 @@ export function ChatInterface({
         }
 
         if (messageContent) {
-          const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           const botMessage: Message = {
-            id: uniqueId,
+            id: crypto.randomUUID(),
             content: messageContent,
             sender: 'bot',
             timestamp: new Date(),
-            status: 'sent'
+            status: parsedMsg.type === 'error' ? 'error' : 'sent'
           };
 
           // Update conversations with session persistence
@@ -365,7 +370,7 @@ export function ChatInterface({
         setIsTypingResponse(true);
       } else if (parsedMsg.type === 'typing_end') {
         setIsTypingResponse(false);
-      }
+      }      
     } catch (error) {
       console.error('WebSocket message error:', error);
       setIsProcessing(false);
@@ -406,10 +411,10 @@ export function ChatInterface({
     
     // Request new session from server
     wsRef.current.sendMessage({ 
-      type: 'new_session', 
+      type: 'new_session_start', 
       content: '',
       chatbot_id: chatbotId,
-      user_id: "user"
+      user_id: userId
     });
   };
 
@@ -449,7 +454,7 @@ export function ChatInterface({
       setIsLoadingHistory(true);
       try {
         const chatHistoryService = new ChatHistoryService();
-        const response = await chatHistoryService.getHistory("user", 8);
+        const response = await chatHistoryService.getHistory(userId, 8);
         
         if (response?.data?.conversations?.length > 0) {
           const appConversations = response.data.conversations
@@ -550,17 +555,17 @@ export function ChatInterface({
         type: 'message',
         content: message.trim(),
         chatbot_id: chatbotId,
-        user_id: "user",
+        user_id: userId,
         session_id: currentSessionId
       });
     } else {
       // No active session, create new one
       console.log('No active session, creating new conversation');
       wsRef.current.sendMessage({
-        type: 'new_session',
+        type: 'new_session_start',
         content: message.trim(),
         chatbot_id: chatbotId,
-        user_id: "user"
+        user_id: userId
       });
 
       // Create temporary conversation
