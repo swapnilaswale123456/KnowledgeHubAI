@@ -42,7 +42,7 @@ interface DashboardContentProps {
   };
   onStatusChange: (id: string, status: ChatbotStatus) => void;
   onDelete: (id: string) => void;
-  onEdit: (id: string) => void;
+  onEdit: (chatbot: ChatbotDetails) => Promise<void>;
   onNavigate: (id: string) => void;
   isLoading: boolean;
   fetcher: ReturnType<typeof useFetcher>;

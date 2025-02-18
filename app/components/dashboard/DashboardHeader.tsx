@@ -13,10 +13,10 @@ export function DashboardHeader({ onNewChatbot, onDataSources }: DashboardHeader
       <div className="flex h-16 items-center px-8">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            AI Chatbots
+            AI Assistants
           </h1>
           <p className="text-sm text-gray-500">
-            Manage and monitor your chatbots
+            Manage and monitor your assistants
           </p>
         </div>
         <div className="flex gap-3 ml-auto">
@@ -26,7 +26,7 @@ export function DashboardHeader({ onNewChatbot, onDataSources }: DashboardHeader
             className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
           >
             <Plus className="w-4 h-4" />
-            New Chatbot
+            New Assistant
           </Button>
         </div>
       </div>

@@ -87,6 +87,13 @@ type LoaderData = DashboardLoaderData & {
         total_messages: number;
         total_sessions: number;
       }>;
+      time_series: {
+        sessions: [];
+      };
+      model_analytics: {
+        models_distribution: {};
+        top_tools: {};
+      };
     };
   };
 };
@@ -186,7 +193,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       sessions: {
         recent: []
       },
-      chatbots: []
+      chatbots: [],
+      time_series: {
+        sessions: []
+      },
+      model_analytics: {
+        models_distribution: {},
+        top_tools: {}
+      }
     }
   };
 
@@ -566,17 +580,18 @@ export default function DashboardRoute() {
             onDataSources={() => navigate(`/app/${params.tenant}/g/data-sources`)}
           />
           
-          <DashboardMetrics metrics={metrics.data} />
+          <DashboardMetrics 
+            metrics={metrics.data} 
+            totalChatbots={chatbots.length}
+            totalDataSources={dashboardStats.totalDataSources}
+          />
           
           <DashboardContent 
             chatbots={chatbots}
             metrics={metrics}
             onStatusChange={handleStatusUpdate}
             onDelete={handleDelete}
-            onEdit={(id) => {
-              setEditingChatbotId(id);
-              setIsWorkflowOpen(true);
-            }}
+            onEdit={(id) => handleEdit(chatbots.find(c => c.id === id) as ChatbotDetails)}
             onNavigate={handleSelectChatbot}
             isLoading={fetcher.state !== "idle"}
             fetcher={fetcher}
