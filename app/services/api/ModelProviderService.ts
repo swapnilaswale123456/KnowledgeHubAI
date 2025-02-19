@@ -27,11 +27,13 @@ interface ModelDetailedInfo {
 }
 
 export class ModelProviderService {
-  private static baseUrl = getApiUrl();
+  private static getBaseUrl() {
+    return 'http://localhost:8000';
+  }
 
   static async getProviders(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/provider-names/`, {
+      const response = await fetch(`${this.getBaseUrl()}/api/v1/provider-names/`, {
         headers: {
           'accept': 'application/json'
         }
@@ -50,7 +52,7 @@ export class ModelProviderService {
 
   static async getProviderModels(provider: string): Promise<ModelBasicInfo[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/provider/${provider}/models`, {
+      const response = await fetch(`${this.getBaseUrl()}/api/v1/provider/${provider}/models`, {
         headers: {
           'accept': 'application/json'
         }
@@ -70,7 +72,7 @@ export class ModelProviderService {
   static async getModelDetails(provider: string, modelId: string): Promise<ModelDetailedInfo> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/api/v1/model-provider/db/provider/${provider}/model/${modelId}`,
+        `${this.getBaseUrl()}/api/v1/model-provider/db/provider/${provider}/model/${modelId}`,
         {
           headers: {
             'accept': 'application/json'

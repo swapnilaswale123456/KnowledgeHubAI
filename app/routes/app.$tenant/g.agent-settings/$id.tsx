@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "~/comp
 import { Info, Bot, Zap, RefreshCcw } from "lucide-react";
 import { ModelProviderService } from "~/services/api/ModelProviderService";
 import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
+import { useState, useEffect } from "react";
 
 interface LoaderData {
   providers: string[];
@@ -21,9 +22,15 @@ interface LoaderData {
   title: string;
 }
 
+interface ModelBasicInfo {
+  model_id: string;
+  id: number;
+  name: string;
+}
+
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { id } = params;
-  const chatbot = await ChatbotService.getChatbotDetails(id);
+  const chatbot = await ChatbotService.getChatbotDetails(id || "");
   const providers = await ModelProviderService.getProviders();
   
   return json<LoaderData>({
@@ -44,6 +51,28 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => [
 
 export default function AgentSettingsDetail() {
   const { providers, defaultProvider, defaultModel, chatbot } = useLoaderData<typeof loader>();
+  const [selectedProvider, setSelectedProvider] = useState(defaultProvider);
+  const [models, setModels] = useState<ModelBasicInfo[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+
+  // Fetch models when provider changes
+  const handleProviderChange = async (provider: string) => {
+    setSelectedProvider(provider);
+    setIsLoadingModels(true);
+    try {
+      const providerModels = await ModelProviderService.getProviderModels(provider);
+      setModels(providerModels);
+    } catch (error) {
+      console.error('Error loading models:', error);
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
+
+  // Load initial models
+  useEffect(() => {
+    handleProviderChange(defaultProvider);
+  }, [defaultProvider]);
 
   return (
     <TooltipProvider>
@@ -71,7 +100,10 @@ export default function AgentSettingsDetail() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Provider</label>
-                  <Select defaultValue={defaultProvider}>
+                  <Select 
+                    defaultValue={defaultProvider}
+                    onValueChange={handleProviderChange}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select provider" />
                     </SelectTrigger>
@@ -90,12 +122,19 @@ export default function AgentSettingsDetail() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Model</label>
-                  <Select defaultValue={defaultModel}>
+                  <Select defaultValue={defaultModel} disabled={isLoadingModels}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select model" />
+                      <SelectValue placeholder={isLoadingModels ? "Loading models..." : "Select model"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="llama3-70b-8192">Llama3 70B</SelectItem>
+                      {models.map((model) => (
+                        <SelectItem key={model.id} value={model.model_id}>
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4" />
+                            {model.name}
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
