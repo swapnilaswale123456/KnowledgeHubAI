@@ -12,6 +12,7 @@ interface ModelConfiguration {
   presence_penalty: number;
   frequency_penalty: number;
   stop_sequences: string[];
+  max_tokens: number;
 }
 
 interface ModelDetailedInfo {
