@@ -13,10 +13,11 @@ interface LoaderData {
     id: string;
     name: string;    
   };
+  title: string;
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: data?.chatbot?.name ? `Customize ${data.chatbot.name} | KnowledgeHub AI` : "Customize Chatbot | KnowledgeHub AI" }
+  { title: data?.title || "Customize Settings" }
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -36,12 +37,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   session.set("selectedChatbotId", chatbotId);
   
   return json(
-    { chatbotId, chatbot },
+    { chatbotId, chatbot, title: "Customize Settings" },
     {
       headers: {
         "Set-Cookie": await commitSession(session)
       }
-    }
+    },
+   
   );
 };
 

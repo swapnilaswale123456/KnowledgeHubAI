@@ -8,39 +8,52 @@ import { Input } from "~/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "~/components/ui/tooltip";
 import { Info, Bot, Zap, RefreshCcw } from "lucide-react";
 import { ModelProviderService } from "~/services/api/ModelProviderService";
+import { ChatbotService } from "~/utils/services/chatbots/chatbotService.server";
 
 interface LoaderData {
   providers: string[];
   defaultProvider: string;
   defaultModel: string;
+  chatbot: {
+    id: string;
+    name: string;
+  };
+  title: string;
 }
 
 export const loader: LoaderFunction = async ({ request, params }) => {
+  const { id } = params;
+  const chatbot = await ChatbotService.getChatbotDetails(id);
   const providers = await ModelProviderService.getProviders();
   
   return json<LoaderData>({
     providers,
     defaultProvider: "Groq",
-    defaultModel: "llama3-70b-8192"
+    defaultModel: "llama3-70b-8192",
+    chatbot: {
+      id: id || "",
+      name: chatbot?.name || "Agent"
+    },
+    title: "Agent Settings"
   });
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-    { title: data?.title || "Agent Settings" }
-  ];
+  { title: data?.title || "Agent Settings" }
+];
 
 export default function AgentSettingsDetail() {
-  const { providers, defaultProvider, defaultModel } = useLoaderData<typeof loader>();
+  const { providers, defaultProvider, defaultModel, chatbot } = useLoaderData<typeof loader>();
 
   return (
     <TooltipProvider>
-      <div className="container mx-auto p-6 max-w-5xl">
-        <div className="space-y-6">
+      <div className="h-full flex-1 overflow-y-auto">
+        <div className="container py-6 space-y-6">
           {/* Header */}
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold">Model Configuration</h1>
-              <p className="text-muted-foreground">Configure your AI model settings</p>
+              <h1 className="text-xl font-bold">{chatbot.name} Settings</h1>
+              <p className="text-muted-foreground">Configure your AI Agent Assistant settings</p>
             </div>
             <Button variant="outline" className="gap-2">
               <RefreshCcw className="h-4 w-4" />
