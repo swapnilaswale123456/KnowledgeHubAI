@@ -45,14 +45,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   // Parse theme if it's a string
   const theme = typeof chatbot.theme === 'string' 
-    ? JSON.parse(chatbot.theme) 
-    : chatbot.theme;
+    ? JSON.parse(chatbot.theme) as ChatbotTheme 
+    : chatbot.theme as unknown as ChatbotTheme;
 
   return json(
     { 
-      chatbot,
-      userId,
-      theme
+      chatbot: {
+        ...chatbot,
+        theme
+      },
+      userId
     }, 
     {
       headers: {
@@ -74,6 +76,17 @@ interface QuickStartStep {
   action: string;
   icon: React.ReactNode;
   link: string;
+}
+
+interface ChatbotTheme {
+  headerColor: string;
+  botMessageColor: string;
+  userMessageColor: string;
+}
+
+interface Chatbot {
+  // ... other properties
+  theme?: ChatbotTheme;
 }
 
 const DEFAULT_SETTINGS: ChatSettings = {

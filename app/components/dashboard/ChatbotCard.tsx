@@ -77,13 +77,15 @@ export function ChatbotCard({
       </div>
 
       <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onNavigate(chatbot.id)}
-        >
-          View
-        </Button>
+        {chatbot.status === ChatbotStatus.ACTIVE && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onNavigate(chatbot.id)}
+          >
+            View
+          </Button>
+        )}
 
         {(chatbot.status === ChatbotStatus.ACTIVE || chatbot.status === ChatbotStatus.ARCHIVED) && (
           <Button
@@ -103,10 +105,12 @@ export function ChatbotCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onNavigate(chatbot.id)}>
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Open Chat
-            </DropdownMenuItem>
+            {chatbot.status === ChatbotStatus.ACTIVE && (
+              <DropdownMenuItem onClick={() => onNavigate(chatbot.id)}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Open Chat
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => onEdit(chatbot.id)}>
               <Settings className="w-4 h-4 mr-2" />
               Settings

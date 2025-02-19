@@ -631,8 +631,8 @@ export function ChatInterface({
                 onClick={startNewConversation}
                 disabled={isProcessing}
                 className={cn(
-                  "w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg",
-                  isProcessing ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
+                  "w-full px-4 py-2 text-sm font-medium text-white bg-primary -600 rounded-lg",
+                  isProcessing ? "opacity-50 cursor-not-allowed" : "hover:bg-primary -700"
                 )}
               >
                 {isProcessing ? "Creating..." : "New Chat"}
