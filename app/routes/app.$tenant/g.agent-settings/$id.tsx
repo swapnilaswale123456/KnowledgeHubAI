@@ -28,6 +28,22 @@ interface ModelBasicInfo {
   name: string;
 }
 
+interface ModelDetailedInfo {
+  context_window: number;
+  max_tokens: number;
+  supported_features: string[];
+  description?: string;
+}
+
+// Add interface for configuration state
+interface ModelConfig {
+  temperature: number;
+  topP: number;
+  presencePenalty: number;
+  frequencyPenalty: number;
+  stopSequences: string;
+}
+
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { id } = params;
   const chatbot = await ChatbotService.getChatbotDetails(id || "");
@@ -54,6 +70,23 @@ export default function AgentSettingsDetail() {
   const [selectedProvider, setSelectedProvider] = useState(defaultProvider);
   const [models, setModels] = useState<ModelBasicInfo[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>(defaultModel);
+  const [modelDetails, setModelDetails] = useState<ModelDetailedInfo | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  // Add state for configuration
+  const [config, setConfig] = useState<ModelConfig>({
+    temperature: 0,
+    topP: 0,
+    presencePenalty: 0,
+    frequencyPenalty: 0,
+    stopSequences: ''
+  });
+
+  // Add handlers for configuration changes
+  const handleConfigChange = (key: keyof ModelConfig, value: number | string) => {
+    setConfig(prev => ({ ...prev, [key]: value }));
+  };
 
   // Fetch models when provider changes
   const handleProviderChange = async (provider: string) => {
@@ -73,6 +106,20 @@ export default function AgentSettingsDetail() {
   useEffect(() => {
     handleProviderChange(defaultProvider);
   }, [defaultProvider]);
+
+  // Add handler for model selection
+  const handleModelChange = async (modelId: string) => {
+    setSelectedModel(modelId);
+    setIsLoadingDetails(true);
+    try {
+      const details = await ModelProviderService.getModelDetails(selectedProvider, modelId);
+      setModelDetails(details);
+    } catch (error) {
+      console.error('Error loading model details:', error);
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -122,7 +169,11 @@ export default function AgentSettingsDetail() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Model</label>
-                  <Select defaultValue={defaultModel} disabled={isLoadingModels}>
+                  <Select 
+                    value={selectedModel} 
+                    onValueChange={handleModelChange}
+                    disabled={isLoadingModels}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={isLoadingModels ? "Loading models..." : "Select model"} />
                     </SelectTrigger>
@@ -148,23 +199,44 @@ export default function AgentSettingsDetail() {
                 <CardDescription>Current model specifications</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Context Window</label>
-                    <p className="text-2xl font-bold">4,096</p>
+                {isLoadingDetails ? (
+                  <div className="flex items-center justify-center h-24">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Max Tokens</label>
-                    <p className="text-2xl font-bold">4,096</p>
+                ) : modelDetails ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium">Context Window</label>
+                        <p className="text-2xl font-bold">{modelDetails.context_window.toLocaleString()}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium">Max Tokens</label>
+                        <p className="text-2xl font-bold">{modelDetails.max_tokens.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Supported Features</label>
+                      <div className="flex gap-2">
+                        {modelDetails.supported_features.map((feature) => (
+                          <span key={feature} className="px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">
+                            {feature}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {modelDetails.description && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Description</label>
+                        <p className="text-sm text-muted-foreground">{modelDetails.description}</p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    Select a model to view details
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Supported Features</label>
-                  <div className="flex gap-2">
-                    <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">Text</span>
-                    <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">Chat</span>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -180,64 +252,96 @@ export default function AgentSettingsDetail() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium">Temperature</label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Controls randomness: Lower values make the model more focused and deterministic
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{config.temperature}</span>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Controls randomness: Lower values make the model more focused and deterministic
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                    <Slider defaultValue={[0.7]} max={1} step={0.1} />
+                    <Slider 
+                      value={[config.temperature]} 
+                      onValueChange={([value]) => handleConfigChange('temperature', value)} 
+                      max={1} 
+                      step={0.1} 
+                    />
                   </div>
 
                   {/* Top P */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium">Top P</label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Controls diversity via nucleus sampling
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{config.topP}</span>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Controls diversity via nucleus sampling
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                    <Slider defaultValue={[1]} max={1} step={0.1} />
+                    <Slider 
+                      value={[config.topP]} 
+                      onValueChange={([value]) => handleConfigChange('topP', value)} 
+                      max={1} 
+                      step={0.1} 
+                    />
                   </div>
 
                   {/* Presence Penalty */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium">Presence Penalty</label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Adjusts likelihood of the model discussing new topics
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{config.presencePenalty}</span>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Adjusts likelihood of the model discussing new topics
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                    <Slider defaultValue={[0]} max={2} step={0.1} />
+                    <Slider 
+                      value={[config.presencePenalty]} 
+                      onValueChange={([value]) => handleConfigChange('presencePenalty', value)} 
+                      max={2} 
+                      step={0.1} 
+                    />
                   </div>
 
                   {/* Frequency Penalty */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium">Frequency Penalty</label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Adjusts likelihood of the model repeating information
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{config.frequencyPenalty}</span>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Adjusts likelihood of the model repeating information
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                    <Slider defaultValue={[0]} max={2} step={0.1} />
+                    <Slider 
+                      value={[config.frequencyPenalty]} 
+                      onValueChange={([value]) => handleConfigChange('frequencyPenalty', value)} 
+                      max={2} 
+                      step={0.1} 
+                    />
                   </div>
                 </div>
 
@@ -254,7 +358,11 @@ export default function AgentSettingsDetail() {
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <Input placeholder="Enter stop sequences (comma-separated)" />
+                  <Input 
+                    placeholder="Enter stop sequences (comma-separated)" 
+                    value={config.stopSequences}
+                    onChange={(e) => handleConfigChange('stopSequences', e.target.value)}
+                  />
                 </div>
               </CardContent>
             </Card>
