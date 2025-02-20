@@ -16,7 +16,7 @@ interface UserSettings {
 }
 
 export class UserSettingsService {
-  private static baseUrl = 'http://localhost:8000';
+  private static baseUrl = 'http://localhost:9000';
 
   static async getUserSettings(chatbotId: string, tenantId: string): Promise<UserSettings | null> {
     try {

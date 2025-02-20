@@ -21,6 +21,7 @@ interface LoaderData {
   chatbot: {
     id: string;
     name: string;
+    tenantId: string;
   };
   title: string;
   userSettings: {
@@ -88,15 +89,16 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const providers = await ModelProviderService.getProviders();
   
   // Fetch user settings if they exist
-  const userSettings = await UserSettingsService.getUserSettings(id || "", tenant || "");
+  const userSettings = await UserSettingsService.getUserSettings(id || "", chatbot?.tenantId || "");
   
   return json<LoaderData>({
     providers,
     defaultProvider: userSettings?.settings.provider || "Groq",
-    defaultModel: userSettings?.settings.model || "llama3-70b-8192",
+    defaultModel: userSettings?.settings.model || "llama3-8b-8192",
     chatbot: {
       id: id || "",
-      name: chatbot?.name || "Agent"
+      name: chatbot?.name || "Agent",
+      tenantId: chatbot?.tenantId || ""
     },
     title: "Agent Settings",
     userSettings: userSettings?.settings.configuration || null
@@ -339,7 +341,7 @@ export default function AgentSettingsDetail() {
     try {
       const userSettings = {
         chatbotid: chatbot.id,
-        tenantid: params.tenant,
+        tenantid: chatbot.tenantId,
         settings: {
           provider: selectedProvider,
           model: selectedModel,

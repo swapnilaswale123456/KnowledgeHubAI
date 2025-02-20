@@ -13,7 +13,7 @@ import { useChatbot } from "~/contexts/ChatbotContext";
 import type { MetaFunction } from "@remix-run/node";
 import { THEME_COLORS } from "~/utils/theme/constants";
 import { setSelectedChatbot, commitSession, getUserSession } from "~/utils/session.server";
-
+import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 type LoaderData = {
   chatbot: {
     id: string;
@@ -28,6 +28,7 @@ type LoaderData = {
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const sessionUser = await getUserSession(request);
   const userId = sessionUser.get("userId");
+  const tenantId = await getTenantIdFromUrl(params);
   
   if (!userId) {
     throw redirect("/login");
@@ -54,7 +55,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
         ...chatbot,
         theme
       },
-      userId
+      tenantId,
+      title: "Chatbot Conversations | KnowledgeHub AI"
     }, 
     {
       headers: {
@@ -65,8 +67,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: data?.chatbot?.name || "Chatbot | KnowledgeHub AI" }
+  { title: data?.title || "Chatbot Conversations | KnowledgeHub AI" }
 ];
+
 
 interface QuickStartStep {
   id: number;
@@ -103,7 +106,7 @@ const DEFAULT_SETTINGS: ChatSettings = {
 export default function ChatbotRoute() {
   const { selectedChatbotId, setSelectedChatbotId } = useChatbot();
   const params = useParams();
-  const { chatbot, userId } = useLoaderData<typeof loader>();
+  const { chatbot, tenantId } = useLoaderData<typeof loader>();
   const [showGuide, setShowGuide] = useState(true);
   const [message, setMessage] = useState("");
   const [isMaximized, setIsMaximized] = useState(false);
@@ -286,7 +289,7 @@ export default function ChatbotRoute() {
           chatbotId={chatbot.id}
           currentMessage={message}
           isMaximized={isMaximized}
-          userId={userId}
+          userId={tenantId}
           messages={messages}
           settings={settings}
           isTyping={isTyping}

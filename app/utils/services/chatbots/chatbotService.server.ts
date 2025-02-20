@@ -24,6 +24,7 @@ export interface ChatbotDetails {
   trainingData?: any[];
   lastCompletedStep?: number;
   files?: FileSource[];
+  tenantId?: string;
 }
 
 export class ChatbotService {
@@ -45,7 +46,8 @@ export class ChatbotService {
         businessName: true,
         status: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        tenantId: true
       }
     });
 

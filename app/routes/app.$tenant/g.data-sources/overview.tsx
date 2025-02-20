@@ -8,12 +8,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
   
   return json({ 
-    title: "Data Sources"
+    title: "Knowledge Base & Data Sources"
   });
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: data?.title || "Data Sources" }
+  { title: data?.title || "Knowledge Base & Data Sources" }
 ];
 
 export default function DataSourceOverviewRoute() {

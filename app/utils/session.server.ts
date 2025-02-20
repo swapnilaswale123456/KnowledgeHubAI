@@ -158,7 +158,7 @@ export async function validateCSRFToken(request: Request) {
 }
 
 export async function getSelectedChatbot(request: Request) {
-  const session = await getUserSession(request);
+  const session = await getUserSession(request); 
   const chatbotId = session.get("selectedChatbotId");
   //console.log("Getting chatbot ID from session:", chatbotId);
   return chatbotId;

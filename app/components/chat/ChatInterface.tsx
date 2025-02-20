@@ -454,7 +454,7 @@ export function ChatInterface({
       setIsLoadingHistory(true);
       try {
         const chatHistoryService = new ChatHistoryService();
-        const response = await chatHistoryService.getHistory(userId, 8);
+        const response = await chatHistoryService.getHistory(userId, 100);
         
         if (response?.data?.conversations?.length > 0) {
           const appConversations = response.data.conversations

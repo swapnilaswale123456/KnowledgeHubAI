@@ -29,12 +29,12 @@ interface ModelDetailedInfo {
 
 export class ModelProviderService {
   private static getBaseUrl() {
-    return 'http://localhost:8000';
+    return 'http://localhost:9000';
   }
 
   static async getProviders(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.getBaseUrl()}/api/v1/provider-names/`, {
+      const response = await fetch(`${this.getBaseUrl()}/api/v1/model-provider/db/providers`, {
         headers: {
           'accept': 'application/json'
         }
@@ -43,8 +43,8 @@ export class ModelProviderService {
       if (!response.ok) {
         throw new Error('Failed to fetch providers');
       }
-
-      return await response.json();
+      const providers = await response.json();
+      return providers.map((provider: any) => provider.name);
     } catch (error) {
       console.error('Error fetching providers:', error);
       throw error;
@@ -53,7 +53,7 @@ export class ModelProviderService {
 
   static async getProviderModels(provider: string): Promise<ModelBasicInfo[]> {
     try {
-      const response = await fetch(`${this.getBaseUrl()}/api/v1/provider/${provider}/models`, {
+      const response = await fetch(`${this.getBaseUrl()}/api/v1/model-provider/db/provider/${provider}/models`, {
         headers: {
           'accept': 'application/json'
         }
@@ -62,12 +62,19 @@ export class ModelProviderService {
       if (!response.ok) {
         throw new Error(`Failed to fetch models for provider ${provider}`);
       }
+      const models = await response.json();
+      return models
+        .filter((model: any) => model.is_active === true) // Filter active models
+        .map((model: any) => ({
+          model_id: model.model_id,
+          id: model.id,
+          name: model.name        
+        }));
 
-      return await response.json();
-    } catch (error) {
-      console.error(`Error fetching models for provider ${provider}:`, error);
-      throw error;
-    }
+      } catch (error) {
+        console.error(`Error fetching models for provider ${provider}:`, error);
+        throw error;
+      }
   }
 
   static async getModelDetails(provider: string, modelId: string): Promise<ModelDetailedInfo> {
