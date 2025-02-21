@@ -33,6 +33,7 @@ import LogoDark from "~/assets/img/logo-dark.png";
 import LogoLight from "~/assets/img/logo-light.png";
 import { Inbox } from "@novu/react";
 import NotificationsButton from "./buttons/NotificationsButton";
+import AssistantsButton from "./buttons/AssistantsButton";
 
 function classNames(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -585,23 +586,18 @@ function NavBar({
   const appOrAdminData = useAppOrAdminData();
   const rootData = useRootData();
   const navigate = useNavigate();
+
   return (
     <div className="flex flex-1 justify-between space-x-2">
       <div className="flex flex-1 items-center">
         <div className="font-extrabold ">{title}</div>
       </div>
       <div className="flex items-center space-x-2 md:ml-6">
-        {/* {layout === "app" && (
-          <CreditsRemaining
-            feature={appOrAdminData.featureSyncs}
-            redirectTo={appOrAdminData.currentTenant ? `/app/${appOrAdminData.currentTenant.slug}/settings/subscription` : "/settings/subscription"}
-          />
-        )} */}
+        {layout === "app" && <AssistantsButton />}
         {buttons.onboarding && appOrAdminData?.onboardingSession && (
           <OnboardingButton item={appOrAdminData?.onboardingSession} onClick={onOpenOnboardingModal} />
         )}
         {layout === "app" && buttons.mySubscription && <CurrentSubscriptionButton />}
-        {/* <LocaleSelector /> */}
         {buttons.notifications && appOrAdminData?.user && (
           <Inbox
             applicationIdentifier={rootData?.appConfiguration.notifications.novuAppId || ""}
@@ -620,7 +616,6 @@ function NavBar({
         {layout === "app" && buttons.linkedAccounts && <LinkedAccountsButton />}
         {layout === "app" && buttons.chatSupport && <ChatSupportButton />}
         {layout === "app" && buttons.quickActions && <QuickActionsButton entities={appOrAdminData?.entities?.filter((f) => f.showInSidebar)} />}
-        {/* {(layout === "app" || layout === "admin") && <ThemeSelector variant="secondary" />} */}
         {(layout === "app" || layout === "admin") && <ProfileButton user={appOrAdminData?.user} layout={layout} />}
       </div>
     </div>
