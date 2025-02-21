@@ -37,29 +37,14 @@ export function MessageItem({ message, settings }: MessageItemProps) {
     }
 
     return (
-      <div 
-        ref={contentRef}
-        className={cn(
-          "prose prose-neutral dark:prose-invert",
-          "max-w-none leading-7",
-          settings.fontSize === 'small' && 'text-sm',
-          settings.fontSize === 'medium' && 'text-base', 
-          settings.fontSize === 'large' && 'text-lg'
-        )}
-      >
+      <div ref={contentRef} className="text-[15px] leading-6">
         {isBot ? (
           <div className="formatted-message">
             <ReactMarkdown
               components={{
-                p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                p: ({ children }) => <p className="mb-4 last:mb-0 text-[15px] leading-6">{children}</p>,
                 code: ({ children, className }) => (
-                  <code
-                    className={cn(
-                      "bg-gray-100 rounded px-1.5 py-0.5",
-                      "text-sm font-mono text-gray-800",
-                      className
-                    )}
-                  >
+                  <code className={cn("bg-gray-100 rounded px-1.5 py-0.5 font-mono text-[13px]", className)}>
                     {children}
                   </code>
                 ),
@@ -74,7 +59,9 @@ export function MessageItem({ message, settings }: MessageItemProps) {
             </ReactMarkdown>
           </div>
         ) : (
-          message.content
+          <div className="text-[15px] leading-6">
+            {message.content}
+          </div>
         )}
       </div>
     );
@@ -109,7 +96,8 @@ export function MessageItem({ message, settings }: MessageItemProps) {
             "max-w-[85%]",
             isBot ? "bg-white" : "bg-gray-100",
             "px-3 py-2 rounded-lg",
-            isBot ? "shadow-sm" : ""
+            isBot ? "shadow-sm" : "",
+            "text-[15px] leading-6"
           )}>
             {renderContent()}
           </div>
