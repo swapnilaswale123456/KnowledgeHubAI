@@ -8,6 +8,7 @@ import { ChatbotStatus } from "@prisma/client";
 import { AreaChart, BarChart } from "@tremor/react";
 import { useFetcher } from "@remix-run/react";
 import { ChatbotCard } from "~/components/dashboard/ChatbotCard";
+import { ChatbotDetails } from "~/types/chatbot";
 
 interface DashboardContentProps {
   chatbots: any[];
@@ -86,7 +87,7 @@ export function DashboardContent({
                     onStatusChange={onStatusChange}
                     onDelete={onDelete}
                     onNavigate={onNavigate}
-                    onEdit={onEdit}
+                    onEdit={(id) => onEdit(chatbots.find(c => c.id === id) as ChatbotDetails)}
                     isProcessing={isLoading}
                     fetcher={fetcher}
                   />

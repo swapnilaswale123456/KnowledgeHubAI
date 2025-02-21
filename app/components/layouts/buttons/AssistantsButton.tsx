@@ -2,20 +2,27 @@ import { Fragment, useState } from "react";
 import { Menu, Transition } from "@headlessui/react";
 import { cn } from "~/lib/utils";
 import { Search, ChevronDown } from "lucide-react";
-import { useAppData } from "~/utils/data/useAppData";
+import { ChatbotDetails } from "~/types/chatbot";
+import { useNavigate, useParams } from "@remix-run/react";
+import { useFetcher } from "@remix-run/react";
 
-interface ChatbotType {
-  id: string;
-  name: string;
-  description?: string;
-  icon?: string;
+interface AssistantsButtonProps {
+  chatbots: ChatbotDetails[];
+  onSelectChatbot?: (chatbot: ChatbotDetails) => void;
 }
 
-export default function AssistantsButton() {
+export default function AssistantsButton({ chatbots = [] }: AssistantsButtonProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { chatbots = [] } = useAppData() || {};
+  const navigate = useNavigate();
+  const params = useParams();
+  const fetcher = useFetcher();
 
-  const filteredChatbots = chatbots?.filter((chatbot: ChatbotType) =>
+  const handleSelectChatbot = async (chatbot: ChatbotDetails) => {
+    
+    navigate(`/app/${params.tenant}/g/chatbot/${chatbot.id}`);
+  };
+
+  const filteredChatbots = chatbots.filter((chatbot) =>
     chatbot.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -57,9 +64,9 @@ export default function AssistantsButton() {
           <div className="max-h-64 overflow-y-auto">
             <div className="px-3 py-2">
               <h3 className="text-xs font-medium text-gray-500 mb-2">
-                {chatbots?.length > 0 ? `${chatbots.length} Chatbots` : 'No chatbots found'}
+                {chatbots.length > 0 ? `${chatbots.length} Chatbots` : 'No chatbots found'}
               </h3>
-              {filteredChatbots.map((chatbot: ChatbotType) => (
+              {filteredChatbots.map((chatbot) => (
                 <Menu.Item key={chatbot.id}>
                   {({ active }) => (
                     <button
@@ -67,10 +74,7 @@ export default function AssistantsButton() {
                         "flex w-full items-center px-2 py-1.5 text-sm rounded-md",
                         active ? "bg-gray-50" : ""
                       )}
-                      onClick={() => {
-                        // Handle chatbot selection
-                        console.log("Selected chatbot:", chatbot);
-                      }}
+                      onClick={() => handleSelectChatbot(chatbot)}
                     >
                       <div className="flex items-center gap-2 w-full">
                         <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">

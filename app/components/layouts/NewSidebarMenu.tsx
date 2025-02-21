@@ -583,7 +583,7 @@ function NavBar({
   onOpenCommandPalette: () => void;
   onOpenOnboardingModal: () => void;
 }) {
-  const appOrAdminData = useAppOrAdminData();
+  const appOrAdminData = useAppOrAdminData();  
   const rootData = useRootData();
   const navigate = useNavigate();
 
@@ -593,7 +593,7 @@ function NavBar({
         <div className="font-extrabold ">{title}</div>
       </div>
       <div className="flex items-center space-x-2 md:ml-6">
-        {layout === "app" && <AssistantsButton />}
+        {layout === "app" && <AssistantsButton chatbots={appOrAdminData?.chatbots ?? []} onSelectChatbot={() => {}} />}
         {buttons.onboarding && appOrAdminData?.onboardingSession && (
           <OnboardingButton item={appOrAdminData?.onboardingSession} onClick={onOpenOnboardingModal} />
         )}

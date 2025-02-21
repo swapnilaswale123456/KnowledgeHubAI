@@ -591,7 +591,7 @@ export default function DashboardRoute() {
             metrics={metrics}
             onStatusChange={handleStatusUpdate}
             onDelete={handleDelete}
-            onEdit={(id) => handleEdit(chatbots.find(c => c.id === id) as ChatbotDetails)}
+            onEdit={(chatbot: ChatbotDetails) => handleEdit(chatbot)}
             onNavigate={handleSelectChatbot}
             isLoading={fetcher.state !== "idle"}
             fetcher={fetcher}

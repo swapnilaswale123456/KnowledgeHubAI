@@ -10,6 +10,7 @@ import { DefaultPermission } from "~/application/dtos/shared/DefaultPermissions"
 import { EntityGroupWithDetails } from "../db/entities/entityGroups.db.server";
 import { TenantTypeWithDetails } from "../db/tenants/tenantTypes.db.server";
 import { PlanFeatureUsageDto } from "~/application/dtos/subscriptions/PlanFeatureUsageDto";
+import { ChatbotDetails } from "~/types/chatbot";
 
 export type AppOrAdminData = {
   // i18n: Record<string, Language>;
@@ -28,6 +29,7 @@ export type AppOrAdminData = {
   onboardingSession: OnboardingSessionWithDetails | null;
   tenantTypes: TenantTypeWithDetails[];
   credits?: PlanFeatureUsageDto | undefined;
+  chatbots?: ChatbotDetails[];
 };
 
 export function useAppOrAdminData(): AppOrAdminData {

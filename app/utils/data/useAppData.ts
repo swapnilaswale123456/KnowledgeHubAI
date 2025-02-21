@@ -5,6 +5,7 @@ import { TenantSubscriptionWithDetails } from "../db/tenantSubscriptions.db.serv
 import { AppOrAdminData } from "./useAppOrAdminData";
 import { TenantRelationshipWithDetails } from "../db/tenants/tenantRelationships.db.server";
 import EntitiesSingleton from "~/modules/rows/repositories/EntitiesSingleton";
+import { ChatbotDetails } from "~/types/chatbot";
 
 export type AppLoaderData = AppOrAdminData & {
   currentTenant: TenantSimple;
@@ -12,6 +13,7 @@ export type AppLoaderData = AppOrAdminData & {
   currentRole: TenantUserType;
   pendingInvitations: number;
   childTenants: TenantRelationshipWithDetails[];
+  chatbots?: ChatbotDetails[];
 };
 
 export function useAppData(): AppLoaderData {

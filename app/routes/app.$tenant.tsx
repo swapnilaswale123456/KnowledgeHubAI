@@ -19,6 +19,7 @@ import { serverTimingHeaders } from "~/modules/metrics/utils/defaultHeaders.serv
 import { getTranslations } from "~/locale/i18next.server";
 import { ChatbotProvider } from "~/contexts/ChatbotContext";
 import { useState, createContext } from "react";
+import { ChatbotQueryService } from "~/services/chatbot/ChatbotQueryService";
 export { serverTimingHeaders as headers };
 
 type LoaderData = {
@@ -80,9 +81,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const selectedChatbotId = await getSelectedChatbot(request);
   const session = await setSelectedChatbot(request, selectedChatbotId);
   
+  const chatbots = await ChatbotQueryService.getChatbots(tenantId);
+  
   return json({
     ...appData,
-    selectedChatbotId
+    selectedChatbotId,
+    chatbots
   }, { 
     headers: {
       ...getServerTimingHeader(),
