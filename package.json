@@ -124,6 +124,7 @@
     "react-hot-toast": "^2.4.1",
     "react-i18next": "^13.5.0",
     "react-json-tree": "^0.17.0",
+    "react-markdown": "^10.0.0",
     "react-sortablejs": "^6.1.4",
     "reactflow": "^11.10.1",
     "recharts": "^2.15.0",

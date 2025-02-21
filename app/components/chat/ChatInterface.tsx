@@ -329,12 +329,18 @@ export function ChatInterface({
                 if (parsedMsg.type === 'stream' && conv.messages.length > 0) {
                   const lastMessage = conv.messages[conv.messages.length - 1];
                   if (lastMessage.sender === 'bot') {
-                    // Update last message for streaming
+                    // Stream update - append to existing message
                     conv.messages[conv.messages.length - 1] = {
                       ...lastMessage,
                       content: lastMessage.content + messageContent
                     };
                     conv.lastMessage = conv.messages[conv.messages.length - 1].content;
+
+                    // Smooth scroll for streaming
+                    requestAnimationFrame(() => {
+                      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                    });
+                    
                     return conv;
                   }
                 }
@@ -354,7 +360,7 @@ export function ChatInterface({
             return updatedConversations;
           });
 
-          // Update parent messages and scroll
+          // Update parent messages with streaming support
           if (sessionId === activeConversation) {
             setParentMessages(prev => {
               if (parsedMsg.type === 'stream' && prev.length > 0) {
@@ -365,13 +371,17 @@ export function ChatInterface({
                     ...lastMessage,
                     content: lastMessage.content + messageContent
                   };
+                  
+                  // Smooth scroll for streaming
+                  requestAnimationFrame(() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                  });
+                  
                   return updatedMessages;
                 }
               }
               return [...prev, botMessage];
             });
-
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
 
           setIsProcessing(false);
@@ -380,10 +390,12 @@ export function ChatInterface({
 
       if (parsedMsg.type === 'typing_start') {
         setIsTypingResponse(true);
-      } else if (parsedMsg.type === 'typing_end') {
+      } 
+      else if (parsedMsg.type === 'typing_end') {
         setIsTypingResponse(false);
       }      
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('WebSocket message error:', error);
       setIsProcessing(false);
     }
