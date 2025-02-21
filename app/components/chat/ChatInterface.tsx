@@ -279,7 +279,7 @@ export function ChatInterface({
         return;
       } 
       
-      if (parsedMsg.type === 'message' || parsedMsg.type === 'response' || parsedMsg.type === 'error') {
+      if (parsedMsg.type === 'message' || parsedMsg.type === 'response' || parsedMsg.type === 'error'|| parsedMsg.type=="stream") {
         const messageContent = parsedMsg.type === 'error' 
           ? (parsedMsg.data?.message || 
              parsedMsg.data?.error || 

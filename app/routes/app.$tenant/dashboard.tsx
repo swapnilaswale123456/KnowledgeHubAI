@@ -205,12 +205,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   };
 
   try {
-    const metricsResponse = await fetch(`http://localhost:5000/dashboard/chatbot?consolidated=true`, {
+    const metricsResponse = await fetch(`http://localhost:5000/dashboard/chatbot?user_id=${tenantId}&consolidated=true`, {
       headers: {        
         'Content-Type': 'application/json'
       }
+      
     });
-    
     if (metricsResponse.ok) {
       metricsData = await metricsResponse.json();
     } else {

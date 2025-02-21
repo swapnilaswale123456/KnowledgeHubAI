@@ -29,7 +29,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const sessionUser = await getUserSession(request);
   const userId = sessionUser.get("userId");
   const tenantId = await getTenantIdFromUrl(params);
-  
+  console.log("tenantId", tenantId);
   if (!userId) {
     throw redirect("/login");
   }
