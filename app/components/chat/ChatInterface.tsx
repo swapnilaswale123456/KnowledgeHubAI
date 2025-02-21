@@ -240,10 +240,8 @@ export function ChatInterface({
   const handleWebSocketMessage = async (msg: any) => {
     try {
       console.log('WebSocket message received:', msg);
-            
       const parsedMsg = msg;
-      
-      
+
       if (parsedMsg.type === 'session_created') {
         // Replace temporary session with real one
         const realSessionId = parsedMsg.session_id;
@@ -279,19 +277,10 @@ export function ChatInterface({
         return;
       } 
       
-      if (parsedMsg.type === 'message' || parsedMsg.type === 'response' || parsedMsg.type === 'error'|| parsedMsg.type=="stream") {
+      if (parsedMsg.type === 'message' || parsedMsg.type === 'response' || parsedMsg.type === 'error' || parsedMsg.type === 'stream') {
         const messageContent = parsedMsg.type === 'error' 
-          ? (parsedMsg.data?.message || 
-             parsedMsg.data?.error || 
-             parsedMsg.message || 
-             parsedMsg.error || 
-             "Sorry, I encountered an error. Please try again.")
-          : (parsedMsg.data?.content || 
-             parsedMsg.data?.answer || 
-             parsedMsg.data?.response || 
-             parsedMsg.content || 
-             parsedMsg.answer || 
-             parsedMsg.response || '');
+          ? (parsedMsg.data?.message || parsedMsg.data?.error || parsedMsg.message || parsedMsg.error || "Sorry, I encountered an error. Please try again.")
+          : (parsedMsg.data?.content || parsedMsg.data?.answer || parsedMsg.data?.response || parsedMsg.content || parsedMsg.answer || parsedMsg.response || '');
 
         const sessionId = parsedMsg.session_id || sessionRef.current.sessionId;
         
@@ -301,17 +290,25 @@ export function ChatInterface({
         }
 
         if (messageContent) {
-          const botMessage: Message = {
-            id: crypto.randomUUID(),
-            content: messageContent,
-            sender: 'bot',
-            timestamp: new Date(),
-            status: parsedMsg.type === 'error' ? 'error' : 'sent'
-          };
+          // Handle streaming or create new message
+          const botMessage: Message = parsedMsg.type === 'stream' 
+            ? {
+                id: crypto.randomUUID(),
+                content: messageContent,
+                sender: 'bot' as const,
+                timestamp: new Date(),
+                status: 'sent' as const
+              }
+            : {
+                id: crypto.randomUUID(),
+                content: messageContent,
+                sender: 'bot' as const,
+                timestamp: new Date(),
+                status: parsedMsg.type === 'error' ? 'error' as const : 'sent' as const
+              };
 
           // Update conversations with session persistence
           setConversations(prev => {
-            // First check if conversation exists in ref
             const existingConv = sessionRef.current.conversations.find(c => c.sessionId === sessionId);
             
             if (!existingConv) {
@@ -322,7 +319,6 @@ export function ChatInterface({
                 messages: [botMessage]
               };
               
-              // Update ref
               sessionRef.current.conversations = [newConv, ...sessionRef.current.conversations];
               return sessionRef.current.conversations;
             }
@@ -330,36 +326,52 @@ export function ChatInterface({
             // Update existing conversation in ref
             const updatedConversations = sessionRef.current.conversations.map(conv => {
               if (conv.sessionId === sessionId) {
-                const messageExists = conv.messages.some(m => m.content === messageContent);
-                if (messageExists) return conv;
-
-                const updated = {
+                if (parsedMsg.type === 'stream' && conv.messages.length > 0) {
+                  const lastMessage = conv.messages[conv.messages.length - 1];
+                  if (lastMessage.sender === 'bot') {
+                    // Update last message for streaming
+                    conv.messages[conv.messages.length - 1] = {
+                      ...lastMessage,
+                      content: lastMessage.content + messageContent
+                    };
+                    conv.lastMessage = conv.messages[conv.messages.length - 1].content;
+                    return conv;
+                  }
+                }
+                
+                // Add new message for non-streaming or first stream chunk
+                return {
                   ...conv,
                   messages: [...conv.messages, botMessage],
                   lastMessage: messageContent?.replace(/<\/?[^>]+(>|$)/g, ""),
                   timestamp: new Date()
                 };
-                return updated;
               }
               return conv;
             });
 
-            // Update ref and return new state
             sessionRef.current.conversations = updatedConversations;
             return updatedConversations;
           });
 
-          // Update parent messages
+          // Update parent messages and scroll
           if (sessionId === activeConversation) {
             setParentMessages(prev => {
-              const messageExists = prev.some(m => m.content === messageContent);
-              if (messageExists) return prev;
+              if (parsedMsg.type === 'stream' && prev.length > 0) {
+                const lastMessage = prev[prev.length - 1];
+                if (lastMessage.sender === 'bot') {
+                  const updatedMessages = [...prev];
+                  updatedMessages[updatedMessages.length - 1] = {
+                    ...lastMessage,
+                    content: lastMessage.content + messageContent
+                  };
+                  return updatedMessages;
+                }
+              }
               return [...prev, botMessage];
             });
-            
-            setTimeout(() => {
-              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
 
           setIsProcessing(false);
