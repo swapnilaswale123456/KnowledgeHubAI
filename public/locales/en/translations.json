@@ -832,7 +832,7 @@
       "subscription": "Subscription",
       "billing": "Billing",
       "profile": "Profile",
-      "settings": "Settings",
+      "settings": "Workspace Settings",
       "signOut": "Sign out",
       "members": "Members"
     },
@@ -840,7 +840,7 @@
       "app": "App",
       "admin": "Admin",
       "dashboard": "Dashboard",
-      "settings": "Settings",
+      "settings": "Workspace Settings",
       "logs": "Logs",
       "setup": "Set up",
       "rolesAndPermissions": "Roles & Permissions",

@@ -700,7 +700,7 @@ export function ChatInterface({
             </div>
           ) : (
             <>
-              <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
+              <div className="flex-1 overflow-y-auto px-0 py-0 space-y-2">
                 {currentMessages.map((msg) => (
                   <MessageItem 
                     key={msg.id}

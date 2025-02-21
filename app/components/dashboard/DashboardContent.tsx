@@ -65,7 +65,7 @@ export function DashboardContent({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Recent Chatbots</CardTitle>
+              <CardTitle>My Chatbots Assistant</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 {chatbots.length} total chatbots
               </p>
@@ -115,22 +115,7 @@ export function DashboardContent({
           </CardContent>
         </Card>
 
-         {/* Tools Usage */}
-         <Card>
-          <CardHeader>
-            <CardTitle>Top Tools</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {Object.entries(metrics.data.model_analytics.top_tools).map(([tool, count]) => (
-                <div key={tool} className="flex items-center justify-between p-2 hover:bg-accent/50 rounded-lg">
-                  <span className="text-sm">{tool}</span>
-                  <span className="text-sm font-medium">{count} uses</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Right section - Sessions & Analytics */}
