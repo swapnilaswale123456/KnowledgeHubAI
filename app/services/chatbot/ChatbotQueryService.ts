@@ -99,4 +99,11 @@ export class ChatbotQueryService {
       data
     });
   }
+
+  static async getChatbotByUniqueUrl(uniqueUrl: string) {
+    const chatbot = await db.chatbot.findUnique({
+      where: { uniqueUrl }
+    });
+    return chatbot;
+  }
 } 

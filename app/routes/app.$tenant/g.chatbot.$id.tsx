@@ -1,5 +1,5 @@
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
-import { useParams } from "@remix-run/react";
+import { useParams, useSearchParams } from "@remix-run/react";
 import { useState, useEffect, useRef } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { MessageSquare, Code, Upload, Settings } from "lucide-react";
@@ -175,6 +175,9 @@ export default function ChatbotRoute() {
     }
   ]);
 
+  const [searchParams] = useSearchParams();
+  const isEmbedded = searchParams.get("embedded") === "true" || "false";
+
   // Update selected chatbot when route changes
   useEffect(() => {
     if (params.id) {
@@ -280,35 +283,38 @@ export default function ChatbotRoute() {
   };
 
   return (
-    <div className="flex flex-1 h-full w-full p-6 bg-gray-100">
-      <div className={cn(
-        "flex bg-white rounded-lg border transition-all duration-200 overflow-hidden w-full h-full",
-        isMaximized ? "w-full h-full" : "max-w-[1000px] max-h-[700px] mx-auto"
-      )}>
-        <ChatInterface 
-          chatbotId={chatbot.id}
-          currentMessage={message}
-          isMaximized={isMaximized}
-          userId={tenantId}
-          messages={messages}
-          settings={settings}
-          isTyping={isTyping}
-          onMessageChange={handleMessageChange}
-          onSendMessage={handleSendMessage}
-          onToggleMaximize={() => setIsMaximized(!isMaximized)}
-          onFileUpload={handleFileUpload}
-          onVoiceRecord={handleVoiceRecord}
-          onEmojiSelect={handleEmojiSelect}
-          setMessages={setMessages}
-          showConversations={true}
-        />
-
-        {showGuide && (
-          <QuickStartGuide 
-            steps={steps}
-            onClose={() => setShowGuide(false)}
+    <div className={isEmbedded ? "h-screen" : ""}>
+      <div className="flex flex-1 h-full w-full p-6 bg-gray-100">
+        <div className={cn(
+          "flex bg-white rounded-lg border transition-all duration-200 overflow-hidden w-full h-full",
+          isMaximized ? "w-full h-full" : "max-w-[1000px] max-h-[700px] mx-auto"
+        )}>
+          <ChatInterface 
+            chatbotId={chatbot.id}
+            currentMessage={message}
+            isMaximized={isMaximized}
+            userId={tenantId}
+            messages={messages}
+            settings={settings}
+            isTyping={isTyping}
+            onMessageChange={handleMessageChange}
+            onSendMessage={handleSendMessage}
+            onToggleMaximize={() => setIsMaximized(!isMaximized)}
+            onFileUpload={handleFileUpload}
+            onVoiceRecord={handleVoiceRecord}
+            onEmojiSelect={handleEmojiSelect}
+            setMessages={setMessages}
+            showConversations={true}
+            isEmbedded={isEmbedded}
           />
-        )}
+
+          {showGuide && (
+            <QuickStartGuide 
+              steps={steps}
+              onClose={() => setShowGuide(false)}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

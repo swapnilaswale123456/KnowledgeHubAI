@@ -44,6 +44,7 @@ interface ChatInterfaceProps {
   onVoiceRecord: () => void;
   onEmojiSelect: (emoji: string) => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  isEmbedded?: boolean;
 }
 
 // Add default theme settings
@@ -97,7 +98,8 @@ export function ChatInterface({
   onFileUpload,
   onVoiceRecord,
   onEmojiSelect,
-  setMessages: setParentMessages
+  setMessages: setParentMessages,
+  isEmbedded
 }: ChatInterfaceProps) {
   // Core states
   const [message, setMessage] = useState("");
@@ -618,11 +620,12 @@ export function ChatInterface({
   return (
     <div className={cn(
       "flex flex-col",
+      isEmbedded ? "h-full" : "min-h-[600px]",
       "w-full h-[500px]",
       "bg-white rounded-2xl shadow-xl overflow-hidden",
       !isMaximized && "md:max-w-[800px]"
     )}>
-      {/* Header */}
+     
       <div 
         className="flex items-center justify-between px-3 py-2 text-white"
         style={themeStyles.header}
@@ -645,6 +648,7 @@ export function ChatInterface({
           {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </button>
       </div>
+     
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
