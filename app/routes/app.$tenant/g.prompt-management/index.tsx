@@ -401,7 +401,7 @@ export default function PromptManagementIndex() {
                         </Select>
                       </div>
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Chatbot Type</label>
+                        <label className="text-sm font-medium mb-1 block">Assistant Type</label>
                         <Select value={config.chatbot_type} onValueChange={handleChatbotTypeChange}>
                           <SelectTrigger>
                             <SelectValue />

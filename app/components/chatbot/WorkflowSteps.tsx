@@ -4,9 +4,9 @@ import { X } from "lucide-react";
 
 export const steps = [
   { id: 1, title: "Industry Selection", description: "Choose your business domain" },
-  { id: 2, title: "Chatbot Type", description: "Select the type of chatbot" },
-  { id: 3, title: "Skills Selection", description: "Define chatbot capabilities" },
-  { id: 4, title: "Chatbot Scope", description: "Set operational boundaries" },
+  { id: 2, title: "Assistant Type", description: "Select the type of assistant" },
+  { id: 3, title: "AI Agents-Skills based modules", description: "Define assistant capabilities" },
+  { id: 4, title: "Chatbot Scope", description: "Set operational boundaries" }, 
   { id: 5, title: "Data Source", description: "Choose your data source type" },
   { id: 6, title: "Data Upload", description: "Add training data" },
   { id: 7, title: "Review & Train", description: "Finalize and start training" },
@@ -24,7 +24,7 @@ export function WorkflowSteps({ currentStep, onClose, onStepChange }: WorkflowSt
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-3">
-        <h1 className="text-lg font-semibold">Create Your Chatbot</h1>
+        <h1 className="text-lg font-semibold">Build Your Smart AI Assistant</h1>
         <Button
           variant="ghost"
           size="sm"

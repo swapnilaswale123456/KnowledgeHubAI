@@ -12,7 +12,7 @@ export function ChatbotType({ value, onChange }: ChatbotTypeProps) {
 
   return (
     <div className="grid gap-2">
-      <Label>Select Chatbot Type</Label>
+      <Label>Select Assistant Type</Label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger>
           <SelectValue placeholder="Choose a type" />

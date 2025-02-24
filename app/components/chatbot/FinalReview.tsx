@@ -31,7 +31,7 @@ export function FinalReview({ config }: FinalReviewProps) {
           </div>
 
           <div>
-            <h4 className="text-sm font-medium text-gray-500">Chatbot Type</h4>
+            <h4 className="text-sm font-medium text-gray-500">Assistant Type</h4>
             <p className="mt-1">{getChatbotTypeName(config.type)}</p>
           </div>
 

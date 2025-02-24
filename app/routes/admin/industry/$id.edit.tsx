@@ -24,7 +24,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const isEnabled = formData.get("isEnabled") === "true";
   const icon = formData.get("icon") as string;
 
-  await updateIndustry(params.id!, { name, description, isEnabled, icon });
+  await updateIndustry(params.id!, { 
+    name, 
+    description, 
+    isEnabled, 
+    icon 
+  });
   return redirect("/admin/industry");
 }
 

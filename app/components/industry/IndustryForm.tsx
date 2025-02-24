@@ -4,6 +4,7 @@ import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { useTranslation } from "react-i18next";
 import { Switch } from "../ui/switch";
+import { useRef, useState } from "react";
 
 interface IndustryFormProps {
   defaultValues?: {
@@ -18,14 +19,18 @@ interface IndustryFormProps {
 
 export function IndustryForm({ defaultValues, isEditing, onSubmit }: IndustryFormProps) {
   const { t } = useTranslation();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [isEnabled, setIsEnabled] = useState(defaultValues?.isEnabled ?? false);
 
   return (
     <Form 
+      ref={formRef}
       method="post" 
       className="space-y-6"
       onSubmit={(e) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
+        formData.set('isEnabled', isEnabled.toString());
         onSubmit?.(formData);
       }}
     >
@@ -56,7 +61,8 @@ export function IndustryForm({ defaultValues, isEditing, onSubmit }: IndustryFor
         </label>
         <Switch
           name="isEnabled"
-          defaultChecked={defaultValues?.isEnabled}
+          checked={isEnabled}
+          onCheckedChange={setIsEnabled}
         />
       </div>
       <div>

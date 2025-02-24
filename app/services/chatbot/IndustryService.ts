@@ -73,7 +73,7 @@ export async function createIndustry({ name, description, isEnabled, icon }: { n
 }
 
 export async function updateIndustry(id: string, { name, description, isEnabled, icon }: { name: string; description: string; isEnabled: boolean; icon: string }) {
-  
+  console.log(isEnabled);
   return db.industry.update({
     where: { id: parseInt(id) },
     data: {
