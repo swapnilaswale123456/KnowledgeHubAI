@@ -16,6 +16,17 @@ export const AdminSidebar = (t: TFunction): SideBarItem[] => [
     ],
   },
   {
+    title: t("segments.masters"),
+    path: "",
+    items: [
+      {
+        title: t("admin.industry.title"),
+        path: "/admin/industry",
+        icon: SvgIcon.TENANTS,
+      },
+    ],
+  },
+  {
     title: t("segments.manage"),
     icon: SvgIcon.DASHBOARD,
     path: "",

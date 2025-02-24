@@ -127,5 +127,9 @@ export const DefaultPermissions = [
   // "entity.{name}.create",
   // "entity.{name}.update",
   // "entity.{name}.delete",
+  "admin.industry.view",
+  "admin.industry.create",
+  "admin.industry.update",
+  "admin.industry.delete",
 ] as const;
 export type DefaultPermission = (typeof DefaultPermissions)[number];

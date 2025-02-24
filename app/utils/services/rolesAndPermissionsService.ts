@@ -119,6 +119,11 @@ export const defaultPermissions: CreatePermissionDto[] = [
   { inRoles: [DefaultAdminRoles.SuperAdmin, DefaultAdminRoles.ProductDesigner], name: "admin.entities.update", description: "Update entity", type: "admin" },
   { inRoles: [DefaultAdminRoles.SuperAdmin, DefaultAdminRoles.ProductDesigner], name: "admin.entities.delete", description: "Delete entity", type: "admin" },
 
+  { inRoles: [DefaultAdminRoles.SuperAdmin], name: "admin.industry.view", description: "View industry", type: "admin" },
+  { inRoles: [DefaultAdminRoles.SuperAdmin], name: "admin.industry.create", description: "Create industry", type: "admin" },
+  { inRoles: [DefaultAdminRoles.SuperAdmin], name: "admin.industry.update", description: "Update industry", type: "admin" },
+  { inRoles: [DefaultAdminRoles.SuperAdmin], name: "admin.industry.delete", description: "Delete industry", type: "admin" },
+
   // {
   //   inRoles: [DefaultAdminRoles.SuperAdmin, DefaultAdminRoles.ProductDesigner, DefaultAdminRoles.Guest, DefaultAdminRoles.Developer, DefaultAdminRoles.Auditor],
   //   name: "admin.workflows.view",

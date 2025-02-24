@@ -1116,6 +1116,16 @@
     "title": "Admin",
     "switchToApp": "Switch to app",
     "switchToAdmin": "Switch to admin",
+    "industry": {
+      "title": "Industry",
+      "view": "View industry",
+      "new": "New industry",
+      "edit": "Edit industry",
+      "delete": "Delete industry",
+      "name": "Name",
+      "description": "Description",
+      "actions": "Actions"
+    },
     "pricing": {
       "title": "Pricing Plans",
       "new": "New pricing plan",
@@ -2199,7 +2209,8 @@
   "segments": {
     "build": "Build",
     "manage": "Manage",
-    "market": "Market"
+    "market": "Market",
+    "masters": "Masters"
   },
   "crm": {
     "title": "CRM",
