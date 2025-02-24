@@ -1309,8 +1309,8 @@
   },
   "common": {
     "actions": "Actions",
-    "createdAt": "createdAt",
-    "updatedAt": "updatedAt",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
     "new": "New",
     "edit": "Edit",
     "delete": "Delete",

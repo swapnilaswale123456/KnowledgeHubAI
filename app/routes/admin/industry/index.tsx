@@ -2,7 +2,7 @@ import { json, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Button } from "~/components/ui/button";
-import { Plus, Edit, Trash } from "lucide-react";
+import { Plus, Edit, Trash, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { verifyUserHasPermission } from "~/utils/helpers/.server/PermissionsService";
 import { getIndustries } from "~/services/chatbot/IndustryService";
 import { useTranslation } from "react-i18next";
@@ -106,6 +106,18 @@ export default function IndustryList() {
     );
   };
 
+  const getSortIcon = (column: string) => {
+    const currentSortBy = searchParams.get("sortBy");
+    const currentOrder = searchParams.get("sortOrder");
+
+    if (currentSortBy !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return currentOrder === "asc" ? 
+      <ArrowUp className="ml-2 h-4 w-4" /> : 
+      <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
   return (
     <div className="container mx-auto py-6">
       <Card>
@@ -134,14 +146,20 @@ export default function IndustryList() {
                   onClick={() => handleSort("name")}
                   className="cursor-pointer hover:bg-gray-50"
                 >
-                  {t("admin.industry.name")}
+                  <div className="flex items-center">
+                    {t("admin.industry.name")}
+                    {getSortIcon("name")}
+                  </div>
                 </TableHead>
                 <TableHead>{t("admin.industry.description")}</TableHead>
                 <TableHead 
                   onClick={() => handleSort("createdAt")}
                   className="cursor-pointer hover:bg-gray-50"
                 >
-                  {t("admin.industry.createdAt")}
+                  <div className="flex items-center">
+                    {t("common.createdAt")}
+                    {getSortIcon("createdAt")}
+                  </div>
                 </TableHead>
                 <TableHead className="w-[100px]">{t("common.actions")}</TableHead>
               </TableRow>
