@@ -18,7 +18,7 @@ import { ChatInterface } from "~/components/chat/ChatInterface";
 import type { Message, ChatSettings } from "~/types/chat";
 import { toast } from "sonner";
 import { THEME_COLORS } from "~/utils/theme/constants";
-
+import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 interface ThemeSettings {
   headerColor: string;
   botMessageColor: string;
@@ -57,7 +57,7 @@ const DEFAULT_THEME_SETTINGS: ThemeSettings = {
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const chatbot = await ChatbotQueryService.getChatbot(params.id!);
-  
+  const tenantId = await getTenantIdFromUrl(params);
   // Parse theme from chatbot or use default
   const savedTheme = typeof chatbot?.theme === 'string' 
     ? JSON.parse(chatbot.theme) 
@@ -68,13 +68,12 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
     ...savedTheme
   };
 
-  return json({ chatbot, theme });
+  return json({ chatbot, theme , tenantId });
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  const theme = JSON.parse(formData.get("theme") as string);
-  
+  const theme = JSON.parse(formData.get("theme") as string); 
   try {
     await ChatbotQueryService.updateChatbot(params.id!, {
       theme: {
@@ -91,10 +90,11 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function AppearanceTab() {
-  const { chatbot, theme } = useLoaderData<LoaderData>();
+  const { chatbot, theme , tenantId } = useLoaderData<LoaderData>();
   const fetcher = useFetcher<ActionData>();
   const [isDarkMode, setIsDarkMode] = useState(false);
-  
+ 
+
   // Initialize with saved theme or defaults
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>({
     ...DEFAULT_THEME_SETTINGS,
@@ -392,6 +392,7 @@ export default function AppearanceTab() {
             <h2 className="text-base font-semibold text-center">Preview</h2>
             <div className="scale-90 origin-top">
               <ChatInterface 
+                userId={tenantId}
                 chatbotId={chatbot.id}
                 messages={previewMessages}
                 settings={getPreviewSettings()}
