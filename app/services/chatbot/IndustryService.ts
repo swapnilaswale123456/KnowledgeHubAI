@@ -20,7 +20,7 @@ export async function getIndustries({
   const where = search ? {
     OR: [
       { name: { contains: search, mode: 'insensitive' as const } },
-      { description: { contains: search, mode: 'insensitive' as const } }
+      { description: { contains: search, mode: 'insensitive' as const }, isEnabled: true, icon: { contains: search, mode: 'insensitive' as const } }
     ]
   } : {};
 
@@ -61,21 +61,26 @@ export async function getIndustry(id: string) {
   });
 }
 
-export async function createIndustry({ name, description }: { name: string; description: string }) {
+export async function createIndustry({ name, description, isEnabled, icon }: { name: string; description: string; isEnabled: boolean; icon: string }) {
   return db.industry.create({
     data: {
       name,
-      description
+      description,
+      isEnabled,
+      icon
     }
   });
 }
 
-export async function updateIndustry(id: string, { name, description }: { name: string; description: string }) {
+export async function updateIndustry(id: string, { name, description, isEnabled, icon }: { name: string; description: string; isEnabled: boolean; icon: string }) {
+  console.log(id, name, description, isEnabled, icon);
   return db.industry.update({
     where: { id: parseInt(id) },
     data: {
       name,
-      description
+      description,
+      isEnabled,
+      icon
     }
   });
 }

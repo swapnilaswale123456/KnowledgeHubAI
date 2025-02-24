@@ -1134,7 +1134,11 @@
       "createSuccess": "Industry created successfully",
       "createError": "Failed to create industry",
       "updateSuccess": "Industry updated successfully",
-      "updateError": "Failed to update industry"
+      "updateError": "Failed to update industry",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "isEnabled": "Enabled",
+      "icon": "Icon"
     },
     "pricing": {
       "title": "Pricing Plans",

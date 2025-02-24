@@ -21,8 +21,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const formData = await request.formData();
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
+  const isEnabled = formData.get("isEnabled") === "true";
+  const icon = formData.get("icon") as string;
 
-  await updateIndustry(params.id!, { name, description });
+  await updateIndustry(params.id!, { name, description, isEnabled, icon });
   return redirect("/admin/industry");
 }
 
@@ -34,7 +36,9 @@ export default function EditIndustry() {
   
   const defaultValues = industry ? {
     name: industry.name,
-    description: industry.description || undefined
+    description: industry.description || undefined,
+    isEnabled: industry.isEnabled,
+    icon: industry.icon || undefined
   } : undefined;
 
   const handleSubmit = async (formData: FormData) => {

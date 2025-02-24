@@ -1,4 +1,4 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Button } from "~/components/ui/button";
@@ -20,6 +20,8 @@ interface Industry {
   name: string;
   description: string | null;
   createdAt: string;
+  isEnabled: boolean;
+  icon: string | null;
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -36,16 +38,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     sortBy,
     sortOrder: sortOrder as 'asc' | 'desc'
   });
-
-  return json({ industries, total, totalPages, page });
+  
+  return json({ industries, total, totalPages, page, title: "Industries" });
 }
+export const meta: MetaFunction<typeof loader> = ({ data }) => [
+  { title: data?.title || "Industries" }
+];
 
 export default function IndustryList() {
   const { industries, total, totalPages, page } = useLoaderData<typeof loader>();
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
   const handleSearch = (value: string) => {
     setSearchParams(prev => {
       prev.set("search", value);
@@ -53,6 +57,7 @@ export default function IndustryList() {
       return prev;
     });
   };
+ 
   const confirmModal = useRef<RefConfirmModal>(null);
   const handleDeleteConfirm = async () => {
     if (deleteId) {
@@ -152,6 +157,8 @@ export default function IndustryList() {
                   </div>
                 </TableHead>
                 <TableHead>{t("admin.industry.description")}</TableHead>
+                <TableHead>{t("admin.industry.isEnabled")}</TableHead>
+                <TableHead>{t("admin.industry.icon")}</TableHead>
                 <TableHead 
                   onClick={() => handleSort("createdAt")}
                   className="cursor-pointer hover:bg-gray-50"
@@ -169,6 +176,8 @@ export default function IndustryList() {
                 <TableRow key={industry.id}>
                   <TableCell>{industry.name}</TableCell>
                   <TableCell>{industry.description}</TableCell>
+                  <TableCell>{industry.isEnabled === true ? t("admin.industry.enabled") : t("admin.industry.disabled")}</TableCell>
+                  <TableCell>{industry.icon}</TableCell>
                   <TableCell>
                     {new Date(industry.createdAt).toLocaleDateString()}
                   </TableCell>
