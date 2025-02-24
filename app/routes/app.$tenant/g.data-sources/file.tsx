@@ -87,7 +87,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     success: true,
     message: "File processed",
     intent: intent?.toString(),
-    data: result.data
+    data: result?.data
   });
 };
 

@@ -92,7 +92,7 @@ export default function FileUploadRoute() {
         onSuccess={handleSuccess}
         showBackButton={true}
         backButtonComponent={backButton}
-        chatbotId={chatbotId ?? ""}
+        chatbotId={params.chatbotId ?? ""}
       />
       <FileList 
         files={files as unknown as FileSource[]}

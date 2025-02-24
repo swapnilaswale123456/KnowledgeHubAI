@@ -1124,7 +1124,17 @@
       "delete": "Delete industry",
       "name": "Name",
       "description": "Description",
-      "actions": "Actions"
+      "actions": "Actions",
+      "unauthorized": "You are not authorized to view this page",
+      "createdAt": "createdAt",
+      "deleteTitle": "Delete Industry",
+      "deleteDescription": "Are you sure you want to delete this industry? This action cannot be undone.",
+      "deleteSuccess": "Industry deleted successfully",
+      "deleteError": "Failed to delete industry",
+      "createSuccess": "Industry created successfully",
+      "createError": "Failed to create industry",
+      "updateSuccess": "Industry updated successfully",
+      "updateError": "Failed to update industry"
     },
     "pricing": {
       "title": "Pricing Plans",
@@ -1296,6 +1306,44 @@
     "tenant": {
       "onlyAdmin": "Only admins or owners can perform this operation"
     }
+  },
+  "common": {
+    "actions": "Actions",
+    "createdAt": "createdAt",
+    "updatedAt": "updatedAt",
+    "new": "New",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "update": "Update",
+    "create": "Create",
+    "view": "View",
+    "list": "List",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "sortBy": "Sort by",
+    "sortAsc": "Sort ascending",
+    "sortDesc": "Sort descending",
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending",
+    "yes": "Yes",
+    "no": "No",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "active": "Active",
+    "inactive": "Inactive",
+    "totalItems": "Total items",
+    "totalPages": "Total pages",
+    "currentPage": "Current page",
+    "nextPage": "Next page",
+    "previousPage": "Previous page",
+    "firstPage": "First page",
+    "lastPage": "Last page"
+
   },
   "models": {
     "entity": {

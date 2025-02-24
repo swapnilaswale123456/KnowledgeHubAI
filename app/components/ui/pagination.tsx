@@ -2,14 +2,35 @@ import { ButtonProps } from "./button";
 import { Button } from "./button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
   return (
-    <nav
-      role="navigation"
-      aria-label="pagination"
-      className={className}
-      {...props}
-    />
+    <div className="flex gap-2">
+      <Button 
+        variant="outline" 
+        size="sm"
+        disabled={currentPage <= 1}
+        onClick={() => onPageChange(currentPage - 1)}
+      >
+        Previous
+      </Button>
+      <span className="flex items-center">
+        Page {currentPage} of {totalPages}
+      </span>
+      <Button 
+        variant="outline" 
+        size="sm"
+        disabled={currentPage >= totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
+      >
+        Next
+      </Button>
+    </div>
   );
 }
 

@@ -176,7 +176,7 @@ export default function ChatbotRoute() {
   ]);
 
   const [searchParams] = useSearchParams();
-  const isEmbedded = searchParams.get("embedded") === "true" || "false";
+  const isEmbedded = searchParams.get("embedded") === "true";
 
   // Update selected chatbot when route changes
   useEffect(() => {
