@@ -1,85 +1,50 @@
-import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { json, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Button } from "~/components/ui/button";
 import { Plus, Edit, Trash, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { verifyUserHasPermission } from "~/utils/helpers/.server/PermissionsService";
-import { getIndustries } from "~/services/chatbot/IndustryService";
+import { getChatbotTypes } from "~/services/chatbot/ChatbotTypeService";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { toast } from "sonner";
 import { Input } from "~/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
-import { Pagination } from "~/components/ui/pagination";
-import ConfirmModal, { RefConfirmModal } from "~/components/ui/modals/ConfirmModal";
 import { useRef, useState } from "react";
-
-
-interface Industry {
-  id: number;
-  name: string;
-  description: string | null;
-  createdAt: string;
-  isEnabled: boolean;
-  icon: string | null;
-}
+import ConfirmModal from "~/components/ui/modals/ConfirmModal";
+import { RefConfirmModal } from "~/components/ui/modals/ConfirmModal";
+import { Pagination } from "~/components/ui/pagination";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await verifyUserHasPermission(request, "admin.industry.view");
+  await verifyUserHasPermission(request, "admin.chatbotType.view");
   const url = new URL(request.url);
   const page = parseInt(url.searchParams.get("page") || "1");
   const search = url.searchParams.get("search") || "";
   const sortBy = url.searchParams.get("sortBy") || "name";
   const sortOrder = url.searchParams.get("sortOrder") || "asc";
 
-  const { industries, total, totalPages } = await getIndustries({
+  const { chatbotTypes, total, totalPages } = await getChatbotTypes({
     page,
     search,
     sortBy,
     sortOrder: sortOrder as 'asc' | 'desc'
   });
   
-  return json({ industries, total, totalPages, page, title: "Industries" });
+  return json({ chatbotTypes, total, totalPages, page });
 }
-export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: data?.title || "Industries" }
-];
 
-export default function IndustryList() {
-  const { industries, total, totalPages, page } = useLoaderData<typeof loader>();
+export default function ChatbotTypeList() {
+  const { chatbotTypes, total, totalPages, page } = useLoaderData<typeof loader>();
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const confirmModal = useRef<RefConfirmModal>(null);
+
   const handleSearch = (value: string) => {
     setSearchParams(prev => {
       prev.set("search", value);
       prev.set("page", "1");
       return prev;
     });
-  };
- 
-  const confirmModal = useRef<RefConfirmModal>(null);
-  const handleDeleteConfirm = async () => {
-    if (deleteId) {
-      try {
-        const response = await fetch(`/admin/industry/${deleteId}/delete`, { 
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          toast.success(t("admin.industry.deleteSuccess"));
-          window.location.reload();
-        } else {
-          toast.error(t("admin.industry.deleteError"));
-        }
-      } catch (error) {
-        toast.error(t("admin.industry.deleteError"));
-      }
-      setDeleteId(null);
-    }
   };
 
   const handleSort = (column: string) => {
@@ -105,10 +70,30 @@ export default function IndustryList() {
   const handleDelete = (id: string) => {
     setDeleteId(id);
     confirmModal.current?.show(
-      t("admin.industry.deleteDescription"),
-      t("admin.industry.deleteTitle")
-      
+      t("admin.chatbotType.deleteTitle"),
+      t("admin.chatbotType.deleteDescription")
     );
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteId) {
+      try {
+        const response = await fetch(`/admin/chatbot-type/${deleteId}/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+          toast.success(t("admin.chatbotType.deleteSuccess"));
+          window.location.reload();
+        } else {
+          toast.error(t("admin.chatbotType.deleteError"));
+        }
+      } catch (error) {
+        toast.error(t("admin.chatbotType.deleteError"));
+      }
+      setDeleteId(null);
+    }
   };
 
   const getSortIcon = (column: string) => {
@@ -127,7 +112,7 @@ export default function IndustryList() {
     <div className="container mx-auto py-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t("admin.industry.title")}</CardTitle>
+          <CardTitle>{t("admin.chatbotType.title")}</CardTitle>
           <div className="flex items-center gap-4">
             <Input
               placeholder={t("common.Search")}
@@ -135,10 +120,10 @@ export default function IndustryList() {
               onChange={(e) => handleSearch(e.target.value)}
               className="max-w-[200px]"
             />
-            <Link to="/admin/industry/new">
+            <Link to="/admin/chatbot-type/new">
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                {t("admin.industry.new")}
+                {t("admin.chatbotType.new")}
               </Button>
             </Link>
           </div>
@@ -152,13 +137,13 @@ export default function IndustryList() {
                   className="cursor-pointer hover:bg-gray-50"
                 >
                   <div className="flex items-center">
-                    {t("admin.industry.name")}
+                    {t("admin.chatbotType.name")}
                     {getSortIcon("name")}
                   </div>
                 </TableHead>
-                <TableHead>{t("admin.industry.description")}</TableHead>
-                <TableHead>{t("admin.industry.isEnabled")}</TableHead>
-                <TableHead>{t("admin.industry.icon")}</TableHead>
+                <TableHead>{t("admin.chatbotType.description")}</TableHead>
+                <TableHead>{t("admin.chatbotType.isEnabled")}</TableHead>
+                <TableHead>{t("admin.chatbotType.icon")}</TableHead>
                 <TableHead 
                   onClick={() => handleSort("createdAt")}
                   className="cursor-pointer hover:bg-gray-50"
@@ -172,27 +157,29 @@ export default function IndustryList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {industries.map((industry: Industry) => (
-                <TableRow key={industry.id}>
-                  <TableCell>{industry.name}</TableCell>
-                  <TableCell>{industry.description}</TableCell>
-                  <TableCell>{industry.isEnabled === true ? t("common.Enabled") : t("common.Disabled")}</TableCell>
-                  <TableCell>{industry.icon}</TableCell>
+              {chatbotTypes.map((chatbotType) => (
+                <TableRow key={chatbotType.id}>
+                  <TableCell>{chatbotType.name}</TableCell>
+                  <TableCell>{chatbotType.description}</TableCell>
                   <TableCell>
-                    {new Date(industry.createdAt).toLocaleDateString()}
+                    {chatbotType.isEnabled ? t("common.Enabled") : t("common.Disabled")}
+                  </TableCell>
+                  <TableCell>{chatbotType.icon}</TableCell>
+                  <TableCell>
+                    {new Date(chatbotType.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Link to={`/admin/industry/${industry.id}/edit`}>
+                      <Link to={`/admin/chatbot-type/${chatbotType.id}/edit`}>
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
                       <Button 
                         variant="ghost" 
-                        size="sm" 
+                        size="sm"
                         className="text-red-500"
-                        onClick={() => handleDelete(industry.id.toString())}
+                        onClick={() => handleDelete(chatbotType.id.toString())}
                       >
                         <Trash className="h-4 w-4" />
                       </Button>
@@ -202,7 +189,7 @@ export default function IndustryList() {
               ))}
             </TableBody>
           </Table>
-          
+
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-gray-500">
               {t("common.TotalItems", { count: total })}
@@ -215,8 +202,8 @@ export default function IndustryList() {
           </div>
         </CardContent>
       </Card>
-      <ConfirmModal ref={confirmModal} onYes={handleDeleteConfirm} destructive/>
 
+      <ConfirmModal ref={confirmModal} onYes={handleDeleteConfirm} destructive />
     </div>
   );
-}
+} 

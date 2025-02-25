@@ -335,6 +335,29 @@
     "submit": "Submit",
     "recommended": "Recommended"
   },
+  "common":{   
+    "totalItems": "Total items",
+    "TotalItems": "Total items",
+    "Created": "Created",
+    "CreatedAt": "Created at",
+    "Updated": "Updated",
+    "UpdatedAt": "Updated at",
+    "Deleted": "Deleted",
+    "DeletedAt": "Deleted at",
+    "Search": "Search",
+    "Sort": "Sort",
+    "Actions": "Action",
+    "Edit": "Edit",
+    "Delete": "Delete",
+    "View": "View",
+    "Create": "Create",
+    "Cancel": "Cancel",
+    "Save": "Save",
+    "Close": "Close",
+    "Enabled": "Enabled",
+    "Disabled": "Disabled",
+    "Update": "Update"
+  },
   "components": {
     "date": {
       "pick": "Pick a date"
@@ -1140,6 +1163,23 @@
       "isEnabled": "Enabled",
       "icon": "Icon"
     },
+    "chatbotType": {
+      "title": "Assistant Types",
+      "new": "New Assistant Type",
+      "edit": "Edit Assistant Type",
+      "name": "Name",
+      "description": "Description",
+      "icon": "Icon",
+      "isEnabled": "Enabled",
+      "deleteTitle": "Delete Assistant Type",
+      "deleteDescription": "Are you sure you want to delete this assistant type? This action cannot be undone.",
+      "deleteSuccess": "Assistant type deleted successfully",
+      "deleteError": "Failed to delete assistant type",
+      "createSuccess": "Assistant type created successfully", 
+      "createError": "Failed to create assistant type",
+      "updateSuccess": "Assistant type updated successfully",
+      "updateError": "Failed to update assistant type"
+    },
     "pricing": {
       "title": "Pricing Plans",
       "new": "New pricing plan",
@@ -1310,45 +1350,7 @@
     "tenant": {
       "onlyAdmin": "Only admins or owners can perform this operation"
     }
-  },
-  "common": {
-    "actions": "Actions",
-    "createdAt": "Created At",
-    "updatedAt": "Updated At",
-    "new": "New",
-    "edit": "Edit",
-    "delete": "Delete",
-    "cancel": "Cancel",
-    "save": "Save",
-    "close": "Close",
-    "back": "Back",
-    "update": "Update",
-    "create": "Create",
-    "view": "View",
-    "list": "List",
-    "search": "Search",
-    "filter": "Filter",
-    "sort": "Sort",
-    "sortBy": "Sort by",
-    "sortAsc": "Sort ascending",
-    "sortDesc": "Sort descending",
-    "sortAscending": "Sort ascending",
-    "sortDescending": "Sort descending",
-    "yes": "Yes",
-    "no": "No",
-    "enabled": "Enabled",
-    "disabled": "Disabled",
-    "active": "Active",
-    "inactive": "Inactive",
-    "totalItems": "Total items",
-    "totalPages": "Total pages",
-    "currentPage": "Current page",
-    "nextPage": "Next page",
-    "previousPage": "Previous page",
-    "firstPage": "First page",
-    "lastPage": "Last page"
-
-  },
+  },  
   "models": {
     "entity": {
       "object": "Entity",

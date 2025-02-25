@@ -131,5 +131,9 @@ export const DefaultPermissions = [
   "admin.industry.create",
   "admin.industry.update",
   "admin.industry.delete",
+  "admin.chatbotType.view",
+  "admin.chatbotType.create",
+  "admin.chatbotType.edit",
+  "admin.chatbotType.delete",
 ] as const;
 export type DefaultPermission = (typeof DefaultPermissions)[number];
