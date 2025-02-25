@@ -356,7 +356,10 @@
     "Close": "Close",
     "Enabled": "Enabled",
     "Disabled": "Disabled",
-    "Update": "Update"
+    "Update": "Update",
+    "Back": "Back",
+    "Saving": "Saving...",
+    "UnsavedChanges": "You have unsaved changes"
   },
   "components": {
     "date": {
@@ -1161,7 +1164,11 @@
       "enabled": "Enabled",
       "disabled": "Disabled",
       "isEnabled": "Enabled",
-      "icon": "Icon"
+      "icon": "Icon",
+      "assignChatbotTypes": "Assign Assistant Types to {{industry}}",
+      "selectChatbotTypes": "Select Assistant Types",
+      "chatbotTypesAssigned": "Assistant types assigned successfully",
+      "chatbotTypesAssignError": "Failed to assign assistant types"
     },
     "chatbotType": {
       "title": "Assistant Types",

@@ -2,7 +2,7 @@ import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Button } from "~/components/ui/button";
-import { Plus, Edit, Trash, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Edit, Trash, ArrowUpDown, ArrowUp, ArrowDown, Settings } from "lucide-react";
 import { verifyUserHasPermission } from "~/utils/helpers/.server/PermissionsService";
 import { getIndustries } from "~/services/chatbot/IndustryService";
 import { useTranslation } from "react-i18next";
@@ -188,9 +188,14 @@ export default function IndustryList() {
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
+                      <Link to={`/admin/industry/${industry.id}/assign-chatbot-types`}>
+                        <Button variant="ghost" size="sm">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </Link>
                       <Button 
                         variant="ghost" 
-                        size="sm" 
+                        size="sm"
                         className="text-red-500"
                         onClick={() => handleDelete(industry.id.toString())}
                       >
