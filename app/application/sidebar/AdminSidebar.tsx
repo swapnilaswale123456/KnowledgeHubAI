@@ -29,6 +29,11 @@ export const AdminSidebar = (t: TFunction): SideBarItem[] => [
         path: "/admin/chatbot-type",
         icon: SvgIcon.TENANTS,
       },
+      {
+        title: t("admin.skill.title"),
+        path: "/admin/skill",
+        icon: SvgIcon.TENANTS,
+      },
     ],
   },  
   {

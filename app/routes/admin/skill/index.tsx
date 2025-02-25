@@ -1,43 +1,41 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
-import { MetaFunction } from "@remix-run/react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Button } from "~/components/ui/button";
 import { Plus, Edit, Trash, ArrowUpDown, ArrowUp, ArrowDown, Settings } from "lucide-react";
 import { verifyUserHasPermission } from "~/utils/helpers/.server/PermissionsService";
-import { getChatbotTypes } from "~/services/chatbot/ChatbotTypeService";
+import { getSkills } from "~/services/chatbot/SkillService";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { toast } from "sonner";
 import { Input } from "~/components/ui/input";
 import { useRef, useState } from "react";
-import ConfirmModal from "~/components/ui/modals/ConfirmModal";
-import { RefConfirmModal } from "~/components/ui/modals/ConfirmModal";
+import ConfirmModal, { RefConfirmModal } from "~/components/ui/modals/ConfirmModal";
 import { Pagination } from "~/components/ui/pagination";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await verifyUserHasPermission(request, "admin.chatbotType.view");
+  await verifyUserHasPermission(request, "admin.skill.view");
   const url = new URL(request.url);
   const page = parseInt(url.searchParams.get("page") || "1");
   const search = url.searchParams.get("search") || "";
   const sortBy = url.searchParams.get("sortBy") || "name";
   const sortOrder = url.searchParams.get("sortOrder") || "asc";
 
-  const { chatbotTypes, total, totalPages } = await getChatbotTypes({
+  const { skills, total, totalPages } = await getSkills({
     page,
     search,
     sortBy,
     sortOrder: sortOrder as 'asc' | 'desc'
   });
   
-  return json({ chatbotTypes, total, totalPages, page, title: "Assistant Types" });
+  return json({ skills, total, totalPages, page, title: "Agent Skills" });
 }
 export const meta: MetaFunction<typeof loader> = ({ data }) => [
-  { title: data?.title || "Assistant Types" }
-];
+    { title: data?.title || "Agent Skills" }
+  ];
 
-export default function ChatbotTypeList() {
-  const { chatbotTypes, total, totalPages, page } = useLoaderData<typeof loader>();
+export default function SkillList() {
+  const { skills, total, totalPages, page } = useLoaderData<typeof loader>();
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -74,66 +72,55 @@ export default function ChatbotTypeList() {
   const handleDelete = (id: string) => {
     setDeleteId(id);
     confirmModal.current?.show(
-      t("admin.chatbotType.deleteDescription"),
-      t("admin.chatbotType.deleteTitle")
+      t("admin.skill.deleteDescription"),
+      t("admin.skill.deleteTitle")
     );
   };
 
   const handleDeleteConfirm = async () => {
-    if (deleteId) {
-      try {
-        const response = await fetch(`/admin/chatbot-type/${deleteId}/delete`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        if (response.ok) {
-          toast.success(t("admin.chatbotType.deleteSuccess"));
-          window.location.reload();
-        } else {
-          toast.error(t("admin.chatbotType.deleteError"));
-        }
-      } catch (error) {
-        toast.error(t("admin.chatbotType.deleteError"));
-      }
-      setDeleteId(null);
+    if (!deleteId) return;
+    
+    try {
+      await fetch(`/admin/skill/${deleteId}/delete`, { method: 'POST' });
+      toast.success(t("admin.skill.deleteSuccess"));
+    } catch (error) {
+      toast.error(t("admin.skill.deleteError"));
     }
   };
 
   const getSortIcon = (column: string) => {
-    const currentSortBy = searchParams.get("sortBy");
-    const currentOrder = searchParams.get("sortOrder");
-
-    if (currentSortBy !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    if (searchParams.get("sortBy") !== column) {
+      return <ArrowUpDown className="h-4 w-4 ml-2" />;
     }
-    return currentOrder === "asc" ? 
-      <ArrowUp className="ml-2 h-4 w-4" /> : 
-      <ArrowDown className="ml-2 h-4 w-4" />;
+    return searchParams.get("sortOrder") === "asc" 
+      ? <ArrowUp className="h-4 w-4 ml-2" />
+      : <ArrowDown className="h-4 w-4 ml-2" />;
   };
 
   return (
     <div className="container mx-auto py-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t("admin.chatbotType.title")}</CardTitle>
-          <div className="flex items-center gap-4">
-            <Input
-              placeholder={t("common.Search")}
-              value={searchParams.get("search") || ""}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="max-w-[200px]"
-            />
-            <Link to="/admin/chatbot-type/new">
-              <Button size="sm">
+        <CardHeader>
+          <div className="flex justify-between">
+            <CardTitle>{t("admin.skill.title")}</CardTitle>
+            <Link to="/admin/skill/new">
+              <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                {t("admin.chatbotType.new")}
+                {t("admin.skill.new")}
               </Button>
             </Link>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="flex items-center gap-4">
+            <Input
+              placeholder={t("common.Search")}
+              value={searchParams.get("search") || ""}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
+
+          <Table className="mt-4">
             <TableHeader>
               <TableRow>
                 <TableHead 
@@ -141,13 +128,13 @@ export default function ChatbotTypeList() {
                   className="cursor-pointer hover:bg-gray-50"
                 >
                   <div className="flex items-center">
-                    {t("admin.chatbotType.name")}
+                    {t("admin.skill.name")}
                     {getSortIcon("name")}
                   </div>
                 </TableHead>
-                <TableHead>{t("admin.chatbotType.description")}</TableHead>
-                <TableHead>{t("admin.chatbotType.isEnabled")}</TableHead>
-                <TableHead>{t("admin.chatbotType.icon")}</TableHead>
+                <TableHead>{t("admin.skill.description")}</TableHead>
+                <TableHead>{t("admin.skill.isEnabled")}</TableHead>
+                <TableHead>{t("admin.skill.icon")}</TableHead>
                 <TableHead 
                   onClick={() => handleSort("createdAt")}
                   className="cursor-pointer hover:bg-gray-50"
@@ -161,34 +148,30 @@ export default function ChatbotTypeList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {chatbotTypes.map((chatbotType) => (
-                <TableRow key={chatbotType.id}>
-                  <TableCell>{chatbotType.name}</TableCell>
-                  <TableCell>{chatbotType.description}</TableCell>
+              {skills.map((skill) => (
+                <TableRow key={skill.id}>
+                  <TableCell>{skill.name}</TableCell>
+                  <TableCell>{skill.description}</TableCell>
                   <TableCell>
-                    {chatbotType.isEnabled ? t("common.Enabled") : t("common.Disabled")}
+                    {skill.isEnabled ? t("common.Enabled") : t("common.Disabled")}
                   </TableCell>
-                  <TableCell>{chatbotType.icon}</TableCell>
+                  <TableCell>{skill.icon}</TableCell>
                   <TableCell>
-                    {new Date(chatbotType.createdAt).toLocaleDateString()}
+                    {new Date(skill.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Link to={`/admin/chatbot-type/${chatbotType.id}/edit`}>
+                      <Link to={`/admin/skill/${skill.id}/edit`}>
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
-                      <Link to={`/admin/chatbot-type/${chatbotType.id}/assign-skills`}>
-                        <Button variant="ghost" size="sm">
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                      
                       <Button 
                         variant="ghost" 
                         size="sm"
                         className="text-red-500"
-                        onClick={() => handleDelete(chatbotType.id.toString())}
+                        onClick={() => handleDelete(skill.id.toString())}
                       >
                         <Trash className="h-4 w-4" />
                       </Button>

@@ -1185,7 +1185,28 @@
       "createSuccess": "Assistant type created successfully", 
       "createError": "Failed to create assistant type",
       "updateSuccess": "Assistant type updated successfully",
-      "updateError": "Failed to update assistant type"
+      "updateError": "Failed to update assistant type",
+      "assignSkills": "Assign Skills to {{chatbotType}}",
+      "selectSkills": "Select Skills",
+      "skillsAssigned": "Skills assigned successfully",
+      "skillsAssignError": "Failed to assign skills"
+    },
+    "skill": {
+      "title": "Agent Skills",
+      "new": "New Agent Skill",
+      "edit": "Edit Agent Skill",
+      "name": "Name",
+      "description": "Description",
+      "icon": "Icon",
+      "isEnabled": "Enabled",
+      "deleteTitle": "Delete Agent Skill",
+      "deleteDescription": "Are you sure you want to delete this agent skill? This action cannot be undone.",
+      "deleteSuccess": "Agent skill deleted successfully",
+      "deleteError": "Failed to delete agent skill",
+      "createSuccess": "Agent skill created successfully", 
+      "createError": "Failed to create agent skill",
+      "updateSuccess": "Agent skill updated successfully",
+      "updateError": "Failed to update agent skill"
     },
     "pricing": {
       "title": "Pricing Plans",
