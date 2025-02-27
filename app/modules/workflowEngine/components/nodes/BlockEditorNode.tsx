@@ -24,13 +24,24 @@ export default function BlockEditorNode({ id, data }: NodeProps) {
   if (!workflowBlock) {
     return <div>Unknown block type: {block.type}</div>;
   }
+
+  const getNodeStyle = () => {
+    if (block.type === "manual" || block.type === "event" || block.type === "schedule") {
+      return "border-blue-500 bg-blue-50";
+    } else if (block.type === "if" || block.type === "switch" || block.type === "iterator") {
+      return "border-amber-500 bg-amber-50";
+    } else {
+      return "border-gray-500 bg-gray-50";
+    }
+  };
+
   return (
     <button
       type="button"
       className={clsx(
         "relative flex h-[80px] w-[250px] flex-col justify-center rounded-md border p-2 text-left focus:ring-1 focus:ring-blue-600 focus:ring-offset-2",
         isNodeSelected(id) ? "bg-blue-50 ring-1 ring-blue-600 ring-offset-2" : "bg-white",
-        errors.length ? "border-red-300" : "border-slate-300"
+        errors.length ? "border-red-300" : getNodeStyle()
       )}
       onKeyDown={(e) => {
         if (e.key === "Delete" || e.key === "Backspace") {

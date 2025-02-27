@@ -100,19 +100,14 @@ function WorkflowBuilderFlow({
       if (!fromBlock || !toBlock) {
         return;
       }
-      if (fromBlock.id === toBlock.id) {
-        return;
-      }
-      if (fromBlock.toBlocks.find((x) => x.toBlockId === toBlock.id)) {
-        // already connected
-        return;
-      }
-      if (toBlock.toBlocks.find((x) => x.toBlockId === fromBlock.id)) {
-        // already connected
-        return;
-      }
+
       let condition: string | null = null;
-      if (fromBlock.type === "if") {
+      if (fromBlock.type === "manual" || fromBlock.type === "event" || fromBlock.type === "schedule") {
+        // Only allow one connection from trigger blocks
+        if (fromBlock.toBlocks.length > 0) {
+          return;
+        }
+      } else if (fromBlock.type === "if") {
         const hasTrue = fromBlock.toBlocks.find((x) => x.condition === "true");
         const hasFalse = fromBlock.toBlocks.find((x) => x.condition === "false");
         if (!hasTrue) {

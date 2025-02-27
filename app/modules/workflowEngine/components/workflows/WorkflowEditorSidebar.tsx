@@ -86,7 +86,7 @@ export default function WorkflowEditorSidebar({
     );
   }
 
-  return <div className="">{content}</div>;
+  return <div className="flex h-full flex-col space-y-4 overflow-y-auto p-4">{content}</div>;
 }
 
 function SelectBlockSidebar({
@@ -304,6 +304,23 @@ function WorkflowSettingsSidebar({
 
         <div className="border-t border-slate-200"></div>
         <WorkflowInputExamples workflow={workflow} />
+
+        <div className="space-y-2">
+          <div className="font-medium">Triggers</div>
+          <div className="grid grid-cols-2 gap-2">
+            {WorkflowBlockTypes.filter((f) => f.type === "trigger").map((blockType) => (
+              <button
+                key={blockType.value}
+                type="button"
+                className="flex flex-col items-center space-y-1 rounded-md border border-gray-200 bg-white p-2 text-xs hover:bg-gray-50"
+                onClick={() => onAddBlock(blockType.value)}
+              >
+                <blockType.icon className="h-5 w-5 text-blue-500" />
+                <div>{blockType.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

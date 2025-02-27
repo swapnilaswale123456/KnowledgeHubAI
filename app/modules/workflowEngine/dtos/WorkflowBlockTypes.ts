@@ -5,6 +5,7 @@ import DoNothingIcon from "../components/nodes/helpers/doNothing/DoNothingIcon";
 import HttpRequestIcon from "../components/nodes/helpers/httpRequest/HttpRequestIcon";
 import LogIcon from "../components/nodes/helpers/log/LogIcon";
 import TriggerManualIcon from "../components/nodes/triggers/manual/TriggerManualIcon";
+import ScheduleIcon from "../components/icons/ScheduleIcon";
 
 export const WorkflowBlockTypes: WorkflowBlockTypeDto[] = [
   {
@@ -153,8 +154,19 @@ export const WorkflowBlockTypes: WorkflowBlockTypeDto[] = [
     ],
     outputs: [],
   },
+  {
+    type: "trigger",
+    category: "Misc",
+    name: "Schedule Trigger",
+    value: "schedule",
+    icon: ScheduleIcon,
+    inputs: [
+      { name: "cronExpression", type: "string", label: "Cron Expression", required: true, placeholder: "e.g., 0 0 * * *" },
+    ],
+    outputs: [],
+  },
 ];
-export type WorkflowBlockType = "manual" | "if" | "switch" | "httpRequest" | "log" | "alertUser" | "doNothing" | "iterator" | "variable" | "event";
+export type WorkflowBlockType = "manual" | "if" | "switch" | "httpRequest" | "log" | "alertUser" | "doNothing" | "iterator" | "variable" | "event" | "schedule";
 export type WorkflowBlockTypeDto = {
   type: "trigger" | "action";
   category: "Misc" | "Flow" | "Helpers" | "Interaction" | "AI" | "Entities" | "App";

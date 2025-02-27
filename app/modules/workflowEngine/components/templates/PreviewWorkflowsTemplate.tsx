@@ -2,6 +2,21 @@ import TableSimple from "~/components/ui/tables/TableSimple";
 import { WorkflowsTemplateDto } from "../../dtos/WorkflowsTemplateDto";
 
 export default function PreviewWorkflowsTemplate({ template }: { template: WorkflowsTemplateDto }) {
+  // Make sure the component can display schedule triggers properly
+  const getBlockTypeDisplay = (blockType: string) => {
+    switch (blockType) {
+      case "manual":
+        return "Manual Trigger";
+      case "schedule":
+        return "Schedule Trigger";
+      case "event":
+        return "Event Trigger";
+      // ... other cases
+      default:
+        return blockType;
+    }
+  };
+
   return (
     <div>
       {template.workflows.map((workflow) => {
@@ -16,7 +31,7 @@ export default function PreviewWorkflowsTemplate({ template }: { template: Workf
                   title: "Block Type",
                   value: (i) => (
                     <div className="flex-col">
-                      <div>{i.type}</div>
+                      <div>{getBlockTypeDisplay(i.type)}</div>
                       <div className="text-xs text-gray-500">{i.description || "No description"}</div>
                     </div>
                   ),
