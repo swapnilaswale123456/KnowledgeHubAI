@@ -2529,3 +2529,53 @@ enum LlmModelType {
   CLAUDE
   CUSTOM
 }
+
+
+model OAuthClient {
+  id           String   @id @default(uuid())
+  clientId     String   @unique
+  clientSecret String
+  name         String
+  redirectUris String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("oauth_clients")
+}
+
+model OAuthAuthorizationCode {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  clientId    String
+  userId      String
+  redirectUri String
+  expiresAt   DateTime
+  scope       String
+  createdAt   DateTime @default(now())
+
+  @@map("oauth_authorization_codes")
+}
+
+model OAuthAccessToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  clientId  String
+  userId    String
+  expiresAt DateTime
+  scope     String
+  createdAt DateTime @default(now())
+
+  @@map("oauth_access_tokens")
+}
+
+model OAuthRefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  clientId  String
+  userId    String
+  expiresAt DateTime
+  scope     String
+  createdAt DateTime @default(now())
+
+  @@map("oauth_refresh_tokens")
+}
