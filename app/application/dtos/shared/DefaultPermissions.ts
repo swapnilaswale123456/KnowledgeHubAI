@@ -139,5 +139,23 @@ export const DefaultPermissions = [
   "admin.skill.create",
   "admin.skill.edit",
   "admin.skill.delete",
+  "admin.oauth.clients.view",
+  "admin.oauth.clients.create",
+  "admin.oauth.clients.edit",
+  "admin.oauth.clients.delete",
+  "admin.oauth.clients.authorize",
+  "admin.oauth.clients.revoke",
+  "admin.oauth.clients.refresh",
+  "admin.oauth.clients.token",
+  "admin.oauth.clients.userinfo",
+  "admin.oauth.clients.introspect",
+  "admin.oauth.clients.jwks",
+  "admin.oauth.clients.revoke",
+  "admin.oauth.clients.token",
+  "admin.oauth.clients.userinfo",
+  "admin.oauth.clients.introspect",
+  "admin.oauth.clients"
+  
+
 ] as const;
 export type DefaultPermission = (typeof DefaultPermissions)[number];

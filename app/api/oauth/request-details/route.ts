@@ -10,13 +10,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing requestId parameter' }, { status: 400 });
   }
   
-  // Check if user is authenticated
-  const session = await getUserSession(request);
-  
-  if (!session || !session.data.userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  
   // Get authorization request details
   const authRequest = OAuthProviderService.getAuthorizationRequest(requestId);
   

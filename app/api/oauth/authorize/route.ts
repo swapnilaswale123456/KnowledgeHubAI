@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticator } from '~/utils/auth/auth.server';
 import OAuthProviderService from '~/modules/auth/services/OAuthProviderService';
 import { getUserSession } from '~/utils/session.server';
+import { verifyUserHasPermission } from '~/utils/helpers/.server/PermissionsService';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       `${redirectUri}?error=unsupported_response_type&state=${state}`
     );
   }
-  
+  console.log("clientId", clientId);
   // Validate client and redirect URI
   const client = await OAuthProviderService.getClient(clientId);
   
@@ -48,13 +49,11 @@ export async function GET(request: NextRequest) {
   // Check if user is authenticated
   const session = await getUserSession(request);
   if (!session) {
+    console.log("No session found");
     // Redirect to login page with return URL
     const returnTo = encodeURIComponent(request.url);
     return NextResponse.redirect(new URL(`/login?returnTo=${returnTo}`, request.url));
   }
-  
-  // Get the user ID
-  const userId = session.get('userId');
   
   // Create authorization request
   const requestId = OAuthProviderService.createAuthorizationRequest(

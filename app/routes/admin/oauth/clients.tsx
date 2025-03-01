@@ -1,17 +1,13 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { json, LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData, Form, useActionData, useNavigation } from '@remix-run/react';
 import { getUserSession } from '~/utils/session.server';
 import { db } from '~/utils/db.server';
 import OAuthProviderService from '~/modules/auth/services/OAuthProviderService';
-
+import { verifyUserHasPermission } from '~/utils/helpers/.server/PermissionsService';
 export async function loader({ request }: LoaderFunctionArgs) {
   // Check if user is authenticated and is an admin
-  const session = await getUserSession(request);
-  if (!session || session.get('role') !== 'admin') {
-    throw new Response('Unauthorized', { status: 401 });
-  }
-  
+  await verifyUserHasPermission(request, "admin.oauth.clients");
   const clients = await db.oAuthClient.findMany({
     select: {
       id: true,
@@ -31,10 +27,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: LoaderFunctionArgs) {
   // Check if user is authenticated and is an admin
-  const session = await getUserSession(request);
-  if (!session || session.get('role') !== 'admin') {
-    throw new Response('Unauthorized', { status: 401 });
-  }
+  await verifyUserHasPermission(request, "admin.oauth.clients.create");
   
   const formData = await request.formData();
   const name = formData.get('name') as string;
@@ -63,6 +56,11 @@ export async function action({ request }: LoaderFunctionArgs) {
   }
 }
 
+// Add a type guard function
+function isErrorResponse(data: any): data is { error: string } {
+  return data && 'error' in data;
+}
+
 export default function OAuthClientsPage() {
   const { clients } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
@@ -70,18 +68,18 @@ export default function OAuthClientsPage() {
   const isSubmitting = navigation.state === 'submitting';
   
   const [showNewClientCredentials, setShowNewClientCredentials] = useState(true);
-  
+  const NextPublicAppUrl = "https://b3f1-103-197-75-21.ngrok-free.app"
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold mb-6">OAuth Clients</h1>
       
-      {actionData?.error && (
+      {actionData && isErrorResponse(actionData) && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {actionData.error}
         </div>
       )}
       
-      {actionData?.success && showNewClientCredentials && (
+      {actionData && !isErrorResponse(actionData) && actionData.success && showNewClientCredentials && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
           <div className="flex justify-between items-start">
             <h2 className="text-lg font-semibold mb-2">Client Created Successfully</h2>
@@ -269,12 +267,12 @@ export default function OAuthClientsPage() {
                 <div className="flex mt-1">
                   <input
                     type="text"
-                    value={`${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/oauth/authorize`}
+                    value={`${NextPublicAppUrl}/api/oauth/authorize`}
                     readOnly
                     className="flex-1 p-2 border border-gray-300 rounded-md bg-gray-50 text-sm"
                   />
                   <button
-                    onClick={() => navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/oauth/authorize`)}
+                    onClick={() => navigator.clipboard.writeText(`${NextPublicAppUrl}/api/oauth/authorize`)}
                     className="ml-2 px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
                   >
                     Copy
@@ -287,12 +285,12 @@ export default function OAuthClientsPage() {
                 <div className="flex mt-1">
                   <input
                     type="text"
-                    value={`${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/oauth/token`}
+                    value={`${NextPublicAppUrl}/api/oauth/token`}
                     readOnly
                     className="flex-1 p-2 border border-gray-300 rounded-md bg-gray-50 text-sm"
                   />
                   <button
-                    onClick={() => navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/oauth/token`)}
+                    onClick={() => navigator.clipboard.writeText(`${NextPublicAppUrl}/api/oauth/token`)}
                     className="ml-2 px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
                   >
                     Copy

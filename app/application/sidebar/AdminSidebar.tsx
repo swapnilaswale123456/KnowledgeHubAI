@@ -34,8 +34,14 @@ export const AdminSidebar = (t: TFunction): SideBarItem[] => [
         path: "/admin/skill",
         icon: SvgIcon.TENANTS,
       },
+      {
+        title: t("admin.oauth.clients.title"),
+        path: "/admin/oauth/clients",
+        icon: SvgIcon.TENANTS,
+      },
     ],
   },  
+  
   {
     title: t("segments.manage"),
     icon: SvgIcon.DASHBOARD,

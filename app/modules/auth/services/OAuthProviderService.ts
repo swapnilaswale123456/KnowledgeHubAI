@@ -242,4 +242,21 @@ export default class OAuthProviderService {
     
     return client;
   }
+  
+  // Verify access token
+  static async verifyAccessToken(token: string): Promise<{ userId: string; clientId: string; scope: string } | null> {
+    const accessToken = await db.oAuthAccessToken.findUnique({
+      where: { token }
+    });
+    
+    if (!accessToken || new Date() > accessToken.expiresAt) {
+      return null;
+    }
+    
+    return {
+      userId: accessToken.userId,
+      clientId: accessToken.clientId,
+      scope: accessToken.scope
+    };
+  }
 } 
