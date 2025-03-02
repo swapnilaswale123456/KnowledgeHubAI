@@ -82,7 +82,7 @@ export class ZapierClient {
   async executeAction(actionId: string, instructions: string, previewOnly: boolean = false, params: any = {}) {
     console.log(`[Zapier API] Executing action: ${actionId} with previewOnly=${previewOnly}`);
     try {
-      // Use the correct URL format with preview_only as a query parameter
+      // Set preview_only=false to actually execute the action
       const url = `/ai-actions/${actionId}/execute/?preview_only=${previewOnly}`;
       console.log(url)
       const result = await this.request(url, 'POST', {
