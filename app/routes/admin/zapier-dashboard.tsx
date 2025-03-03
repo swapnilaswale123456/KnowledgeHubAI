@@ -375,7 +375,7 @@ export default function ZapierDashboard() {
                       To configure Zapier AI Actions, add the following environment variable to your .env file:
                     </p>
                     <pre className="bg-gray-100 p-2 rounded mt-2 text-sm">
-                      ZAPIER_API_KEY=your_api_key_here
+                      ZAPIER_API_KEY=sk-ak-mbR1iAzMLs1dXtaWrs2hgJDfR6
                     </pre>
                   </div>
                 </div>
