@@ -1,1 +1,1 @@
-export type WorkflowStatus = "running" | "success" | "error";
+export type WorkflowStatus = "running" | "success" | "error" | "waiting" | "completed";

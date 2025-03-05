@@ -140,7 +140,7 @@ export async function updateWorkflowExecution(
       status: error ? "error" : status,
       output,
       duration: Math.round(duration),
-      endedAt: new Date(),
+      endedAt: status === "waiting" ? undefined : new Date(),
       error,
     },
     include: {

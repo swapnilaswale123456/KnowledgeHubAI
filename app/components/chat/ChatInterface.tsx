@@ -123,6 +123,9 @@ export function ChatInterface({
   // Add loading ref at the top with other refs
   const isLoadingHistoryRef = useRef(false);
 
+  // At the top with other refs
+  const eventHandlersAttachedRef = useRef(false);
+
   // Move handler outside useEffect to prevent recreation
   const messageHandler = useCallback((msg: any) => {
     console.log('Message handler called:', msg);
@@ -139,7 +142,27 @@ export function ChatInterface({
       wsRef.current.connect();
     }
 
+    // Add event listener for workflow input submissions
+    const handleWorkflowInputSubmit = (event: CustomEvent) => {
+      if (wsRef.current && wsRef.current.isConnected()) {
+        const inputData = event.detail;
+        console.log('Sending workflow input via WebSocket:', inputData);
+        wsRef.current.sendMessage({
+          type: inputData.type,
+          content: JSON.stringify(inputData),
+          chatbot_id: chatbotId,
+          user_id: userId,
+          session_id: sessionRef.current.sessionId || undefined
+        });
+      } else {
+        console.error('Cannot send workflow input: WebSocket not connected');
+      }
+    };
+
+    window.addEventListener('send-workflow-input', handleWorkflowInputSubmit as EventListener);
+
     return () => {
+      window.removeEventListener('send-workflow-input', handleWorkflowInputSubmit as EventListener);
       if (wsRef.current) {
         wsRef.current.removeMessageHandler(messageHandler);
         wsRef.current.disconnect();
@@ -390,6 +413,79 @@ export function ChatInterface({
         }
       }
 
+      // Add this new handler for workflow input requests
+      if (parsedMsg.type === 'workflow_input_required') {
+        console.log('[WORKFLOW] Input required:', parsedMsg);
+        
+        // Extract workflow input details
+        const executionId = parsedMsg.execution_id;
+        const workflowId = parsedMsg.workflow;
+        const sessionId = parsedMsg.session_id || sessionRef.current.sessionId;
+        const inputConfig = parsedMsg.input_config || {};
+        
+        // Create a special bot message asking for input
+        const botMessage: Message = {
+          id: crypto.randomUUID(),
+          content: parsedMsg.content || inputConfig.message || "Please provide input to continue",
+          sender: 'bot' as const,
+          timestamp: new Date(),
+          status: 'sent' as const,
+          metadata: {
+            isWorkflowInputRequest: true,
+            workflowInputConfig: {
+              executionId,
+              workflowId,
+              blockId: inputConfig.block_id,
+              inputType: inputConfig.input_type || 'text',
+              inputName: inputConfig.input_name || 'input'
+            }
+          }
+        };
+        
+        // Update conversations
+        setConversations(prev => {
+          const existingConv = sessionRef.current.conversations.find(c => c.sessionId === sessionId);
+          
+          if (!existingConv) {
+            const newConv: Conversation = {
+              sessionId,
+              lastMessage: botMessage.content?.replace(/<\/?[^>]+(>|$)/g, ""),
+              timestamp: new Date(),
+              messages: [botMessage]
+            };
+            
+            sessionRef.current.conversations = [newConv, ...sessionRef.current.conversations];
+            return sessionRef.current.conversations;
+          }
+          
+          // Update existing conversation
+          const updatedConversations = sessionRef.current.conversations.map(conv => {
+            if (conv.sessionId === sessionId) {
+              return {
+                ...conv,
+                messages: [...conv.messages, botMessage],
+                lastMessage: botMessage.content?.replace(/<\/?[^>]+(>|$)/g, ""),
+                timestamp: new Date()
+              };
+            }
+            return conv;
+          });
+          
+          sessionRef.current.conversations = updatedConversations;
+          return updatedConversations;
+        });
+        
+        // Update parent messages if this is active conversation
+        if (sessionId === activeConversation) {
+          setParentMessages(prev => [...prev, botMessage]);
+        }
+        
+        setIsTypingResponse(false);
+        setIsProcessing(false);
+        
+        return;
+      }
+
       if (parsedMsg.type === 'typing_start') {
         setIsTypingResponse(true);
       } 
@@ -616,6 +712,90 @@ export function ChatInterface({
 
     setMessage('');
   };
+
+  // Then in the useEffect
+  useEffect(() => {
+    // Only attach handlers once
+    if (eventHandlersAttachedRef.current) return;
+    
+    // Handle workflow input submissions
+    const handleWorkflowInputSubmitted = (event: CustomEvent) => {
+      const { input, executionId, blockId } = event.detail;
+      
+      // First, update the original input request message to mark it as submitted
+      setParentMessages(prev => prev.map(msg => {
+        if (msg.metadata?.isWorkflowInputRequest && 
+            msg.metadata?.workflowInputConfig?.executionId === executionId &&
+            msg.metadata?.workflowInputConfig?.blockId === blockId) {
+          console.log('Input submitted, requesting state update for message:', msg.id);
+          return {
+            ...msg,
+            metadata: {
+              ...msg.metadata,
+              inputSubmitted: true
+            }
+          };
+        }
+        return msg;
+      }));
+      
+      // Then add the user's response as a message
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        content: input.trim(),
+        sender: 'user',
+        timestamp: new Date(),
+        status: 'sent',
+        metadata: {
+          isWorkflowInputResponse: true,
+          executionId: executionId
+        }
+      };
+      
+      // Update message state with the new user message
+      setParentMessages(prev => [...prev, userMessage]);
+      
+      const currentSessionId = sessionRef.current.sessionId || activeConversation;
+      if (currentSessionId) {
+        setConversations(prev => {
+          const updatedConversations = prev.map(conv => {
+            if (conv.sessionId === currentSessionId) {
+              return {
+                ...conv,
+                messages: [...conv.messages, userMessage],
+                lastMessage: input.trim(),
+                timestamp: new Date()
+              };
+            }
+            return conv;
+          });
+          
+          sessionRef.current.conversations = updatedConversations;
+          return updatedConversations;
+        });
+      }
+      
+      // Workflow might continue and send more messages, so let's show we're processing
+      setIsProcessing(true);
+    };
+    
+    window.addEventListener('workflow-input-submitted', handleWorkflowInputSubmitted as EventListener);
+    eventHandlersAttachedRef.current = true;
+    
+    return () => {
+      window.removeEventListener('workflow-input-submitted', handleWorkflowInputSubmitted as EventListener);
+      eventHandlersAttachedRef.current = false;
+    };
+  }, []);
+
+  // Debug input requests
+  useEffect(() => {
+    const inputRequests = currentMessages.filter(
+      msg => msg.metadata?.isWorkflowInputRequest && !msg.metadata?.inputSubmitted
+    );
+    
+    
+  }, [currentMessages]);
 
   return (
     <div className={cn(

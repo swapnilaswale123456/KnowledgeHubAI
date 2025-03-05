@@ -83,19 +83,30 @@ async function execute({
   const blockEndTime = performance.now();
   const blockDuration = blockEndTime - blockStartTime;
 
+  // Only mark as success if not in a waiting state
+  const blockStatus = result.status === "waiting" ? "waiting" : (result.error ? "error" : "success");
+
   await db.workflowBlockExecution.update({
     where: { id: blockExecution.id },
     data: {
       output: result.output ? JSON.stringify(result.output) : null,
-      status: result.error ? "error" : "success",
+      status: blockStatus,
       duration: Math.round(blockDuration),
-      endedAt: new Date(),
+      endedAt: blockStatus === "waiting" ? undefined : new Date(),
       error: result.error,
     },
   });
 
   if (result.error && result.throwsError) {
     throw new Error(result.error);
+  }
+
+  // If block is waiting, don't process any further blocks
+  if (result.status === "waiting") {
+    return {
+      status: "waiting",
+      workflowContext
+    };
   }
 
   for (const nextBlockId of result.toBlockIds) {
@@ -106,11 +117,19 @@ async function execute({
         ...workflowContext,
         ...result.workflowContext,
       };
+      
+      // If a downstream block is waiting, propagate the waiting status upward
+      if (result.status === "waiting") {
+        return {
+          status: "waiting",
+          workflowContext,
+        };
+      }
     }
   }
 
   return {
-    status: error ? "error" : "success",
+    status: result.status || (error ? "error" : "success"),
     workflowContext: workflowContext,
   };
 }
@@ -137,6 +156,8 @@ async function executeBlock(args: BlockExecutionParamsDto): Promise<BlockExecuti
       return await executeVariableBlock(args);
     case "event":
       return await executeEventBlock(args);
+    case "waitForInput":
+      return await executeWaitForInputBlock(args);
     default:
       throw new Error("Block type not implemented: " + args.block.type);
   }
@@ -367,6 +388,51 @@ async function executeEventBlock({ block, workflowContext }: BlockExecutionParam
   return {
     output: workflowContext.$params,
     toBlockIds: block.toBlocks.map((f) => f.toBlockId),
+  };
+}
+
+async function executeWaitForInputBlock({ 
+  block, 
+  workflowContext, 
+  workflow, 
+  workflowExecutionId 
+}: BlockExecutionParamsDto): Promise<BlockExecutionResultDto> {
+  // Parse the message with variables
+  const message = parseVariable(block.input?.message || "Please provide input...", workflowContext);
+  const inputName = block.input?.inputName || "userInput";
+  const inputType = block.input?.inputType || "text";
+  const options = block.input?.options || {};
+  
+  console.log("[WORKFLOW] Waiting for input...");
+  console.log("[WORKFLOW] Block ID:", block.id);
+  console.log("[WORKFLOW] Execution ID:", workflowExecutionId);
+  
+  // Update the workflow execution to indicate it's waiting for input
+  await db.workflowExecution.update({
+    where: { id: workflowExecutionId },
+    data: {
+      status: "waiting",
+      waitingBlockId: block.id,
+      // Store the input request details in the output field
+      output: JSON.stringify({
+        waitForInput: true,
+        message,
+        inputName,
+        inputType,
+        options,
+        blockId: block.id
+      })
+    }
+  });
+  
+  console.log("[WORKFLOW] Database updated with waiting status");
+  
+  // Return a special result that indicates the workflow is paused
+  return {
+    output: null,
+    toBlockIds: [], // Don't proceed to next blocks yet
+    waitingForInput: true,
+    status: "waiting"
   };
 }
 

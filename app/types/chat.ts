@@ -11,6 +11,17 @@ export interface Message {
   metadata?: {
     format?: string;
     language?: string;
+    isWorkflowInputRequest?: boolean;
+    isWorkflowInputResponse?: boolean;
+    inputSubmitted?: boolean;
+    workflowInputConfig?: {
+      executionId: string;
+      workflowId: string;
+      blockId: string;
+      inputType: string;
+      inputName: string;
+      options?: Record<string, string>;
+    }
     [key: string]: any;
   };
 }

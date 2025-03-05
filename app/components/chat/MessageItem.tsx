@@ -5,23 +5,41 @@ import { Bot, Copy } from "lucide-react";
 import { useState, useRef } from "react";
 import ReactMarkdown from 'react-markdown';
 import { Components } from 'react-markdown';
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 
 interface MessageItemProps {
   message: Message;
   settings: ChatSettings;
 }
 
+interface WorkflowInputConfig {
+  executionId?: string;
+  workflowId?: string;
+  blockId?: string;
+  inputType?: string;
+  inputName?: string;
+  options?: Record<string, string>;
+}
+
 export function MessageItem({ message, settings }: MessageItemProps) {
   const isBot = message.sender === 'bot';
   const [showCopy, setShowCopy] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const copyMessage = () => {
     if (typeof window === 'undefined') return;
     navigator.clipboard.writeText(message.content || '');
   };
 
-  const formatContent = (content: string) => {
+  const formatContent = (content: string | null | undefined) => {
+    // Make sure content is a string before using string methods
+    if (typeof content !== 'string') {
+      return '';
+    }
     // Remove any unwanted asterisks
     return content.replace(/\*(?!\*)/g, '').trim();
   };
@@ -67,6 +85,56 @@ export function MessageItem({ message, settings }: MessageItemProps) {
     );
   };
 
+  // Handle workflow input submission
+  const handleWorkflowInputSubmit = async () => {
+    if (!inputValue.trim() || !message.metadata?.isWorkflowInputRequest) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const inputConfig = message.metadata.workflowInputConfig as WorkflowInputConfig;
+      
+      // Create message data for input submission
+      const inputData = {
+        type: "workflow_input_submit",
+        executionId: inputConfig?.executionId || "",
+        input: inputValue,
+        blockId: inputConfig?.blockId || "",
+        workflowId: inputConfig?.workflowId || ""
+      };
+      
+      // Dispatch an event for ChatInterface to send via its WebSocket
+      window.dispatchEvent(new CustomEvent('send-workflow-input', {
+        detail: inputData
+      }));
+      console.log('Dispatched workflow input event:', inputData);
+      
+      // Add user's response as a new message via event
+      window.dispatchEvent(new CustomEvent('workflow-input-submitted', {
+        detail: {
+          input: inputValue,
+          executionId: inputConfig?.executionId || "",
+          blockId: inputConfig?.blockId || ""
+        }
+      }));
+      
+      // Clear input and disable the form
+      setInputValue("");
+      message.metadata.inputSubmitted = true;
+      
+    } catch (error) {
+      console.error('Error submitting workflow input:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Determine if this is a workflow input request message
+  const isWorkflowInput = !!message.metadata?.isWorkflowInputRequest && !message.metadata?.inputSubmitted;
+  const inputConfig = (message.metadata?.workflowInputConfig || {}) as WorkflowInputConfig;
+
+  console.log('Rendering MessageItem:', message.id, isWorkflowInput, message.metadata);
+
   return (
     <div className={cn(
       "group relative",
@@ -100,6 +168,51 @@ export function MessageItem({ message, settings }: MessageItemProps) {
             "text-[15px] leading-6"
           )}>
             {renderContent()}
+            
+            {/* Render workflow input form if this is an input request */}
+            {isWorkflowInput && (
+              <div className="mt-3 bg-white rounded-md p-2 border">
+                <p className="text-xs text-gray-500 mb-2">
+                  {inputConfig?.inputType === 'select' 
+                    ? 'Please select an option:' 
+                    : 'Please provide your response:'}
+                </p>
+                
+                {inputConfig?.inputType === 'select' && inputConfig?.options ? (
+                  <Select 
+                    value={inputValue} 
+                    onValueChange={setInputValue}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select an option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(inputConfig.options || {}).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label as string}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={`Enter ${inputConfig.inputName || 'your response'}...`}
+                    className="w-full mb-2"
+                    disabled={isSubmitting}
+                  />
+                )}
+                
+                <Button 
+                  onClick={handleWorkflowInputSubmit} 
+                  className="w-full mt-2"
+                  disabled={!inputValue.trim() || isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 

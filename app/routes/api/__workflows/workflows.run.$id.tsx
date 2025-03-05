@@ -6,6 +6,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (request.method !== "POST") {
     return json({ error: "Method not allowed." }, { status: 405 });
   }
+  console.log("params", params);
+  console.log("request", request);
   try {
     const { tenant, userId } = await validateApiKey(request, params);
     let body: { [key: string]: any } = {};

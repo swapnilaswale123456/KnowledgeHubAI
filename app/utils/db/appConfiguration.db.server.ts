@@ -116,7 +116,7 @@ export async function getAppConfiguration({ request }: { request: Request }): Pr
         tenantEntityCustomization: false,
         tenantTypes: false,
         tenantBlogs: false,
-        tenantWorkflows: false,
+        tenantWorkflows: true,
         tenantEmailMarketing: false,
         linkedAccounts: false,
         tenantFeedback: false,

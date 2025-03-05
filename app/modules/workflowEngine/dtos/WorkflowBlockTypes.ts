@@ -165,8 +165,48 @@ export const WorkflowBlockTypes: WorkflowBlockTypeDto[] = [
     ],
     outputs: [],
   },
+  {
+    type: "action",
+    category: "Interaction",
+    name: "Wait for Input",
+    value: "waitForInput",
+    icon: WorkflowBlockActionIcon,
+    inputs: [
+      { name: "message", type: "string", label: "Message", required: true, placeholder: "Please provide input..." },
+      { name: "inputName", type: "string", label: "Input Variable Name", required: true, placeholder: "userInput" },
+      { 
+        name: "inputType", 
+        type: "select", 
+        label: "Input Type", 
+        required: true,
+        defaultValue: "text",
+        options: [
+          { label: "Text", value: "text" },
+          { label: "Number", value: "number" },
+          { label: "Yes/No", value: "boolean" },
+          { label: "Options", value: "options" }
+        ]
+      },
+      { name: "options", type: "keyValue", label: "Options (if Input Type is Options)", required: false },
+    ],
+    outputs: [
+      { name: "input", label: "User Input" }
+    ],
+  },
 ];
-export type WorkflowBlockType = "manual" | "if" | "switch" | "httpRequest" | "log" | "alertUser" | "doNothing" | "iterator" | "variable" | "event" | "schedule";
+export type WorkflowBlockType = 
+  | "manual" 
+  | "if" 
+  | "switch" 
+  | "httpRequest" 
+  | "log" 
+  | "alertUser" 
+  | "doNothing" 
+  | "iterator" 
+  | "variable" 
+  | "event" 
+  | "schedule"
+  | "waitForInput";
 export type WorkflowBlockTypeDto = {
   type: "trigger" | "action";
   category: "Misc" | "Flow" | "Helpers" | "Interaction" | "AI" | "Entities" | "App";
