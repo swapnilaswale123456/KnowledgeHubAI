@@ -21,6 +21,7 @@ interface WorkflowInputConfig {
   inputType?: string;
   inputName?: string;
   options?: Record<string, string>;
+  id?: string;
 }
 
 export function MessageItem({ message, settings }: MessageItemProps) {

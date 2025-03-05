@@ -83,6 +83,13 @@ const QUICK_RESPONSES: QuickResponse[] = [
   { id: '4', text: 'What payment methods do you accept?', category: 'payments' }
 ];
 
+// Declare the global window interface extension
+declare global {
+  interface Window {
+    _recentWorkflowMessages?: Map<string, number>;
+  }
+}
+
 export function ChatInterface({ 
   chatbotId,
   userId,
@@ -348,7 +355,7 @@ export function ChatInterface({
               return sessionRef.current.conversations;
             }
 
-            // Update existing conversation in ref
+            // Update existing conversation
             const updatedConversations = sessionRef.current.conversations.map(conv => {
               if (conv.sessionId === sessionId) {
                 if (parsedMsg.type === 'stream' && conv.messages.length > 0) {
@@ -366,6 +373,22 @@ export function ChatInterface({
                       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
                     });
                     
+                    return conv;
+                  }
+                }
+                
+                // For non-streaming messages, check for duplicates
+                if (parsedMsg.type !== 'stream') {
+                  // Check if this message already exists in the conversation
+                  const messageExists = conv.messages.some(m => 
+                    m.id === botMessage.id || 
+                    (m.metadata?.workflowInputConfig?.executionId === botMessage.metadata?.workflowInputConfig?.executionId &&
+                    m.metadata?.workflowInputConfig?.blockId === botMessage.metadata?.workflowInputConfig?.blockId &&
+                    m.metadata?.isWorkflowInputRequest && m.metadata.workflowInputConfig?.id === botMessage.metadata?.workflowInputConfig?.id)
+                  );
+                  
+                  if (messageExists) {
+                    console.log('[WORKFLOW] Bot message already exists in conversation, not adding duplicate:', botMessage.id);
                     return conv;
                   }
                 }
@@ -405,6 +428,23 @@ export function ChatInterface({
                   return updatedMessages;
                 }
               }
+              
+              // For non-streaming messages, check for duplicates
+              if (parsedMsg.type !== 'stream') {
+                // Check if this message already exists in parent messages
+                const messageExists = prev.some(m => 
+                  m.id === botMessage.id || 
+                  (m.metadata?.workflowInputConfig?.executionId === botMessage.metadata?.workflowInputConfig?.executionId &&
+                   m.metadata?.workflowInputConfig?.blockId === botMessage.metadata?.workflowInputConfig?.blockId &&
+                   m.metadata?.isWorkflowInputRequest && m.metadata.workflowInputConfig?.id === botMessage.metadata?.workflowInputConfig?.id)
+                );
+                
+                if (messageExists) {
+                  console.log('[WORKFLOW] Bot message already exists in parent messages, not adding duplicate:', botMessage.id);
+                  return prev;
+                }
+              }
+              
               return [...prev, botMessage];
             });
           }
@@ -420,12 +460,43 @@ export function ChatInterface({
         // Extract workflow input details
         const executionId = parsedMsg.execution_id;
         const workflowId = parsedMsg.workflow;
+        const blockId = parsedMsg.input_config?.block_id;
         const sessionId = parsedMsg.session_id || sessionRef.current.sessionId;
         const inputConfig = parsedMsg.input_config || {};
         
+        // Generate a unique message ID that's stable for the same input request
+        // This prevents the same message from being added twice even if the handler runs twice
+        const stableMessageId = `input-${executionId}-${blockId}-${Date.now()}`;
+        
+        // Check if we already processed this exact message recently (within last 2 seconds)
+        // Using a static Map as a simple message deduplication cache
+        if (!window._recentWorkflowMessages) {
+          window._recentWorkflowMessages = new Map();
+        }
+        
+        // Clean up old messages (older than 5 seconds)
+        const now = Date.now();
+        window._recentWorkflowMessages?.forEach((timestamp, key) => {
+          if (now - timestamp > 5000) {
+            window._recentWorkflowMessages?.delete(key);
+          }
+        });
+        
+        // Check if we recently processed this message
+        const messageKey = stableMessageId;
+        if (window._recentWorkflowMessages?.has(messageKey)) {
+          console.log('[WORKFLOW] Ignoring duplicate message:', messageKey);
+          return;
+        }
+        
+        // Mark this message as processed
+        window._recentWorkflowMessages?.set(messageKey, now);
+        
+        console.log(`[WORKFLOW] Processing input request: ${messageKey}, adding message with ID: ${stableMessageId}`);
+        
         // Create a special bot message asking for input
         const botMessage: Message = {
-          id: crypto.randomUUID(),
+          id: stableMessageId,
           content: parsedMsg.content || inputConfig.message || "Please provide input to continue",
           sender: 'bot' as const,
           timestamp: new Date(),
@@ -433,18 +504,35 @@ export function ChatInterface({
           metadata: {
             isWorkflowInputRequest: true,
             workflowInputConfig: {
+              id: stableMessageId,
               executionId,
               workflowId,
               blockId: inputConfig.block_id,
               inputType: inputConfig.input_type || 'text',
-              inputName: inputConfig.input_name || 'input'
-            }
+              inputName: (inputConfig.input_name || 'input').trim().replace(/\.{3}$/, '')
+            },
+            inputSubmitted: false
           }
         };
         
         // Update conversations
         setConversations(prev => {
-          const existingConv = sessionRef.current.conversations.find(c => c.sessionId === sessionId);
+          const existingConv = prev.find(c => c.sessionId === sessionId);
+          
+          // Check if we already have this message in the conversation
+          if (existingConv) {
+            const hasExistingInputRequest = existingConv.messages.some(msg => 
+              msg.metadata?.isWorkflowInputRequest && 
+              msg.metadata?.workflowInputConfig?.executionId === executionId &&
+              msg.metadata?.workflowInputConfig?.blockId === blockId &&
+              msg.id === stableMessageId
+            );
+            
+            if (hasExistingInputRequest) {
+              console.log('[WORKFLOW] Input request message already exists in conversation, not adding duplicate');
+              return prev; // Don't modify the conversations array
+            }
+          }
           
           if (!existingConv) {
             const newConv: Conversation = {
@@ -455,11 +543,11 @@ export function ChatInterface({
             };
             
             sessionRef.current.conversations = [newConv, ...sessionRef.current.conversations];
-            return sessionRef.current.conversations;
+            return [newConv, ...prev];
           }
           
           // Update existing conversation
-          const updatedConversations = sessionRef.current.conversations.map(conv => {
+          const updatedConversations = prev.map(conv => {
             if (conv.sessionId === sessionId) {
               return {
                 ...conv,
@@ -477,7 +565,22 @@ export function ChatInterface({
         
         // Update parent messages if this is active conversation
         if (sessionId === activeConversation) {
-          setParentMessages(prev => [...prev, botMessage]);
+          setParentMessages(prev => {
+            // Check if this message already exists
+            const messageExists = prev.some(msg => 
+              msg.metadata?.isWorkflowInputRequest && 
+              msg.metadata?.workflowInputConfig?.executionId === executionId &&
+              msg.metadata?.workflowInputConfig?.blockId === blockId &&
+              msg.id === stableMessageId  
+            );
+            
+            if (messageExists) {
+              console.log('[WORKFLOW] Input request message already exists in parent messages, not adding duplicate');
+              return prev;
+            }
+            
+            return [...prev, botMessage];
+          });
         }
         
         setIsTypingResponse(false);
@@ -720,13 +823,15 @@ export function ChatInterface({
     
     // Handle workflow input submissions
     const handleWorkflowInputSubmitted = (event: CustomEvent) => {
-      const { input, executionId, blockId } = event.detail;
+      const { input, executionId, blockId, stableMessageId } = event.detail;
       
       // First, update the original input request message to mark it as submitted
       setParentMessages(prev => prev.map(msg => {
         if (msg.metadata?.isWorkflowInputRequest && 
             msg.metadata?.workflowInputConfig?.executionId === executionId &&
-            msg.metadata?.workflowInputConfig?.blockId === blockId) {
+            msg.metadata?.workflowInputConfig?.blockId === blockId &&
+            msg.id === stableMessageId
+          ) {
           console.log('Input submitted, requesting state update for message:', msg.id);
           return {
             ...msg,

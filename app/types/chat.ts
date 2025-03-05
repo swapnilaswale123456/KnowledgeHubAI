@@ -21,6 +21,7 @@ export interface Message {
       inputType: string;
       inputName: string;
       options?: Record<string, string>;
+      id?: string;
     }
     [key: string]: any;
   };
