@@ -124,7 +124,9 @@ async function resumeWithInput(
   input: any,
   session: { tenantId: string | null; userId: string | null }
 ): Promise<WorkflowExecutionDto> {
-  // Get the workflow execution
+  console.log(`[WORKFLOW] Resuming execution ${executionId} with input:`, input);
+  
+  // Get the workflow execution with all necessary relations
   const execution = await db.workflowExecution.findUnique({
     where: { id: executionId },
     include: {
@@ -150,60 +152,18 @@ async function resumeWithInput(
     throw new Error("Workflow execution not found");
   }
 
-  // Check if the execution has a stored waitingBlockId in metadata even if status is now running
-  const previousBlockExecution = execution.status === "running" 
-    ? await db.workflowBlockExecution.findFirst({
-        where: {
-          workflowExecutionId: executionId,
-          status: "pending",
-        },
-        orderBy: { startedAt: "desc" },
-      })
-    : null;
-  
-  // Get the waiting block ID either from the execution or from the pending block execution
-  let waitingBlockId = execution.waitingBlockId;
-  
-  // If execution is no longer in waiting state, try to determine the waiting block from history
-  if (!waitingBlockId && execution.status === "running" && previousBlockExecution) {
-    console.log("[WORKFLOW] Execution already transitioned to running, using block ID from pending execution");
-    waitingBlockId = previousBlockExecution.workflowBlockId;
-  }
-  
-  // If no waiting block ID found and status is running, try to find the last successful block execution
-  if (!waitingBlockId && execution.status === "running") {
-    console.log("[WORKFLOW] No pending block found, checking for the last successful block execution");
-    const lastSuccessfulBlock = await db.workflowBlockExecution.findFirst({
-      where: {
-        workflowExecutionId: executionId,
-        status: "success",
-      },
-      orderBy: { endedAt: "desc" },
-    });
-    
-    if (lastSuccessfulBlock) {
-      // Find blocks that come after this one
-      const nextBlocks = execution.workflow.blocks.filter(
-        block => block.fromBlocks.some(fb => fb.fromBlockId === lastSuccessfulBlock.workflowBlockId)
-      );
-      
-      if (nextBlocks.length > 0) {
-        console.log("[WORKFLOW] Found next blocks after last successful execution:", 
-          nextBlocks.map(b => b.id));
-        
-        // Use the first next block as our continuation point
-        waitingBlockId = nextBlocks[0].id;
-      }
-    }
-  }
-  
-  // Accept the execution if it's either waiting or running
+  // Only accept the execution if it's either waiting or running
   if (execution.status !== "waiting" && execution.status !== "running") {
+    console.error(`[WORKFLOW] Cannot resume execution in ${execution.status} state`);
     throw new Error(`Workflow execution is not in a valid state for input: ${execution.status}`);
   }
   
-  // Still need a valid block ID to resume from
+  // Get the waiting block ID from the execution
+  let waitingBlockId = execution.waitingBlockId;
+  
+  // If no waiting block ID found, throw an error as we don't know where to continue from
   if (!waitingBlockId) {
+    console.error("[WORKFLOW] No waiting block ID found");
     throw new Error("Could not determine which block to resume from");
   }
 
@@ -223,8 +183,8 @@ async function resumeWithInput(
 
   const inputName = outputData.inputName || "userInput";
 
-  // Create or update a block execution record for the input received
-  let pendingBlockExecution = await db.workflowBlockExecution.findFirst({
+  // Find any existing block execution for this waiting block
+  const pendingBlockExecution = await db.workflowBlockExecution.findFirst({
     where: {
       workflowExecutionId: executionId,
       workflowBlockId: waitingBlockId,
@@ -235,41 +195,10 @@ async function resumeWithInput(
     },
   });
 
-  // If no pending block execution found, we might need to create one or find the last one
-  if (!pendingBlockExecution) {
-    console.log("[WORKFLOW] No pending block execution found for block ID:", waitingBlockId);
-    
-    // Check if there's a successful block execution already
-    const existingBlockExecution = await db.workflowBlockExecution.findFirst({
-      where: {
-        workflowExecutionId: executionId,
-        workflowBlockId: waitingBlockId,
-      },
-      orderBy: {
-        startedAt: "desc",
-      },
-    });
-    
-    if (!existingBlockExecution) {
-      // Create a new block execution record if none exists
-      console.log("[WORKFLOW] Creating new block execution record for input");
-      pendingBlockExecution = await db.workflowBlockExecution.create({
-        data: {
-          workflowExecutionId: executionId,
-          workflowBlockId: waitingBlockId,
-          status: "pending",
-          startedAt: new Date(),
-        },
-      });
-    } else {
-      console.log("[WORKFLOW] Found existing block execution:", existingBlockExecution.id);
-      // We'll just update the execution context below
-    }
-  }
-
-  // If we have a pending block execution, update it with the input
+  // If we found a pending block execution, update it with the input and mark it as successful
   if (pendingBlockExecution) {
-    console.log("[WORKFLOW] Updating pending block execution with input");
+    console.log("[WORKFLOW] Updating pending block execution with input:", pendingBlockExecution.id);
+    
     await db.workflowBlockExecution.update({
       where: {
         id: pendingBlockExecution.id,
@@ -280,35 +209,49 @@ async function resumeWithInput(
         endedAt: new Date(),
       },
     });
-  }
-
-  // Make sure the execution is in running state and clear waitingBlockId
-  if (execution.status === "waiting" || execution.waitingBlockId) {
-    console.log("[WORKFLOW] Updating execution status to running");
-    await db.workflowExecution.update({
-      where: { id: executionId },
+  } else {
+    console.log("[WORKFLOW] No pending block execution found, creating one");
+    
+    // Create a record to track that we received input for this block
+    await db.workflowBlockExecution.create({
       data: {
-        status: "running",
-        waitingBlockId: null,
+        workflowExecutionId: executionId,
+        workflowBlockId: waitingBlockId,
+        status: "success", // Mark as success since we received input
+        startedAt: new Date(),
+        endedAt: new Date(),
+        output: JSON.stringify({ [inputName]: input }),
       },
     });
   }
 
-  // Resume execution from the waiting block
+  // Now update the execution to running state and clear the waitingBlockId
+  console.log("[WORKFLOW] Updating execution to running status");
+  await db.workflowExecution.update({
+    where: { id: executionId },
+    data: {
+      status: "running",
+      waitingBlockId: null, // Clear the waiting block ID since we're no longer waiting
+    },
+  });
+
+  // Setup execution tracking variables
   const startTime = performance.now();
   let error: string | null = null;
   let result: {
     status: WorkflowStatus;
     workflowContext: { [key: string]: any };
+    waitingForInput?: boolean;
   } = { status: "running", workflowContext: {} };
 
+  // Get tenant and user information
   let tenant = session.tenantId
     ? await db.tenant.findFirstOrThrow({ where: { OR: [{ slug: session.tenantId }, { id: session.tenantId }] } }).catch(() => null)
     : null;
   let user = session.userId ? await db.user.findUnique({ where: { id: session.userId } }) : null;
 
   try {
-    // Get the workflow context
+    // Set up the workflow context with the user input
     const workflowContext = {
       $params: execution.input ? JSON.parse(execution.input) : {},
       $session: {
@@ -321,7 +264,7 @@ async function resumeWithInput(
       [inputName]: input,
     };
 
-    // Convert the database model to our DTO
+    // Convert the database model to our DTO for execution
     const workflow: WorkflowDto = {
       id: execution.workflow.id,
       name: execution.workflow.name,
@@ -370,7 +313,7 @@ async function resumeWithInput(
       },
     };
     
-    // Get the next blocks to execute
+    // Get the next blocks to execute (the blocks that come after the waiting block)
     const nextBlocks = workflow.blocks.filter(
       (b) => waitingBlock.toBlocks.some((tb) => tb.toBlockId === b.id)
     );
@@ -390,13 +333,13 @@ async function resumeWithInput(
       });
     } else {
       // Execute each next block
-      let finalBlockProcessed = false;
+      console.log(`[WORKFLOW] Found ${nextBlocks.length} next blocks to execute`);
       
-      for (const nextBlock of nextBlocks) {
-        // Track if we're processing the final block
-        if (nextBlock === nextBlocks[nextBlocks.length - 1]) {
-          finalBlockProcessed = true;
-        }
+      for (let i = 0; i < nextBlocks.length; i++) {
+        const nextBlock = nextBlocks[i];
+        const isLastBlock = i === nextBlocks.length - 1;
+        
+        console.log(`[WORKFLOW] Executing block ${i+1}/${nextBlocks.length}: ${nextBlock.id} (${nextBlock.type})`);
         
         const blockResult = await WorkflowBlockService.execute({
           workflowContext,
@@ -437,24 +380,37 @@ async function resumeWithInput(
         });
         
         // Update the workflow context with the result
-        result.workflowContext = blockResult.workflowContext;
+        result.workflowContext = {
+          ...result.workflowContext,
+          ...blockResult.workflowContext
+        };
         
-        // If the status is waiting, break the loop
-        if (blockResult.status === "waiting") {
-          result.status = "waiting" as WorkflowStatus;
+        // If the block is waiting for input, we need to pause execution
+        if (blockResult.status === "waiting" || (blockResult as any).waitingForInput) {
+          console.log("[WORKFLOW] Block is waiting for input, pausing execution");
+          result.status = "waiting";
           break;
         }
-      }
-      
-      // After all blocks are processed, if we're not waiting and processed the final block,
-      // mark the workflow as completed
-      if (result.status !== "waiting" && finalBlockProcessed) {
-        console.log("[WORKFLOW] Final block executed and not waiting, marking as success");
-        result.status = "success";
+        
+        // If this is the last block and we're not waiting, the workflow is complete
+        if (isLastBlock && result.status !== "waiting") {
+          console.log("[WORKFLOW] Last block executed successfully, marking workflow as completed");
+          result.status = "success";
+          
+          // Update the execution to mark it as completed
+          await db.workflowExecution.update({
+            where: { id: executionId },
+            data: {
+              status: "success",
+              endedAt: new Date(),
+            },
+          });
+        }
       }
     }
   } catch (e: any) {
     error = e.message;
+    console.error("[WORKFLOW] Error during execution:", e);
     if (process.env.NODE_ENV === "development") {
       console.error(e.stack);
     }
@@ -463,7 +419,10 @@ async function resumeWithInput(
   const endTime = performance.now();
   const duration = endTime - startTime;
 
+  // Remove credentials from context for security
   delete result.workflowContext.$credentials;
+  
+  // Final update to the execution
   const updatedExecution = await updateWorkflowExecution(executionId, {
     status: error ? "error" : result.status,
     output: JSON.stringify(result.workflowContext),
@@ -471,7 +430,52 @@ async function resumeWithInput(
     error: error,
   });
 
-  return WorkflowExecutionUtils.rowToDto(updatedExecution);
+  // Get the execution DTO
+  const executionDto = WorkflowExecutionUtils.rowToDto(updatedExecution);
+  
+  // If the status is waiting, find the next block that's waiting for input
+  if (result.status === "waiting") {
+    const nextBlockExecution = await db.workflowBlockExecution.findFirst({
+      where: {
+        workflowExecutionId: executionId,
+        status: "pending",
+      },
+      orderBy: { startedAt: "desc" },
+      include: {
+        workflowBlock: true,
+      },
+    });
+    
+    if (nextBlockExecution) {
+      console.log("[WORKFLOW] Next block waiting for input:", nextBlockExecution.workflowBlockId);
+      
+      // Use type assertion to avoid linter error
+      return {
+        ...executionDto,
+        nextBlock: {
+          id: nextBlockExecution.workflowBlockId,
+          executionId: nextBlockExecution.id,
+          status: nextBlockExecution.status,
+          blockType: nextBlockExecution.workflowBlock?.type || null,
+          startedAt: nextBlockExecution.startedAt,
+          blockInput: nextBlockExecution.workflowBlock?.input ? 
+            JSON.parse(nextBlockExecution.workflowBlock.input) : {},
+        }
+      } as WorkflowExecutionDto & { 
+        nextBlock: {
+          id: string;
+          executionId: string;
+          status: string;
+          blockType: string | null;
+          startedAt: Date;
+          blockInput?: { [key: string]: any };
+        }
+      };
+    }
+  }
+  
+  console.log(`[WORKFLOW] Execution completed with status: ${result.status}`);
+  return executionDto;
 }
 
 export default {

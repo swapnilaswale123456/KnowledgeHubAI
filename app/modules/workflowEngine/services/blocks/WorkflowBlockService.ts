@@ -407,33 +407,64 @@ async function executeWaitForInputBlock({
   console.log("[WORKFLOW] Block ID:", block.id);
   console.log("[WORKFLOW] Execution ID:", workflowExecutionId);
   
-  // Update the workflow execution to indicate it's waiting for input
-  await db.workflowExecution.update({
-    where: { id: workflowExecutionId },
-    data: {
-      status: "waiting",
-      waitingBlockId: block.id,
-      // Store the input request details in the output field
-      output: JSON.stringify({
-        waitForInput: true,
+  try {
+    // Update the workflow execution to indicate it's waiting for input
+    await db.workflowExecution.update({
+      where: { id: workflowExecutionId },
+      data: {
+        status: "waiting",
+        waitingBlockId: block.id,
+        // Store the input request details in the output field
+        output: JSON.stringify({
+          waitForInput: true,
+          message,
+          inputName,
+          inputType,
+          options,
+          blockId: block.id
+        })
+      }
+    });
+    
+    console.log("[WORKFLOW] Database updated with waiting status");
+    
+    // Create a block execution record for this waiting state
+    // This helps track that we're waiting on this specific block
+    const blockExecution = await db.workflowBlockExecution.create({
+      data: {
+        workflowExecutionId,
+        workflowBlockId: block.id,
+        status: "pending", // Using "pending" for blocks waiting for input
+        startedAt: new Date(),
+        input: JSON.stringify({
+          message,
+          inputName,
+          inputType,
+          options
+        })
+      }
+    });
+    
+    console.log("[WORKFLOW] Created block execution record:", blockExecution.id);
+    
+    // Return a special result that indicates the workflow is paused
+    return {
+      output: {
+        waitingBlockId: block.id,
+        waitingBlockExecutionId: blockExecution.id,
         message,
         inputName,
         inputType,
-        options,
-        blockId: block.id
-      })
-    }
-  });
-  
-  console.log("[WORKFLOW] Database updated with waiting status");
-  
-  // Return a special result that indicates the workflow is paused
-  return {
-    output: null,
-    toBlockIds: [], // Don't proceed to next blocks yet
-    waitingForInput: true,
-    status: "waiting"
-  };
+        options
+      },
+      toBlockIds: block.toBlocks.map((tb) => tb.toBlockId), // Store next blocks but don't execute yet
+      waitingForInput: true,
+      status: "waiting"
+    };
+  } catch (error) {
+    console.error("[WORKFLOW] Error while setting wait state:", error);
+    throw error;
+  }
 }
 
 export default {

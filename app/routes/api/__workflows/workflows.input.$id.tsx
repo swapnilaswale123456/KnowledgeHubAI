@@ -94,19 +94,45 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           tenantId: tenant?.id || "default" 
         }
       );
+      console.log("[WORKFLOW-INPUT] Execution:", execution);
+      console.log("[WORKFLOW-INPUT] Execution resumed with final status:", execution.status);
       
-      console.log("[WORKFLOW-INPUT] Execution resumed with status:", execution.status);
+      // Determine appropriate message based on execution status
+      let message;
+      let success = true;
       
-      // Return successful response with appropriate message
-      const message = execution.status === "success" 
-        ? "Workflow completed successfully" 
-        : execution.status === "waiting"
-          ? "Workflow paused waiting for next input"
-          : "Workflow continued to next block";
-          
+      switch (execution.status) {
+        case "success":
+          message = "Workflow completed successfully";
+          break;
+        case "waiting":
+          message = "Workflow is waiting for additional input";
+          break;
+        case "running":
+          message = "Workflow is continuing execution";
+          break;
+        case "error":
+          message = execution.error || "Workflow encountered an error";
+          success = false;
+          break;
+        default:
+          message = "Workflow input processed";
+      }
+      
+      // Check if we have nextBlock info even if status isn't explicitly "waiting"
+      const hasNextBlock = !!(execution as any).nextBlock;
+      
+      if (hasNextBlock) {
+        console.log("[WORKFLOW-INPUT] Execution has a next block waiting for input");
+        message = "Workflow is waiting for additional input";
+      }
+      
+      // Return the response with execution details
       return json({ 
-        success: true, 
+        success, 
         execution,
+        // Include nextBlock info if present, using type assertion to avoid TypeScript errors
+        ...(hasNextBlock ? { nextBlock: (execution as any).nextBlock } : {}),
         message
       });
     } catch (resumeError: any) {
