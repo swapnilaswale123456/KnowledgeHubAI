@@ -73,6 +73,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
 interface SessionState {
   sessionId: string | null;
   conversations: Conversation[];
+  streamMessageId?: string | null;
 }
 
 // Add mock quick responses
@@ -124,7 +125,8 @@ export function ChatInterface({
   // Update ref type
   const sessionRef = useRef<SessionState>({
     sessionId: null,
-    conversations: []
+    conversations: [],
+    streamMessageId: null
   });
 
   // Add loading ref at the top with other refs
@@ -132,6 +134,9 @@ export function ChatInterface({
 
   // At the top with other refs
   const eventHandlersAttachedRef = useRef(false);
+
+  // Add a new ref to track the last message time
+  const lastMessageTimeRef = useRef<number>(Date.now());
 
   // Move handler outside useEffect to prevent recreation
   const messageHandler = useCallback((msg: any) => {
@@ -235,7 +240,8 @@ export function ChatInterface({
     // Update session ref and state atomically
     sessionRef.current = {
       sessionId,
-      conversations: [newConversation, ...sessionRef.current.conversations]
+      conversations: [newConversation, ...sessionRef.current.conversations],
+      streamMessageId: null
     };
 
     setConversations(prev => [newConversation, ...prev]);
@@ -274,8 +280,8 @@ export function ChatInterface({
       console.log('WebSocket message received:', msg);
       const parsedMsg = msg;
 
+      // Handle session creation
       if (parsedMsg.type === 'session_created') {
-        // Replace temporary session with real one
         const realSessionId = parsedMsg.session_id;
         const tempSession = sessionRef.current.conversations[0]; // Most recent temp session
 
@@ -291,7 +297,8 @@ export function ChatInterface({
             conversations: [
               updatedConversation,
               ...sessionRef.current.conversations.slice(1)
-            ]
+            ],
+            streamMessageId: null
           };
 
           // Update state
@@ -309,7 +316,9 @@ export function ChatInterface({
         return;
       } 
       
+      // Handle bot messages, including streaming
       if (parsedMsg.type === 'message' || parsedMsg.type === 'response' || parsedMsg.type === 'error' || parsedMsg.type === 'stream') {
+        // Extract content from message
         const messageContent = parsedMsg.type === 'error' 
           ? (parsedMsg.data?.message || parsedMsg.data?.error || parsedMsg.message || parsedMsg.error || "Sorry, I encountered an error. Please try again.")
           : (parsedMsg.data?.content || parsedMsg.data?.answer || parsedMsg.data?.response || parsedMsg.content || parsedMsg.answer || parsedMsg.response || '');
@@ -321,141 +330,195 @@ export function ChatInterface({
           return;
         }
 
-        if (messageContent) {
-          // Handle streaming or create new message
-          const botMessage: Message = parsedMsg.type === 'stream' 
-            ? {
-                id: crypto.randomUUID(),
-                content: messageContent,
-                sender: 'bot' as const,
-                timestamp: new Date(),
-                status: 'sent' as const
-              }
-            : {
-                id: crypto.randomUUID(),
-                content: messageContent,
-                sender: 'bot' as const,
-                timestamp: new Date(),
-                status: parsedMsg.type === 'error' ? 'error' as const : 'sent' as const
-              };
+        if (!messageContent) {
+          console.warn('No content in message');
+          return;
+        }
 
-          // Update conversations with session persistence
-          setConversations(prev => {
-            const existingConv = sessionRef.current.conversations.find(c => c.sessionId === sessionId);
+        // Track this message arrival time
+        lastMessageTimeRef.current = Date.now();
+        
+        // Handle the message
+        const isStreamMessage = parsedMsg.type === 'stream';
+        
+        // For streaming, maintain a consistent message ID
+        if (isStreamMessage && !sessionRef.current.streamMessageId) {
+          // Starting a new stream
+          sessionRef.current.streamMessageId = `stream-${Date.now()}`;
+          console.log(`[STREAM] Starting new stream with ID: ${sessionRef.current.streamMessageId}`);
+        }
+        
+        // Use the stream ID for streams, or generate a unique ID for regular messages
+        const messageId = isStreamMessage 
+          ? sessionRef.current.streamMessageId!
+          : `msg-${Date.now()}`;
+        
+        console.log(`[CHAT] Processing ${parsedMsg.type} message with ID ${messageId}`);
+        
+        // Reset stream ID when we receive a non-stream message
+        if (!isStreamMessage) {
+          sessionRef.current.streamMessageId = null;
+        }
+        
+        // Create bot message
+        const botMessage: Message = {
+          id: messageId,
+          content: messageContent,
+          sender: 'bot',
+          timestamp: new Date(),
+          status: parsedMsg.type === 'error' ? 'error' : 'sent'
+        };
+
+        // Force immediate UI update for faster rendering of bot messages
+        // This helps ensure messages show up right away
+        setIsProcessing(false);
+        setIsTypingResponse(false);
+        
+        // Update conversations - create an immediate update function
+        // to ensure rendering happens right away
+        const updateConversations = () => {
+          setConversations(prevConversations => {
+            // Try to find the conversation for this session
+            const conversation = prevConversations.find(c => c.sessionId === sessionId);
             
-            if (!existingConv) {
-              const newConv: Conversation = {
+            if (!conversation) {
+              // Create a new conversation
+              const newConversation: Conversation = {
                 sessionId,
-                lastMessage: messageContent?.replace(/<\/?[^>]+(>|$)/g, ""),
+                lastMessage: messageContent.replace(/<\/?[^>]+(>|$)/g, ""),
                 timestamp: new Date(),
                 messages: [botMessage]
               };
-              
-              sessionRef.current.conversations = [newConv, ...sessionRef.current.conversations];
-              return sessionRef.current.conversations;
+
+              // Update sessionRef to match
+              sessionRef.current.conversations = [
+                newConversation,
+                ...sessionRef.current.conversations.filter(c => c.sessionId !== sessionId)
+              ];
+
+              return [newConversation, ...prevConversations];
             }
-
-            // Update existing conversation
-            const updatedConversations = sessionRef.current.conversations.map(conv => {
-              if (conv.sessionId === sessionId) {
-                if (parsedMsg.type === 'stream' && conv.messages.length > 0) {
-                  const lastMessage = conv.messages[conv.messages.length - 1];
-                  if (lastMessage.sender === 'bot') {
-                    // Stream update - append to existing message
-                    conv.messages[conv.messages.length - 1] = {
-                      ...lastMessage,
-                      content: lastMessage.content + messageContent
-                    };
-                    conv.lastMessage = conv.messages[conv.messages.length - 1].content;
-
-                    // Smooth scroll for streaming
-                    requestAnimationFrame(() => {
-                      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                    });
-                    
-                    return conv;
-                  }
-                }
-                
-                // For non-streaming messages, check for duplicates
-                if (parsedMsg.type !== 'stream') {
-                  // Check if this message already exists in the conversation
-                  const messageExists = conv.messages.some(m => 
-                    m.id === botMessage.id || 
-                    (m.metadata?.workflowInputConfig?.executionId === botMessage.metadata?.workflowInputConfig?.executionId &&
-                    m.metadata?.workflowInputConfig?.blockId === botMessage.metadata?.workflowInputConfig?.blockId &&
-                    m.metadata?.isWorkflowInputRequest && m.metadata.workflowInputConfig?.id === botMessage.metadata?.workflowInputConfig?.id)
-                  );
-                  
-                  if (messageExists) {
-                    console.log('[WORKFLOW] Bot message already exists in conversation, not adding duplicate:', botMessage.id);
-                    return conv;
-                  }
-                }
-                
-                // Add new message for non-streaming or first stream chunk
-                return {
-                  ...conv,
-                  messages: [...conv.messages, botMessage],
-                  lastMessage: messageContent?.replace(/<\/?[^>]+(>|$)/g, ""),
-                  timestamp: new Date()
+            
+            // Handle existing conversation
+            let updatedMessages: Message[];
+            
+            if (isStreamMessage) {
+              // For streaming, try to find an existing message with the same ID
+              const existingMessageIndex = conversation.messages.findIndex(m => 
+                m.id === messageId && m.sender === 'bot'
+              );
+              
+              if (existingMessageIndex >= 0) {
+                // Update the existing message by appending content
+                console.log(`[STREAM] Appending to message at index ${existingMessageIndex}`);
+                updatedMessages = [...conversation.messages];
+                updatedMessages[existingMessageIndex] = {
+                  ...updatedMessages[existingMessageIndex],
+                  content: updatedMessages[existingMessageIndex].content + messageContent
                 };
+              } else {
+                // Create a new message for the first chunk
+                console.log(`[STREAM] First chunk, creating new message`);
+                updatedMessages = [...conversation.messages, botMessage];
               }
-              return conv;
-            });
-
+            } else {
+              // For regular messages, always add a new message
+              updatedMessages = [...conversation.messages, botMessage];
+            }
+            
+            // Create updated conversation
+            const updatedConversation: Conversation = {
+              ...conversation,
+              messages: updatedMessages,
+              lastMessage: messageContent.replace(/<\/?[^>]+(>|$)/g, ""),
+              timestamp: new Date()
+            };
+            
+            // Update sessionRef to match the state
+            const updatedConversations = prevConversations.map(c => 
+              c.sessionId === sessionId ? updatedConversation : c
+            );
+            
             sessionRef.current.conversations = updatedConversations;
+            
             return updatedConversations;
           });
-
-          // Update parent messages with streaming support
+        };
+        
+        // Update parent messages if this is the active conversation
+        const updateParentMessages = () => {
           if (sessionId === activeConversation) {
-            setParentMessages(prev => {
-              if (parsedMsg.type === 'stream' && prev.length > 0) {
-                const lastMessage = prev[prev.length - 1];
-                if (lastMessage.sender === 'bot') {
-                  const updatedMessages = [...prev];
-                  updatedMessages[updatedMessages.length - 1] = {
-                    ...lastMessage,
-                    content: lastMessage.content + messageContent
+            setParentMessages(prevMessages => {
+              if (isStreamMessage) {
+                // For streaming, try to find an existing message with the same ID
+                const existingMessageIndex = prevMessages.findIndex(m => 
+                  m.id === messageId && m.sender === 'bot'
+                );
+                
+                if (existingMessageIndex >= 0) {
+                  // Update the existing message
+                  console.log(`[STREAM] Appending to parent message at index ${existingMessageIndex}`);
+                  const updatedMessages = [...prevMessages];
+                  updatedMessages[existingMessageIndex] = {
+                    ...updatedMessages[existingMessageIndex],
+                    content: updatedMessages[existingMessageIndex].content + messageContent
                   };
                   
-                  // Smooth scroll for streaming
-                  requestAnimationFrame(() => {
+                  // Ensure immediate scroll
+                  setTimeout(() => {
                     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                  });
+                  }, 10);
                   
                   return updatedMessages;
                 }
               }
               
-              // For non-streaming messages, check for duplicates
-              if (parsedMsg.type !== 'stream') {
-                // Check if this message already exists in parent messages
-                const messageExists = prev.some(m => 
-                  m.id === botMessage.id || 
-                  (m.metadata?.workflowInputConfig?.executionId === botMessage.metadata?.workflowInputConfig?.executionId &&
-                   m.metadata?.workflowInputConfig?.blockId === botMessage.metadata?.workflowInputConfig?.blockId &&
-                   m.metadata?.isWorkflowInputRequest && m.metadata.workflowInputConfig?.id === botMessage.metadata?.workflowInputConfig?.id)
-                );
-                
-                if (messageExists) {
-                  console.log('[WORKFLOW] Bot message already exists in parent messages, not adding duplicate:', botMessage.id);
-                  return prev;
-                }
-              }
+              // For non-streaming or first chunk, add a new message
+              // Ensure immediate scroll
+              setTimeout(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+              }, 10);
               
-              return [...prev, botMessage];
+              return [...prevMessages, botMessage];
             });
           }
-
-          setIsProcessing(false);
-        }
+        };
+        
+        // Perform updates in the correct order
+        updateConversations();
+        updateParentMessages();
+        
+        // Force multiple re-renders to ensure UI updates correctly
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          setIsTypingResponse(prev => prev);
+        }, 50);
+        
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+        
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+        
+        setIsTypingResponse(false);
+        setIsProcessing(false);
       }
 
-      // Add this new handler for workflow input requests
+      // Handle workflow input requests
       if (parsedMsg.type === 'workflow_input_required') {
+        // IMMEDIATE UI UPDATES - Do this first to ensure responsiveness
+        setIsProcessing(false);
+        setIsTypingResponse(false);
+        
+        // Record message time for our continuous checker
+        lastMessageTimeRef.current = Date.now();
+        
         console.log('[WORKFLOW] Input required:', parsedMsg);
+        
+        // End any streaming session
+        sessionRef.current.streamMessageId = null;
         
         // Extract workflow input details
         const executionId = parsedMsg.execution_id;
@@ -464,47 +527,45 @@ export function ChatInterface({
         const sessionId = parsedMsg.session_id || sessionRef.current.sessionId;
         const inputConfig = parsedMsg.input_config || {};
         
-        // Generate a unique message ID that's stable for the same input request
-        // This prevents the same message from being added twice even if the handler runs twice
-        const stableMessageId = `input-${executionId}-${blockId}-${Date.now()}`;
+        // Generate a unique ID for this workflow input request
+        const inputRequestId = `input-${executionId}-${blockId}-${Date.now()}`;
         
-        // Check if we already processed this exact message recently (within last 2 seconds)
-        // Using a static Map as a simple message deduplication cache
+        // Deduplicate using the Map
         if (!window._recentWorkflowMessages) {
           window._recentWorkflowMessages = new Map();
         }
         
-        // Clean up old messages (older than 5 seconds)
+        // Clean up old entries
         const now = Date.now();
-        window._recentWorkflowMessages?.forEach((timestamp, key) => {
+        window._recentWorkflowMessages.forEach((timestamp, key) => {
           if (now - timestamp > 5000) {
-            window._recentWorkflowMessages?.delete(key);
+            window._recentWorkflowMessages!.delete(key);
           }
         });
         
-        // Check if we recently processed this message
-        const messageKey = stableMessageId;
-        if (window._recentWorkflowMessages?.has(messageKey)) {
-          console.log('[WORKFLOW] Ignoring duplicate message:', messageKey);
+        // Check for duplicates by execution and block ID
+        const messageKey = `${executionId}-${blockId}`;
+        if (window._recentWorkflowMessages.has(messageKey)) {
+          console.log('[WORKFLOW] Ignoring duplicate input request:', messageKey);
           return;
         }
         
-        // Mark this message as processed
-        window._recentWorkflowMessages?.set(messageKey, now);
+        // Mark as processed
+        window._recentWorkflowMessages.set(messageKey, now);
         
-        console.log(`[WORKFLOW] Processing input request: ${messageKey}, adding message with ID: ${stableMessageId}`);
+        console.log(`[WORKFLOW] Processing input request: ${messageKey}`);
         
-        // Create a special bot message asking for input
+        // Create a special bot message for workflow input
         const botMessage: Message = {
-          id: stableMessageId,
+          id: inputRequestId,
           content: parsedMsg.content || inputConfig.message || "Please provide input to continue",
-          sender: 'bot' as const,
+          sender: 'bot',
           timestamp: new Date(),
-          status: 'sent' as const,
+          status: 'sent',
           metadata: {
             isWorkflowInputRequest: true,
             workflowInputConfig: {
-              id: stableMessageId,
+              id: inputRequestId,
               executionId,
               workflowId,
               blockId: inputConfig.block_id,
@@ -515,86 +576,138 @@ export function ChatInterface({
           }
         };
         
-        // Update conversations
-        setConversations(prev => {
-          const existingConv = prev.find(c => c.sessionId === sessionId);
-          
-          // Check if we already have this message in the conversation
-          if (existingConv) {
-            const hasExistingInputRequest = existingConv.messages.some(msg => 
+        // AGGRESSIVE IMMEDIATE UPDATES
+        // Create two separate functions so we can control execution order
+        
+        // 1. Update conversations state
+        const updateConversations = () => {
+          setConversations(prevConversations => {
+            // Find the conversation
+            const conversation = prevConversations.find(c => c.sessionId === sessionId);
+            
+            if (!conversation) {
+              // Create a new conversation
+              const newConversation: Conversation = {
+                sessionId,
+                lastMessage: botMessage.content.replace(/<\/?[^>]+(>|$)/g, ""),
+                timestamp: new Date(),
+                messages: [botMessage]
+              };
+              
+              // Update ref to match state
+              sessionRef.current.conversations = [
+                newConversation, 
+                ...sessionRef.current.conversations.filter(c => c.sessionId !== sessionId)
+              ];
+              
+              return [newConversation, ...prevConversations];
+            }
+            
+            // Check for duplicate input requests in existing conversation
+            const hasDuplicateRequest = conversation.messages.some(msg => 
               msg.metadata?.isWorkflowInputRequest && 
-              msg.metadata?.workflowInputConfig?.executionId === executionId &&
-              msg.metadata?.workflowInputConfig?.blockId === blockId &&
-              msg.id === stableMessageId
+              msg.metadata.workflowInputConfig?.executionId === executionId &&
+              msg.metadata.workflowInputConfig?.blockId === blockId
             );
             
-            if (hasExistingInputRequest) {
-              console.log('[WORKFLOW] Input request message already exists in conversation, not adding duplicate');
-              return prev; // Don't modify the conversations array
+            if (hasDuplicateRequest) {
+              console.log('[WORKFLOW] Input request already exists in conversation, not adding duplicate');
+              return prevConversations;
             }
-          }
-          
-          if (!existingConv) {
-            const newConv: Conversation = {
-              sessionId,
-              lastMessage: botMessage.content?.replace(/<\/?[^>]+(>|$)/g, ""),
-              timestamp: new Date(),
-              messages: [botMessage]
+            
+            // Add to existing conversation
+            const updatedConversation: Conversation = {
+              ...conversation,
+              messages: [...conversation.messages, botMessage],
+              lastMessage: botMessage.content.replace(/<\/?[^>]+(>|$)/g, ""),
+              timestamp: new Date()
             };
             
-            sessionRef.current.conversations = [newConv, ...sessionRef.current.conversations];
-            return [newConv, ...prev];
-          }
-          
-          // Update existing conversation
-          const updatedConversations = prev.map(conv => {
-            if (conv.sessionId === sessionId) {
-              return {
-                ...conv,
-                messages: [...conv.messages, botMessage],
-                lastMessage: botMessage.content?.replace(/<\/?[^>]+(>|$)/g, ""),
-                timestamp: new Date()
-              };
-            }
-            return conv;
-          });
-          
-          sessionRef.current.conversations = updatedConversations;
-          return updatedConversations;
-        });
-        
-        // Update parent messages if this is active conversation
-        if (sessionId === activeConversation) {
-          setParentMessages(prev => {
-            // Check if this message already exists
-            const messageExists = prev.some(msg => 
-              msg.metadata?.isWorkflowInputRequest && 
-              msg.metadata?.workflowInputConfig?.executionId === executionId &&
-              msg.metadata?.workflowInputConfig?.blockId === blockId &&
-              msg.id === stableMessageId  
+            // Update ref to match state
+            const updatedConversations = prevConversations.map(c => 
+              c.sessionId === sessionId ? updatedConversation : c
             );
+            sessionRef.current.conversations = updatedConversations;
             
-            if (messageExists) {
-              console.log('[WORKFLOW] Input request message already exists in parent messages, not adding duplicate');
-              return prev;
-            }
-            
-            return [...prev, botMessage];
+            console.log('[WORKFLOW] Updated conversations with input request');
+            return updatedConversations;
           });
+        };
+        
+        // 2. Update parent messages state (if active conversation)
+        const updateParentMessages = () => {
+          if (sessionId === activeConversation) {
+            setParentMessages(prevMessages => {
+              // Check for duplicates
+              const hasDuplicateRequest = prevMessages.some(msg => 
+                msg.metadata?.isWorkflowInputRequest && 
+                msg.metadata.workflowInputConfig?.executionId === executionId &&
+                msg.metadata.workflowInputConfig?.blockId === blockId
+              );
+              
+              if (hasDuplicateRequest) {
+                console.log('[WORKFLOW] Input request already exists in parent messages, not adding duplicate');
+                return prevMessages;
+              }
+              
+              console.log('[WORKFLOW] Adding input request to parent messages');
+              return [...prevMessages, botMessage];
+            });
+          }
+        };
+        
+        // Execute state updates in sequence
+        updateConversations();
+        // Very small delay to allow React to process first update
+        setTimeout(updateParentMessages, 0);
+        
+        // FORCE IMMEDIATE RENDERING through multiple techniques
+        
+        // 1. Immediate scroll attempt using zero timeout (microtask-like)
+        setTimeout(() => {
+          console.log('[WORKFLOW] Immediate scroll attempt');
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 0);
+        
+        // 2. Force React to flush updates with multiple state changes
+        setTimeout(() => {
+          setIsProcessing(prev => !prev);
+          setIsProcessing(prev => !prev);
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 10);
+        
+        // 3. Multiple staggered forced renders
+        for (let delay of [50, 100, 200, 300, 500]) {
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            // Tiny state change to force render
+            if (delay % 200 === 0) {
+              setIsTypingResponse(prev => prev);
+            }
+          }, delay);
         }
         
+        // 4. Attempt direct DOM manipulation as a fallback
+        setTimeout(() => {
+          // Force layout recalculation
+          if (document.body) {
+            document.body.getBoundingClientRect();
+          }
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+        
+        // Final cleanup
         setIsTypingResponse(false);
         setIsProcessing(false);
-        
-        return;
       }
-
+      
+      // Handle typing indicators
       if (parsedMsg.type === 'typing_start') {
         setIsTypingResponse(true);
       } 
       else if (parsedMsg.type === 'typing_end') {
         setIsTypingResponse(false);
-      }      
+      }
     } 
     catch (error) {
       console.error('WebSocket message error:', error);
@@ -629,7 +742,8 @@ export function ChatInterface({
     // Update ref and state
     sessionRef.current = {
       sessionId: tempSessionId,
-      conversations: [tempConversation, ...sessionRef.current.conversations]
+      conversations: [tempConversation, ...sessionRef.current.conversations],
+      streamMessageId: null
     };
 
     setConversations(prev => [tempConversation, ...prev]);
@@ -690,7 +804,8 @@ export function ChatInterface({
           if (appConversations.length > 0) {
             sessionRef.current = {
               sessionId: appConversations[0].sessionId,
-              conversations: appConversations
+              conversations: appConversations,
+              streamMessageId: null
             };
 
             setConversations(appConversations);
@@ -707,7 +822,7 @@ export function ChatInterface({
         }
       } catch (error) {
         console.error('Failed to fetch conversations:', error);
-        sessionRef.current = { sessionId: null, conversations: [] };
+        sessionRef.current = { sessionId: null, conversations: [], streamMessageId: null };
       } finally {
         setIsLoading(false);
         setIsLoadingHistory(false);
@@ -724,6 +839,22 @@ export function ChatInterface({
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [currentMessages]);
+
+  // Add an effect to handle immediate message display
+  useEffect(() => {
+    // This effect helps ensure messages are displayed immediately
+    const checkForNewMessages = () => {
+      // If we had a recent message (within last 500ms), force scroll update
+      if (Date.now() - lastMessageTimeRef.current < 500) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+    
+    // Check every 100ms for new messages
+    const interval = setInterval(checkForNewMessages, 100);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Add this before the return statement
   const handleSendMessage = () => {
@@ -805,7 +936,8 @@ export function ChatInterface({
       // Update ref and state
       sessionRef.current = {
         sessionId: tempSessionId,
-        conversations: [newConversation, ...sessionRef.current.conversations]
+        conversations: [newConversation, ...sessionRef.current.conversations],
+        streamMessageId: null
       };
 
       setConversations(prev => [newConversation, ...prev]);
