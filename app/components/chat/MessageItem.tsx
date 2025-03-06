@@ -8,6 +8,9 @@ import { Components } from 'react-markdown';
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Label } from "~/components/ui/label";
+import { AlertCircle } from "lucide-react";
 
 interface MessageItemProps {
   message: Message;
@@ -22,6 +25,8 @@ interface WorkflowInputConfig {
   inputName?: string;
   options?: Record<string, string>;
   id?: string;
+  min?: number;
+  max?: number;
 }
 
 export function MessageItem({ message, settings }: MessageItemProps) {
@@ -29,6 +34,9 @@ export function MessageItem({ message, settings }: MessageItemProps) {
   const [showCopy, setShowCopy] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState("");
+  const [numberValue, setNumberValue] = useState<number | "">("");
+  const [booleanValue, setBooleanValue] = useState<boolean | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const copyMessage = () => {
@@ -86,20 +94,83 @@ export function MessageItem({ message, settings }: MessageItemProps) {
     );
   };
 
+  // Validate input based on type
+  const validateInput = (): boolean => {
+    setValidationError(null);
+    const inputConfig = message.metadata?.workflowInputConfig as WorkflowInputConfig;
+    const inputType = inputConfig?.inputType || 'text';
+    
+    switch (inputType) {
+      case 'text':
+        if (!inputValue.trim()) {
+          setValidationError("Text input is required");
+          return false;
+        }
+        return true;
+        
+      case 'number':
+        if (numberValue === "") {
+          setValidationError("Number input is required");
+          return false;
+        }
+        return true;
+        
+      case 'boolean':
+        if (booleanValue === null) {
+          setValidationError("Please select Yes or No");
+          return false;
+        }
+        return true;
+        
+      case 'select':
+        if (!inputValue) {
+          setValidationError("Please select an option");
+          return false;
+        }
+        return true;
+        
+      default:
+        return true;
+    }
+  };
+
+  // Get input value based on input type
+  const getInputValueForSubmit = (): string => {
+    const inputConfig = message.metadata?.workflowInputConfig as WorkflowInputConfig;
+    const inputType = inputConfig?.inputType || 'text';
+    
+    switch (inputType) {
+      case 'number':
+        return numberValue.toString();
+      case 'boolean':
+        return booleanValue ? 'true' : 'false';
+      case 'text':
+      case 'select':
+      default:
+        return inputValue;
+    }
+  };
+
   // Handle workflow input submission
   const handleWorkflowInputSubmit = async () => {
-    if (!inputValue.trim() || !message.metadata?.isWorkflowInputRequest) return;
+    if (!message.metadata?.isWorkflowInputRequest) return;
+    
+    // Validate input before submission
+    if (!validateInput()) {
+      return;
+    }
     
     setIsSubmitting(true);
     
     try {
       const inputConfig = message.metadata.workflowInputConfig as WorkflowInputConfig;
+      const submissionValue = getInputValueForSubmit();
       
       // Create message data for input submission
       const inputData = {
         type: "workflow_input_submit",
         executionId: inputConfig?.executionId || "",
-        input: inputValue,
+        input: submissionValue,
         blockId: inputConfig?.blockId || "",
         workflowId: inputConfig?.workflowId || ""
       };
@@ -113,18 +184,22 @@ export function MessageItem({ message, settings }: MessageItemProps) {
       // Add user's response as a new message via event
       window.dispatchEvent(new CustomEvent('workflow-input-submitted', {
         detail: {
-          input: inputValue,
+          input: submissionValue,
           executionId: inputConfig?.executionId || "",
-          blockId: inputConfig?.blockId || ""
+          blockId: inputConfig?.blockId || "",
+          stableMessageId: message.id
         }
       }));
       
       // Clear input and disable the form
       setInputValue("");
+      setNumberValue("");
+      setBooleanValue(null);
       message.metadata.inputSubmitted = true;
       
     } catch (error) {
       console.error('Error submitting workflow input:', error);
+      setValidationError("An error occurred while submitting your input");
     } finally {
       setIsSubmitting(false);
     }
@@ -133,9 +208,113 @@ export function MessageItem({ message, settings }: MessageItemProps) {
   // Determine if this is a workflow input request message
   const isWorkflowInput = !!message.metadata?.isWorkflowInputRequest && !message.metadata?.inputSubmitted;
   const inputConfig = (message.metadata?.workflowInputConfig || {}) as WorkflowInputConfig;
+  const inputType = inputConfig?.inputType || 'text';
 
-  console.log('Rendering MessageItem:', message.id, isWorkflowInput, message.metadata);
+  // Move this function INSIDE the MessageItem component
+  const renderInputByType = () => {
+    switch (inputType) {
+      case 'number':
+        return (
+          <Input
+            type="number"
+            value={numberValue}
+            onChange={(e) => {
+              const val = e.target.value;
+              setNumberValue(val === '' ? '' : Number(val));
+              setValidationError(null);
+            }}
+            placeholder={`Enter ${inputConfig.inputName || 'a number'}...`}
+            className="w-full mb-2"
+            disabled={isSubmitting}
+            min={inputConfig.min}
+            max={inputConfig.max}
+          />
+        );
+      
+      case 'boolean':
+        return (
+          <div className="flex flex-col space-y-2 mb-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="yes-option"
+                checked={booleanValue === true}
+                onCheckedChange={() => {
+                  setBooleanValue(true);
+                  setValidationError(null);
+                }}
+                disabled={isSubmitting}
+              />
+              <Label htmlFor="yes-option">Yes</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="no-option"
+                checked={booleanValue === false}
+                onCheckedChange={() => {
+                  setBooleanValue(false);
+                  setValidationError(null);
+                }}
+                disabled={isSubmitting}
+              />
+              <Label htmlFor="no-option">No</Label>
+            </div>
+          </div>
+        );
+        
+      case 'options':
+      case 'select':
+        console.log('Options for dropdown:', inputConfig.options);
+        
+        // Parse options if they're in string format
+        let parsedOptions = inputConfig.options;
+        if (typeof inputConfig.options === 'string') {
+          try {
+            parsedOptions = JSON.parse(inputConfig.options);
+          } catch (error) {
+            console.error('Failed to parse options:', error, inputConfig.options);
+            parsedOptions = {}; // Fallback to empty object if parsing fails
+          }
+        }
+        
+        return (
+          <Select 
+            value={inputValue} 
+            onValueChange={(value) => {
+              setInputValue(value);
+              setValidationError(null);
+            }}
+            disabled={isSubmitting}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={`Select ${inputConfig.inputName || 'an option'}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {parsedOptions && Object.entries(parsedOptions).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label as string}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+        
+      case 'text':
+      default:
+        return (
+          <Input
+            type="text"
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              setValidationError(null);
+            }}
+            placeholder={`Enter ${inputConfig.inputName || 'your response'}...`}
+            className="w-full mb-2"
+            disabled={isSubmitting}
+          />
+        );
+    }
+  };
 
+  console.log('Message:', inputConfig);
   return (
     <div className={cn(
       "group relative",
@@ -174,41 +353,30 @@ export function MessageItem({ message, settings }: MessageItemProps) {
             {isWorkflowInput && (
               <div className="mt-3 bg-white rounded-md p-2 border">
                 <p className="text-xs text-gray-500 mb-2">
-                  {inputConfig?.inputType === 'select' 
+                  {inputConfig?.inputType === 'select' || inputConfig?.inputType === 'options'
                     ? 'Please select an option:' 
+                    : inputConfig?.inputType === 'boolean'
+                    ? 'Please select yes or no:'
+                    : inputConfig?.inputType === 'number'
+                    ? `Please enter a number${inputConfig.min !== undefined || inputConfig.max !== undefined ? 
+                        ` (${inputConfig.min !== undefined ? `min: ${inputConfig.min}` : ''}${inputConfig.min !== undefined && inputConfig.max !== undefined ? ', ' : ''}${inputConfig.max !== undefined ? `max: ${inputConfig.max}` : ''})` : 
+                        ''}:`
                     : 'Please provide your response:'}
                 </p>
                 
-                {inputConfig?.inputType === 'select' && inputConfig?.options ? (
-                  <Select 
-                    value={inputValue} 
-                    onValueChange={setInputValue}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select an option" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(inputConfig.options || {}).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>{label as string}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder={`Enter ${inputConfig.inputName || 'your response'}...`}
-                    className="w-full mb-2"
-                    disabled={isSubmitting}
-                  />
+                {renderInputByType()}
+                
+                {validationError && (
+                  <div className="flex items-center text-red-500 text-xs mt-1 mb-2">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {validationError}
+                  </div>
                 )}
                 
                 <Button 
                   onClick={handleWorkflowInputSubmit} 
                   className="w-full mt-2"
-                  disabled={!inputValue.trim() || isSubmitting}
+                  disabled={isSubmitting}
                 >
                   {isSubmitting ? "Submitting..." : "Submit"}
                 </Button>

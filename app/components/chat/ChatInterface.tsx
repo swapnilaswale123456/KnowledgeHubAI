@@ -570,6 +570,7 @@ export function ChatInterface({
               workflowId,
               blockId: inputConfig.block_id,
               inputType: inputConfig.input_type || 'text',
+              options: inputConfig.options || {},
               inputName: (inputConfig.input_name || 'input').trim().replace(/\.{3}$/, '')
             },
             inputSubmitted: false
