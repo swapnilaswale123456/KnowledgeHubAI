@@ -27,7 +27,7 @@ export class ResearchSuggestionsService {
   public async getSuggestions(description: string): Promise<ResearchSuggestions> {
     try {
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",

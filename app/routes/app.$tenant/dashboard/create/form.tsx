@@ -2,10 +2,10 @@ import { redirect, json, ActionFunctionArgs, LoaderFunctionArgs } from "@remix-r
 import { Form, useNavigate, useParams, useLoaderData, useFetcher } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
-import { getUserInfo } from "~/utils/session.server";
 import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 import { ResearchRequestsService } from "~/services/research/researchRequests.server";
-import { ResearchSuggestionsService, ResearchSuggestions } from "~/services/ai/researchSuggestions.server";
+import { ResearchSuggestions } from "~/services/ai/researchSuggestions.server";
+import { getUserInfo } from "~/utils/session.server";
 
 type LoaderData = {
   description: string;
@@ -16,67 +16,40 @@ type SuggestionsResponse = {
   suggestions: ResearchSuggestions;
 };
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
+export async function action({ request, params }: ActionFunctionArgs) {
   await requireAuth({ request, params });
-  
-  // Get the tenant ID and user ID
   const userInfo = await getUserInfo(request);
-  const tenantId = await getTenantIdFromUrl(params);
-  
-  if (!userInfo.userId || !tenantId) {
-    return json({ error: "Unauthorized" }, { status: 401 });
-  }
-  
-  // Process form data for the request
   const formData = await request.formData();
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
-  const subredditsJson = formData.get("subreddits") as string;
-  const keywordsJson = formData.get("keywords") as string;
-  const scheduleType = formData.get("schedule_type") as "daily" | "weekly" | "monthly";
-  const minScore = parseInt(formData.get("min_score") as string) || 10;
-  const minComments = parseInt(formData.get("min_comments") as string) || 5;
-  const startDate = formData.get("start_date") as string;
-  const endDate = formData.get("end_date") as string;
-  
-  const subreddits = JSON.parse(subredditsJson) as string[];
-  const keywords = JSON.parse(keywordsJson) as string[];
-  
-  // Add validation logic if needed
-  if (!name || !description || !subreddits.length || !keywords.length) {
-    return json({ error: "All fields are required" }, { status: 400 });
+  const tenantId = await getTenantIdFromUrl(params);
+
+  try {
+    const researchService = ResearchRequestsService.getInstance();
+    const response = await researchService.createRequest({
+      tenant_id: tenantId,
+      created_by: userInfo.userId,
+      name: formData.get("name") as string,
+      description: formData.get("description") as string,
+      schedule_type: formData.get("schedule_type") as "daily" | "weekly" | "monthly",
+      subreddits: formData.getAll("subreddits") as string[],
+      keywords: formData.getAll("keywords") as string[],
+      min_score: parseInt(formData.get("min_score") as string),
+      min_comments: parseInt(formData.get("min_comments") as string),
+      date_range: {
+        start_date: formData.get("start_date") as string,
+        end_date: formData.get("end_date") as string
+      }
+    });
+
+    // Redirect to dashboard after successful creation
+    return redirect(`/app/${params.tenant}/dashboard`);
+  } catch (error) {
+    console.error("Error creating research request:", error);
+    return json(
+      { error: "Failed to create research request" },
+      { status: 500 }
+    );
   }
-  
-  // Create the request data
-  const requestData = {
-    tenant_id: tenantId,
-    created_by: userInfo.userId,
-    name,
-    description,
-    schedule_type: scheduleType,
-    subreddits,
-    keywords,
-    min_score: minScore,
-    min_comments: minComments,
-    date_range: {
-      start_date: startDate,
-      end_date: endDate
-    }
-  };
-  
-  console.log("Creating research request:", requestData);
-  
-  // Create the request
-  const researchService = ResearchRequestsService.getInstance();
-  const result = await researchService.createRequest(requestData);
-  
-  if (!result) {
-    return json({ error: "Failed to create research request" }, { status: 500 });
-  }
-  
-  // Redirect back to the dashboard
-  return redirect(`/app/${params.tenant}/dashboard`);
-};
+}
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   await requireAuth({ request, params });

@@ -106,13 +106,18 @@ export const loader = async ({ request: req, params }: LoaderFunctionArgs) => {
     throw new Response("Request ID is required", { status: 400 });
   }
 
-  console.log(`[view.$id.loader] Fetching research request with ID: ${params.id}`);
+  const tenantId = await getTenantIdFromUrl(params);
+  if (!tenantId) {
+    throw new Response("Tenant ID is required", { status: 400 });
+  }
+
+  console.log(`[view.$id.loader] Fetching research request with ID: ${params.id} for tenant: ${tenantId}`);
 
   const researchService = ResearchRequestsService.getInstance();
   
   try {
     const request = await time(
-      researchService.getRequestById(params.id),
+      researchService.getRequestById(params.id, tenantId),
       "fetchResearchRequest"
     );
     

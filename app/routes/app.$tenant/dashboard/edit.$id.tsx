@@ -13,10 +13,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   if (!requestId) {
     throw json("Request ID is required", { status: 400 });
   }
+
+  const tenantId = await getTenantIdFromUrl(params);
+  if (!tenantId) {
+    throw json("Tenant ID is required", { status: 400 });
+  }
   
   // Get the research request
   const researchService = ResearchRequestsService.getInstance();
-  const researchRequest = await researchService.getRequestById(requestId);
+  const researchRequest = await researchService.getRequestById(requestId, tenantId);
   
   if (!researchRequest) {
     throw json("Research request not found", { status: 404 });

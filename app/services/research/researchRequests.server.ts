@@ -168,11 +168,11 @@ export class ResearchRequestsService {
     }
   }
 
-  async getRequestById(id: string): Promise<ResearchRequest | null> {
-    console.log(`[ResearchRequestsService] Attempting to fetch research request with ID ${id}`);
+  async getRequestById(id: string, tenantId: string): Promise<ResearchRequest | null> {
+    console.log(`[ResearchRequestsService] Attempting to fetch research request with ID ${id} for tenant ${tenantId}`);
     try {
       const response = await fetch(
-        `${this.apiEndpoint}/api/v1/research/requests/${id}`,
+        `${this.apiEndpoint}/api/v1/research/requests/${id}?tenant_id=${tenantId}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -188,9 +188,36 @@ export class ResearchRequestsService {
       }
 
       const data = await response.json();
-      console.log(`[ResearchRequestsService] Successfully fetched research request with ID ${id}`);
+      console.log(`[ResearchRequestsService] API Response:`, JSON.stringify(data, null, 2));
       
-      return data.data;
+      // Handle both direct object response and data property response
+      const request = data.data || data;
+      
+      if (!request) {
+        console.log(`[ResearchRequestsService] No request found with ID ${id}`);
+        return null;
+      }
+      
+      // Map the API response to match our ResearchRequest interface
+      const mappedRequest: ResearchRequest = {
+        id: request.id,
+        name: request.name,
+        purpose: request.description, // Map description to purpose
+        description: request.description,
+        subreddits: request.subreddits || [],
+        keywords: request.keywords || [],
+        status: request.status || 'pending',
+        schedule: request.next_run_at ? {
+          frequency: request.schedule_type || 'daily',
+          nextRun: request.next_run_at,
+          lastRun: request.last_run_at || ''
+        } : undefined,
+        createdAt: request.created_at,
+        results: request.results || undefined
+      };
+      
+      console.log(`[ResearchRequestsService] Successfully mapped research request with ID ${id}`);
+      return mappedRequest;
     } catch (error) {
       console.error(`[ResearchRequestsService] Error fetching research request with ID ${id}:`, 
         error instanceof Error ? {
