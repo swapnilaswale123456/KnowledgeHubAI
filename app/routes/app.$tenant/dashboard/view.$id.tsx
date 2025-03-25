@@ -13,7 +13,7 @@ export { serverTimingHeaders as headers };
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   await requireAuth({ request, params });
   const { time, getServerTimingHeader } = await createMetrics({ request, params }, "app.$tenant.dashboard.view.action");
-  
+  const tenantId = await time(getTenantIdFromUrl(params), "getTenantIdFromUrl");
   const formData = await request.formData();
   const action = formData.get("_action") as string;
   const requestId = params.id;
@@ -40,7 +40,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     }
   } else if (action === "execute") {
     const success = await time(
-      researchService.executeRequest(requestId),
+      researchService.executeRequest(requestId, tenantId, true),
       "executeResearchRequest"
     );
     
@@ -145,6 +145,14 @@ export default function ViewRequest() {
   const [showScheduleOptions, setShowScheduleOptions] = useState(false);
   const [scheduleType, setScheduleType] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+  const [requestStatus, setRequestStatus] = useState(request.status);
+  const [requestInfo, setRequestInfo] = useState<{
+    lastRunAt?: string;
+    nextRunAt?: string;
+    updatedAt?: string;
+  } | null>(null);
 
   // Type guards to check actionData properties
   const hasError = actionData && 'error' in actionData;
@@ -166,6 +174,23 @@ export default function ViewRequest() {
       setTimeout(() => setNotification(null), 5000);
     }
   }, [actionData, hasError, hasSuccess]);
+
+  // Auto-refresh for in-progress requests
+  useEffect(() => {
+    let refreshInterval: NodeJS.Timeout | null = null;
+    
+    if (requestStatus === 'in_progress') {
+      refreshInterval = setInterval(() => {
+        handleRefresh();
+      }, 60000); // Refresh every 60 seconds for in-progress requests
+    }
+
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
+  }, [requestStatus]);
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this research request?")) {
@@ -190,9 +215,81 @@ export default function ViewRequest() {
     setShowScheduleOptions(false);
   };
 
-  const handleRefresh = () => {
-    // Force a refresh by navigating to the same page
-    navigate(`/app/${params.tenant}/dashboard/view/${request.id}`, { replace: true });
+  const handleRefresh = async () => {
+    if (refreshing) return; // Prevent multiple simultaneous refreshes
+    
+    setRefreshing(true);
+    const formData = new FormData();
+    formData.append("_action", "refresh");
+    
+    try {
+      const response = await fetch(
+        `/app/${params.tenant}/dashboard/view/${request.id}/status`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh status');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update status and request info
+        setRequestStatus(data.status);
+        setRequestInfo({
+          lastRunAt: data.requestInfo?.lastRunAt,
+          nextRunAt: data.requestInfo?.nextRunAt,
+          updatedAt: data.requestInfo?.updatedAt
+        });
+
+        // Show notification based on status
+        let message = '';
+        switch (data.status) {
+          case 'completed':
+            message = 'Research request completed successfully!';
+            break;
+          case 'failed':
+            message = 'Research request failed. Please try again.';
+            break;
+          case 'in_progress':
+            message = 'Research request is currently in progress.';
+            break;
+          case 'pending':
+            message = 'Research request is pending execution.';
+            break;
+          default:
+            message = data.message || `Request status: ${data.status}`;
+        }
+
+        setNotification({
+          message,
+          type: data.status === 'failed' ? 'error' : 'success'
+        });
+
+        // If status is completed or failed, update the request data
+        if (data.shouldUpdate) {
+          navigate(`/app/${params.tenant}/dashboard/view/${request.id}`, { replace: true });
+        }
+      } else {
+        throw new Error(data.message || 'Failed to refresh status');
+      }
+
+      setLastRefreshTime(new Date());
+    } catch (error) {
+      console.error('Error refreshing status:', error);
+      setNotification({
+        message: error instanceof Error ? error.message : 'Failed to refresh status',
+        type: 'error'
+      });
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   if (isEditing) {
@@ -342,16 +439,24 @@ export default function ViewRequest() {
               <div>
                 <h2 className="text-sm font-bold text-gray-900">Execute Request</h2>
                 <p className="text-xs text-gray-600 mt-0.5">Run analysis to find potential contacts</p>
+                {lastRefreshTime && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Last refreshed: {lastRefreshTime.toLocaleTimeString()}
+                  </p>
+                )}
               </div>
               <div className="flex space-x-2">
                 <button 
                   onClick={handleRefresh}
-                  className="px-3 py-1.5 text-xs border-2 border-gray-200 rounded-lg hover:bg-gray-50 flex items-center"
+                  disabled={refreshing}
+                  className={`px-3 py-1.5 text-xs border-2 border-gray-200 rounded-lg hover:bg-gray-50 flex items-center ${
+                    refreshing ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  Refresh
+                  {refreshing ? 'Refreshing...' : 'Refresh'}
                 </button>
                 <div className="relative">
                   <button 
@@ -418,39 +523,38 @@ export default function ViewRequest() {
               </div>
             </div>
 
-            {(request.status === 'completed' || request.status === 'in_progress' || request.schedule) && (
+            {(requestStatus === 'completed' || requestStatus === 'in_progress' || request.schedule) && (
               <div className={`mt-3 p-3 ${
-                request.status === 'completed' 
+                requestStatus === 'completed' 
                   ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-100' 
-                  : request.status === 'in_progress'
+                  : requestStatus === 'in_progress'
                   ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'
                   : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100'
               } rounded-lg border`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className={`w-2 h-2 ${
-                      request.status === 'completed' ? 'bg-green-500' : 
-                      request.status === 'in_progress' ? 'bg-blue-500' : 
+                      requestStatus === 'completed' ? 'bg-green-500' : 
+                      requestStatus === 'in_progress' ? 'bg-blue-500' : 
                       'bg-indigo-500'
                     } rounded-full`}></span>
                     <span className={`text-xs font-semibold ${
-                      request.status === 'completed' ? 'text-green-800' : 
-                      request.status === 'in_progress' ? 'text-blue-800' : 
+                      requestStatus === 'completed' ? 'text-green-800' : 
+                      requestStatus === 'in_progress' ? 'text-blue-800' : 
                       'text-indigo-800'
                     } capitalize`}>
-                      {request.status === 'pending' && request.schedule ? 'Scheduled' : request.status}
+                      {requestStatus === 'pending' && request.schedule ? 'Scheduled' : requestStatus}
                     </span>
                     <span className={`text-xs ${
-                      request.status === 'completed' ? 'text-green-600' : 
-                      request.status === 'in_progress' ? 'text-blue-600' : 
+                      requestStatus === 'completed' ? 'text-green-600' : 
+                      requestStatus === 'in_progress' ? 'text-blue-600' : 
                       'text-indigo-600'
                     }`}>
-                      {request.schedule 
-                        ? `${request.schedule.frequency} (Next: ${new Date(request.schedule.nextRun).toLocaleString()})` 
-                        : new Date(request.createdAt).toLocaleString()}
+                      {requestInfo?.lastRunAt && `Last run: ${new Date(requestInfo.lastRunAt).toLocaleString()}`}
+                      {requestInfo?.nextRunAt && ` | Next run: ${new Date(requestInfo.nextRunAt).toLocaleString()}`}
                     </span>
                   </div>
-                  {request.status === 'completed' && request.results && (
+                  {requestStatus === 'completed' && request.results && (
                     <button className="px-3 py-1.5 text-xs bg-white border-2 border-green-200 rounded-lg hover:bg-green-50 flex items-center">
                       <svg className="w-4 h-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

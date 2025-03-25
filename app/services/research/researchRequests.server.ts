@@ -315,51 +315,64 @@ export class ResearchRequestsService {
    * @param id The ID of the research request to execute
    * @returns A promise resolving to true if successful, false otherwise
    */
-  async executeRequest(id: string): Promise<boolean> {
+  async executeRequest(id: string, tenantId: string, forceRefresh: boolean = false): Promise<{ success: boolean; message?: string; data?: any }> {
     try {
-      console.log(`Executing research request ${id}`);
-      const response = await fetch(
-        `${this.apiEndpoint}/api/v1/research/requests/${id}/execute`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
-          }
+      console.log(`[ResearchRequestsService] Executing research request ${id} for tenant ${tenantId}`);
+      const url = `${this.apiEndpoint}/api/v1/research/requests/${id}/execute?tenant_id=${tenantId}&force_refresh=${forceRefresh}`;
+      console.log(`[ResearchRequestsService] Executing request at: ${url}`);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
         }
-      );
+      });
+
+      const responseData = await response.json();
+      console.log(`[ResearchRequestsService] Execute response:`, JSON.stringify(responseData, null, 2));
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
-        console.error(`Failed to execute research request: ${JSON.stringify(errorData)}`);
-        
-        // For development/testing, return success
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Development mode: Simulating successful execution');
-          
-          // Update the mock request to in_progress status if using mock data
-          const mockRequest = this.getMockRequestById(id);
-          if (mockRequest) {
-            mockRequest.status = "in_progress";
-          }
-          
-          return true;
-        }
-        
-        return false;
+        console.error(`[ResearchRequestsService] Failed to execute research request:`, responseData);
+        return {
+          success: false,
+          message: responseData.message || `Failed to execute request: ${response.status}`,
+          data: responseData
+        };
       }
 
-      return true;
+      return {
+        success: true,
+        message: responseData.message || 'Request executed successfully',
+        data: responseData
+      };
     } catch (error) {
-      console.error(`Error executing research request with id ${id}:`, error);
+      console.error(`[ResearchRequestsService] Error executing research request with id ${id}:`, 
+        error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : error
+      );
       
       // For development/testing, return success
       if (process.env.NODE_ENV === 'development') {
-        console.log('Development mode: Simulating successful execution despite error');
-        return true;
+        console.log('[ResearchRequestsService] Development mode: Simulating successful execution despite error');
+        return {
+          success: true,
+          message: 'Development mode: Simulated success',
+          data: {
+            status: 'success',
+            message: 'Development mode: Simulated successful execution'
+          }
+        };
       }
       
-      return false;
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        data: null
+      };
     }
   }
 
@@ -569,6 +582,152 @@ export class ResearchRequestsService {
       return { 
         isAvailable: false, 
         message: `Failed to connect to API: ${errorMessage}` 
+      };
+    }
+  }
+
+  /**
+   * Gets the current status of a research request
+   * @param id The ID of the research request to check
+   * @param tenantId The tenant ID
+   * @returns A promise resolving to the status response
+   */
+  async getRequestStatus(id: string, tenantId: string): Promise<{ 
+    success: boolean; 
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    message?: string;
+    requestInfo?: {
+      requestId: string;
+      tenantId: string;
+      lastRunAt?: string;
+      nextRunAt?: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    results?: {
+      postsAnalyzed?: number;
+      relevantPosts?: number;
+      sentimentBreakdown?: {
+        positive: number;
+        neutral: number;
+        negative: number;
+      };
+      downloadUrl?: string;
+    };
+  }> {
+    try {
+      console.log(`[ResearchRequestsService] Checking status for request ${id} for tenant ${tenantId}`);
+      const url = `${this.apiEndpoint}/api/v1/research/requests/${id}/status?tenant_id=${tenantId}`;
+      console.log(`[ResearchRequestsService] Fetching status from: ${url}`);
+
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        }
+      });
+
+      const responseData = await response.json();
+      console.log(`[ResearchRequestsService] Status response:`, JSON.stringify(responseData, null, 2));
+
+      if (!response.ok) {
+        console.error(`[ResearchRequestsService] Failed to get request status:`, responseData);
+        return {
+          success: false,
+          status: 'failed',
+          message: responseData.message || `Failed to get status: ${response.status}`
+        };
+      }
+
+      // Map the response to our expected format
+      const mappedResponse = {
+        success: true,
+        status: responseData.status === 'running' ? 'in_progress' : responseData.status,
+        requestInfo: {
+          requestId: responseData.request_id,
+          tenantId: responseData.tenant_id,
+          lastRunAt: responseData.last_run_at,
+          nextRunAt: responseData.next_run_at,
+          createdAt: responseData.created_at,
+          updatedAt: responseData.updated_at
+        },
+        message: `Request is ${responseData.status}`,
+        ...(responseData.results ? { results: responseData.results } : {})
+      };
+
+      console.log(`[ResearchRequestsService] Mapped status response:`, JSON.stringify(mappedResponse, null, 2));
+      return mappedResponse;
+
+    } catch (error) {
+      console.error(`[ResearchRequestsService] Error getting request status for id ${id}:`, 
+        error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : error
+      );
+      
+      return {
+        success: false,
+        status: 'failed',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  /**
+   * Handles refreshing a research request's status and updates if needed
+   * @param id The ID of the research request to refresh
+   * @param tenantId The tenant ID
+   * @returns A promise resolving to the refresh result
+   */
+  async handleRefresh(id: string, tenantId: string): Promise<{
+    success: boolean;
+    message?: string;
+    shouldUpdate: boolean;
+    status?: string;
+    requestInfo?: {
+      requestId: string;
+      tenantId: string;
+      lastRunAt?: string;
+      nextRunAt?: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    results?: any;
+  }> {
+    try {
+      // Get the current status
+      const statusResponse = await this.getRequestStatus(id, tenantId);
+      console.log(`[ResearchRequestsService] Status check response:`, statusResponse);
+
+      if (!statusResponse.success) {
+        return {
+          success: false,
+          message: statusResponse.message || 'Failed to get request status',
+          shouldUpdate: false
+        };
+      }
+
+      // Only update if status is completed or failed
+      const shouldUpdate = ['completed', 'failed'].includes(statusResponse.status);
+
+      return {
+        success: true,
+        shouldUpdate,
+        status: statusResponse.status,
+        requestInfo: statusResponse.requestInfo,
+        ...(shouldUpdate ? { results: statusResponse.results } : {}),
+        message: shouldUpdate 
+          ? `Request ${statusResponse.status}` 
+          : `Request is ${statusResponse.status}`
+      };
+    } catch (error) {
+      console.error(`[ResearchRequestsService] Error handling refresh for request ${id}:`, error);
+      return {
+        success: false,
+        shouldUpdate: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
   }
