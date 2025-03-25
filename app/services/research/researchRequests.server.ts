@@ -61,12 +61,10 @@ export interface CreateResearchRequestData {
 
 export class ResearchRequestsService {
   private static instance: ResearchRequestsService;
-  private apiEndpoint: string;
-  private apiKey: string;
+  private baseUrl: string;
 
   private constructor() {
-    this.apiEndpoint = process.env.PYTHON_API_ENDPOINT || 'http://localhost:5000';
-    this.apiKey = process.env.PYTHON_API_KEY || '';
+    this.baseUrl = process.env.API_BASE_URL || 'http://localhost:5000/api/v1';
   }
 
   public static getInstance(): ResearchRequestsService {
@@ -80,14 +78,14 @@ export class ResearchRequestsService {
     console.log(`[ResearchRequestsService] Attempting to fetch research requests for tenant ${tenantId}, page ${page}, limit ${limit}`);
     try {
       // First try to fetch from the API
-      let url = `${this.apiEndpoint}/api/v1/research/requests?tenant_id=${tenantId}&page=${page}&limit=${limit}`;
+      let url = `${this.baseUrl}/research/requests?tenant_id=${tenantId}&page=${page}&limit=${limit}`;
       console.log('Fetching research requests from:', url);
 
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
         }
       });
       
@@ -172,11 +170,11 @@ export class ResearchRequestsService {
     console.log(`[ResearchRequestsService] Attempting to fetch research request with ID ${id} for tenant ${tenantId}`);
     try {
       const response = await fetch(
-        `${this.apiEndpoint}/api/v1/research/requests/${id}?tenant_id=${tenantId}`,
+        `${this.baseUrl}/research/requests/${id}?tenant_id=${tenantId}`,
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
+            'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
           },
         }
       );
@@ -237,12 +235,12 @@ export class ResearchRequestsService {
   async createRequest(requestData: CreateResearchRequestData): Promise<ResearchRequest | null> {
     try {
       const response = await fetch(
-        `${this.apiEndpoint}/api/v1/research/requests`,
+        `${this.baseUrl}/research/requests`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
+            'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
           },
           body: JSON.stringify(requestData)
         }
@@ -263,12 +261,12 @@ export class ResearchRequestsService {
   async updateRequest(id: string, requestData: Partial<CreateResearchRequestData>): Promise<ResearchRequest | null> {
     try {
       const response = await fetch(
-        `${this.apiEndpoint}/api/v1/research/requests/${id}`,
+        `${this.baseUrl}/research/requests/${id}`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
+            'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
           },
           body: JSON.stringify(requestData)
         }
@@ -289,12 +287,12 @@ export class ResearchRequestsService {
   async deleteRequest(id: string): Promise<boolean> {
     try {
       const response = await fetch(
-        `${this.apiEndpoint}/api/v1/research/requests/${id}`,
+        `${this.baseUrl}/research/requests/${id}`,
         {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
+            'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
           }
         }
       );
@@ -318,14 +316,14 @@ export class ResearchRequestsService {
   async executeRequest(id: string, tenantId: string, forceRefresh: boolean = false): Promise<{ success: boolean; message?: string; data?: any }> {
     try {
       console.log(`[ResearchRequestsService] Executing research request ${id} for tenant ${tenantId}`);
-      const url = `${this.apiEndpoint}/api/v1/research/requests/${id}/execute?tenant_id=${tenantId}&force_refresh=${forceRefresh}`;
+      const url = `${this.baseUrl}/research/requests/${id}/execute?tenant_id=${tenantId}&force_refresh=${forceRefresh}`;
       console.log(`[ResearchRequestsService] Executing request at: ${url}`);
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
         }
       });
 
@@ -385,10 +383,10 @@ export class ResearchRequestsService {
   async scheduleRequest(requestId: string, scheduleType: string): Promise<boolean> {
     try {
       console.log(`Scheduling research request ${requestId} with type ${scheduleType}`);
-      const response = await fetch(`${this.apiEndpoint}/api/v1/research/requests/${requestId}/schedule`, {
+      const response = await fetch(`${this.baseUrl}/research/requests/${requestId}/schedule`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -431,10 +429,10 @@ export class ResearchRequestsService {
   async cancelSchedule(requestId: string): Promise<boolean> {
     try {
       console.log(`Canceling schedule for research request ${requestId}`);
-      const response = await fetch(`${this.apiEndpoint}/api/v1/research/requests/${requestId}/schedule`, {
+      const response = await fetch(`${this.baseUrl}/research/requests/${requestId}/schedule`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`
+          'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
         }
       });
 
@@ -542,17 +540,17 @@ export class ResearchRequestsService {
    * @returns A promise resolving to an object with status information
    */
   async checkApiHealth(): Promise<{ isAvailable: boolean; statusCode?: number; message: string }> {
-    console.log(`[ResearchRequestsService] Checking API health at ${this.apiEndpoint}`);
+    console.log(`[ResearchRequestsService] Checking API health at ${this.baseUrl}`);
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(
-        `${this.apiEndpoint}/health`,
+        `${this.baseUrl}/health`,
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
+            'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
           },
           signal: controller.signal
         }
@@ -617,13 +615,13 @@ export class ResearchRequestsService {
   }> {
     try {
       console.log(`[ResearchRequestsService] Checking status for request ${id} for tenant ${tenantId}`);
-      const url = `${this.apiEndpoint}/api/v1/research/requests/${id}/status?tenant_id=${tenantId}`;
+      const url = `${this.baseUrl}/research/requests/${id}/status?tenant_id=${tenantId}`;
       console.log(`[ResearchRequestsService] Fetching status from: ${url}`);
 
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
         }
       });
 
@@ -729,6 +727,75 @@ export class ResearchRequestsService {
         shouldUpdate: false,
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       };
+    }
+  }
+
+  async getRequestResults(requestId: string, tenantId: string, fromDate?: string, toDate?: string): Promise<any[]> {
+    console.log(`[ResearchRequestsService.getRequestResults] Fetching results for request ${requestId}`);
+    console.log(`[ResearchRequestsService.getRequestResults] Parameters:`, JSON.stringify({
+      requestId,
+      tenantId,
+      fromDate,
+      toDate
+    }, null, 2));
+    
+    try {
+      let url = `${this.baseUrl}/research/requests/${requestId}/results?tenant_id=${tenantId}`;
+      if (fromDate && toDate) {
+        url += `&from_date=${fromDate}&to_date=${toDate}`;
+      }
+
+      console.log(`[ResearchRequestsService.getRequestResults] Fetching from URL: ${url}`);
+
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[ResearchRequestsService.getRequestResults] Error response: Status ${response.status}, Response: ${errorText}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[ResearchRequestsService.getRequestResults] Raw response:`, JSON.stringify(data, null, 2));
+      
+      // Handle both array and object response formats
+      const results = Array.isArray(data) ? data : (data.data || data.results || []);
+      
+      // Map the results to ensure consistent format
+      const mappedResults = results.map(result => ({
+        id: result.id,
+        request_id: result.request_id,
+        run_date: result.run_date,
+        total_posts: result.total_posts,
+        total_comments: result.total_comments,
+        relevant_posts: result.relevant_posts,
+        relevant_comments: result.relevant_comments,
+        sentiment_analysis: {
+          positive: result.sentiment_analysis?.positive || 0,
+          negative: result.sentiment_analysis?.negative || 0,
+          neutral: result.sentiment_analysis?.neutral || 0
+        },
+        top_topics: result.top_topics || [],
+        highlights: result.highlights || [],
+        report: result.report || null
+      }));
+
+      console.log(`[ResearchRequestsService.getRequestResults] Mapped ${mappedResults.length} results:`, JSON.stringify(mappedResults, null, 2));
+      return mappedResults;
+    } catch (error) {
+      console.error('[ResearchRequestsService.getRequestResults] Error:', 
+        error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : error
+      );
+      return [];
     }
   }
 } 

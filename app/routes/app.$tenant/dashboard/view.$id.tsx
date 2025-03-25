@@ -7,6 +7,7 @@ import { ResearchRequestsService, ResearchRequest } from "~/services/research/re
 import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 import { createMetrics } from "~/modules/metrics/services/.server/MetricTracker";
 import { serverTimingHeaders } from "~/modules/metrics/utils/defaultHeaders.server";
+import ResearchResults from "~/components/research/ResearchResults";
 
 export { serverTimingHeaders as headers };
 
@@ -116,10 +117,16 @@ export const loader = async ({ request: req, params }: LoaderFunctionArgs) => {
   const researchService = ResearchRequestsService.getInstance();
   
   try {
-    const request = await time(
-      researchService.getRequestById(params.id, tenantId),
-      "fetchResearchRequest"
-    );
+    const [request, results] = await Promise.all([
+      time(
+        researchService.getRequestById(params.id, tenantId),
+        "fetchResearchRequest"
+      ),
+      time(
+        researchService.getRequestResults(params.id, tenantId),
+        "fetchResearchResults"
+      )
+    ]);
     
     if (!request) {
       console.log(`[view.$id.loader] Research request not found with ID: ${params.id}`);
@@ -127,7 +134,7 @@ export const loader = async ({ request: req, params }: LoaderFunctionArgs) => {
     }
     
     console.log(`[view.$id.loader] Successfully fetched research request with ID: ${params.id}`);
-    return json({ request }, { headers: getServerTimingHeader() });
+    return json({ request, results }, { headers: getServerTimingHeader() });
   } catch (error) {
     console.error(`[view.$id.loader] Error fetching research request: ${error instanceof Error ? error.message : 'Unknown error'}`);
     throw error;
@@ -135,7 +142,7 @@ export const loader = async ({ request: req, params }: LoaderFunctionArgs) => {
 };
 
 export default function ViewRequest() {
-  const { request } = useLoaderData<typeof loader>();
+  const { request, results } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigate = useNavigate();
   const params = useParams();
@@ -153,6 +160,8 @@ export default function ViewRequest() {
     nextRunAt?: string;
     updatedAt?: string;
   } | null>(null);
+  const [researchResults, setResearchResults] = useState(results || []);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
 
   // Type guards to check actionData properties
   const hasError = actionData && 'error' in actionData;
@@ -289,6 +298,39 @@ export default function ViewRequest() {
       });
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleDateRangeChange = async (fromDate: string, toDate: string) => {
+    setIsLoadingResults(true);
+    try {
+      const response = await fetch(
+        `/app/${params.tenant}/dashboard/view/${request.id}/results?tenant_id=${params.tenant}&from_date=${fromDate}&to_date=${toDate}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch filtered results');
+      }
+
+      const data = await response.json();
+      setResearchResults(data);
+      setNotification({
+        message: 'Results filtered successfully',
+        type: 'success'
+      });
+    } catch (error) {
+      setNotification({
+        message: error instanceof Error ? error.message : 'Failed to filter results',
+        type: 'error'
+      });
+    } finally {
+      setIsLoadingResults(false);
     }
   };
 
@@ -432,6 +474,22 @@ export default function ViewRequest() {
               ))}
             </div>
           </div>
+
+          {/* Research Results Section */}
+          {request.status === 'completed' && researchResults && researchResults.length > 0 && (
+            <div className="mt-6">
+              {isLoadingResults ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+              ) : (
+                <ResearchResults
+                  results={researchResults}
+                  onDateRangeChange={handleDateRangeChange}
+                />
+              )}
+            </div>
+          )}
 
           {/* Execute Section */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
