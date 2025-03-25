@@ -1,68 +1,194 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate, useParams } from "@remix-run/react";
+import { json, LoaderFunctionArgs, ActionFunctionArgs, redirect } from "@remix-run/node";
+import { useLoaderData, useNavigate, useParams, useSubmit, useActionData } from "@remix-run/react";
 import { requireAuth } from "~/utils/loaders.middleware";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import RequestForm from "~/components/research/RequestForm";
+import { ResearchRequestsService, ResearchRequest } from "~/services/research/researchRequests.server";
+import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
+import { createMetrics } from "~/modules/metrics/services/.server/MetricTracker";
+import { serverTimingHeaders } from "~/modules/metrics/utils/defaultHeaders.server";
 
-interface RedditRequest {
-  id: string;
-  name: string;
-  purpose: string;
-  subreddits: string[];
-  keywords: string[];
-  duration: 'day' | 'week' | 'month';
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  createdAt: string;
-  results?: {
-    postsAnalyzed: number;
-    relevantPosts: number;
-    sentimentBreakdown: {
-      positive: number;
-      neutral: number;
-      negative: number;
-    };
-    downloadUrl?: string;
-  };
-}
+export { serverTimingHeaders as headers };
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
   await requireAuth({ request, params });
+  const { time, getServerTimingHeader } = await createMetrics({ request, params }, "app.$tenant.dashboard.view.action");
   
-  // Mock data - Replace with actual API/DB call
-  const request_data: RedditRequest = {
-    id: params.id || "1",
-    name: "SaaS AI Prospects",
-    purpose: "Identify users interested in or seeking SaaS AI products to understand their needs and potentially offer relevant solutions.",
-    subreddits: ["SaaS"],
-    keywords: [
-      "SaaS AI", "AI software", "AI solutions", "SaaS tools", "AI platform",
-      "AI integration", "machine learning SaaS", "AI automation", "AI SaaS pricing",
-      "SaaS AI benefits", "AI SaaS demo", "AI SaaS challenges", "AI SaaS reviews",
-      "AI SaaS comparison", "AI SaaS implementation"
-    ],
-    duration: "day",
-    status: "completed",
-    createdAt: "2024-03-19T10:34:39",
-    results: {
-      postsAnalyzed: 150,
-      relevantPosts: 45,
-      sentimentBreakdown: {
-        positive: 60,
-        neutral: 30,
-        negative: 10
-      },
-      downloadUrl: "#"
-    }
-  };
+  const formData = await request.formData();
+  const action = formData.get("_action") as string;
+  const requestId = params.id;
+  
+  if (!requestId) {
+    throw new Response("Request ID is required", { status: 400 });
+  }
 
-  return json({ request: request_data });
+  const researchService = ResearchRequestsService.getInstance();
+  
+  if (action === "delete") {
+    const success = await time(
+      researchService.deleteRequest(requestId),
+      "deleteResearchRequest"
+    );
+    
+    if (success) {
+      return redirect(`/app/${params.tenant}/dashboard`);
+    } else {
+      return json(
+        { error: "Failed to delete research request" },
+        { status: 500, headers: getServerTimingHeader() }
+      );
+    }
+  } else if (action === "execute") {
+    const success = await time(
+      researchService.executeRequest(requestId),
+      "executeResearchRequest"
+    );
+    
+    if (success) {
+      return json(
+        { success: true, message: "Research request execution started" },
+        { headers: getServerTimingHeader() }
+      );
+    } else {
+      return json(
+        { error: "Failed to execute research request" },
+        { status: 500, headers: getServerTimingHeader() }
+      );
+    }
+  } else if (action === "schedule") {
+    const scheduleType = formData.get("schedule_type") as string;
+    const success = await time(
+      researchService.scheduleRequest(requestId, scheduleType),
+      "scheduleResearchRequest"
+    );
+    
+    if (success) {
+      return json(
+        { success: true, message: "Research request scheduled" },
+        { headers: getServerTimingHeader() }
+      );
+    } else {
+      return json(
+        { error: "Failed to schedule research request" },
+        { status: 500, headers: getServerTimingHeader() }
+      );
+    }
+  } else if (action === "cancel_schedule") {
+    const success = await time(
+      researchService.cancelSchedule(requestId),
+      "cancelScheduleResearchRequest"
+    );
+    
+    if (success) {
+      return json(
+        { success: true, message: "Research request schedule canceled" },
+        { headers: getServerTimingHeader() }
+      );
+    } else {
+      return json(
+        { error: "Failed to cancel research request schedule" },
+        { status: 500, headers: getServerTimingHeader() }
+      );
+    }
+  }
+  
+  return json(
+    { error: "Invalid action" },
+    { status: 400, headers: getServerTimingHeader() }
+  );
+};
+
+export const loader = async ({ request: req, params }: LoaderFunctionArgs) => {
+  await requireAuth({ request: req, params });
+  const { time, getServerTimingHeader } = await createMetrics({ request: req, params }, "app.$tenant.dashboard.view.loader");
+  
+  if (!params.id) {
+    throw new Response("Request ID is required", { status: 400 });
+  }
+
+  console.log(`[view.$id.loader] Fetching research request with ID: ${params.id}`);
+
+  const researchService = ResearchRequestsService.getInstance();
+  
+  try {
+    const request = await time(
+      researchService.getRequestById(params.id),
+      "fetchResearchRequest"
+    );
+    
+    if (!request) {
+      console.log(`[view.$id.loader] Research request not found with ID: ${params.id}`);
+      throw new Response("Research request not found", { status: 404 });
+    }
+    
+    console.log(`[view.$id.loader] Successfully fetched research request with ID: ${params.id}`);
+    return json({ request }, { headers: getServerTimingHeader() });
+  } catch (error) {
+    console.error(`[view.$id.loader] Error fetching research request: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw error;
+  }
 };
 
 export default function ViewRequest() {
   const { request } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const navigate = useNavigate();
   const params = useParams();
+  const submit = useSubmit();
   const [isEditing, setIsEditing] = useState(false);
+  const [executionStarted, setExecutionStarted] = useState(false);
+  const [showScheduleOptions, setShowScheduleOptions] = useState(false);
+  const [scheduleType, setScheduleType] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  // Type guards to check actionData properties
+  const hasError = actionData && 'error' in actionData;
+  const hasSuccess = actionData && 'success' in actionData && actionData.success === true;
+
+  // Show notification when action data changes
+  useEffect(() => {
+    if (hasError) {
+      setNotification({
+        message: actionData.error,
+        type: 'error'
+      });
+      setTimeout(() => setNotification(null), 5000);
+    } else if (hasSuccess) {
+      setNotification({
+        message: actionData.message,
+        type: 'success'
+      });
+      setTimeout(() => setNotification(null), 5000);
+    }
+  }, [actionData, hasError, hasSuccess]);
+
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this research request?")) {
+      const formData = new FormData();
+      formData.append("_action", "delete");
+      submit(formData, { method: "post" });
+    }
+  };
+
+  const handleExecute = () => {
+    const formData = new FormData();
+    formData.append("_action", "execute");
+    submit(formData, { method: "post" });
+    setExecutionStarted(true);
+  };
+
+  const handleSchedule = () => {
+    const formData = new FormData();
+    formData.append("_action", "schedule");
+    formData.append("schedule_type", scheduleType);
+    submit(formData, { method: "post" });
+    setShowScheduleOptions(false);
+  };
+
+  const handleRefresh = () => {
+    // Force a refresh by navigating to the same page
+    navigate(`/app/${params.tenant}/dashboard/view/${request.id}`, { replace: true });
+  };
 
   if (isEditing) {
     return (
@@ -70,10 +196,15 @@ export default function ViewRequest() {
         mode="edit"
         initialData={{
           name: request.name,
+          description: request.description,
           purpose: request.purpose,
           subreddits: request.subreddits,
           keywords: request.keywords,
           duration: request.duration,
+          min_score: request.min_score,
+          min_comments: request.min_comments,
+          schedule_type: request.schedule_type,
+          date_range: request.date_range
         }}
         onClose={() => setIsEditing(false)}
       />
@@ -102,7 +233,7 @@ export default function ViewRequest() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-4">
           {/* Header Card */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
@@ -129,7 +260,19 @@ export default function ViewRequest() {
                   </svg>
                   Edit
                 </button>
-                <button className="px-3 py-1.5 text-xs border-2 border-red-100 rounded-lg text-red-600 hover:bg-red-50 flex items-center">
+                <button
+                  onClick={() => setShowScheduleOptions(!showScheduleOptions)}
+                  className="px-3 py-1.5 text-xs border-2 border-gray-200 rounded-lg hover:bg-gray-50 flex items-center"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Schedule
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="px-3 py-1.5 text-xs border-2 border-red-100 rounded-lg text-red-600 hover:bg-red-50 flex items-center"
+                >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
@@ -139,7 +282,7 @@ export default function ViewRequest() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Target Subreddits */}
             <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
               <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center">
@@ -196,41 +339,164 @@ export default function ViewRequest() {
                 <p className="text-xs text-gray-600 mt-0.5">Run analysis to find potential contacts</p>
               </div>
               <div className="flex space-x-2">
-                <button className="px-3 py-1.5 text-xs border-2 border-gray-200 rounded-lg hover:bg-gray-50 flex items-center">
+                <button 
+                  onClick={handleRefresh}
+                  className="px-3 py-1.5 text-xs border-2 border-gray-200 rounded-lg hover:bg-gray-50 flex items-center"
+                >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                   Refresh
                 </button>
-                <button className="px-3 py-1.5 text-xs text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-700 hover:to-indigo-700 flex items-center shadow-sm">
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowScheduleOptions(!showScheduleOptions)}
+                    className={`px-3 py-1.5 text-xs ${
+                      request.schedule 
+                        ? 'border-2 border-green-100 text-green-600 hover:bg-green-50' 
+                        : 'border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50'
+                    } rounded-lg flex items-center`}
+                  >
+                    <svg className={`w-4 h-4 mr-1 ${request.schedule ? 'text-green-500' : 'text-indigo-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {request.schedule ? 'Scheduled' : 'Schedule'}
+                  </button>
+                  {showScheduleOptions && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white p-3 ring-1 ring-black ring-opacity-5 z-10">
+                      <div className="mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Schedule Type</label>
+                        <select
+                          value={scheduleType}
+                          onChange={(e) => setScheduleType(e.target.value as 'daily' | 'weekly' | 'monthly')}
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs"
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </div>
+                      <div className="flex justify-between">
+                        {request.schedule && (
+                          <button
+                            onClick={() => {
+                              const formData = new FormData();
+                              formData.append("_action", "cancel_schedule");
+                              submit(formData, { method: "post" });
+                              setShowScheduleOptions(false);
+                            }}
+                            className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200"
+                          >
+                            Cancel Schedule
+                          </button>
+                        )}
+                        <button
+                          onClick={handleSchedule}
+                          className="px-2 py-1 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                        >
+                          {request.schedule ? 'Update Schedule' : 'Save Schedule'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button 
+                  onClick={handleExecute}
+                  disabled={request.status === 'in_progress' || executionStarted}
+                  className="px-3 py-1.5 text-xs text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-700 hover:to-indigo-700 flex items-center shadow-sm disabled:opacity-50"
+                >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                   </svg>
-                  Execute Request
+                  {executionStarted ? 'Processing...' : 'Execute Request'}
                 </button>
               </div>
             </div>
 
-            {request.status === 'completed' && (
-              <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100">
+            {(request.status === 'completed' || request.status === 'in_progress' || request.schedule) && (
+              <div className={`mt-3 p-3 ${
+                request.status === 'completed' 
+                  ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-100' 
+                  : request.status === 'in_progress'
+                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'
+                  : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100'
+              } rounded-lg border`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span className="text-xs font-semibold text-green-800">Completed</span>
-                    <span className="text-xs text-green-600">{new Date(request.createdAt).toLocaleString()}</span>
+                    <span className={`w-2 h-2 ${
+                      request.status === 'completed' ? 'bg-green-500' : 
+                      request.status === 'in_progress' ? 'bg-blue-500' : 
+                      'bg-indigo-500'
+                    } rounded-full`}></span>
+                    <span className={`text-xs font-semibold ${
+                      request.status === 'completed' ? 'text-green-800' : 
+                      request.status === 'in_progress' ? 'text-blue-800' : 
+                      'text-indigo-800'
+                    } capitalize`}>
+                      {request.status === 'pending' && request.schedule ? 'Scheduled' : request.status}
+                    </span>
+                    <span className={`text-xs ${
+                      request.status === 'completed' ? 'text-green-600' : 
+                      request.status === 'in_progress' ? 'text-blue-600' : 
+                      'text-indigo-600'
+                    }`}>
+                      {request.schedule 
+                        ? `${request.schedule.frequency} (Next: ${new Date(request.schedule.nextRun).toLocaleString()})` 
+                        : new Date(request.createdAt).toLocaleString()}
+                    </span>
                   </div>
-                  <button className="px-3 py-1.5 text-xs bg-white border-2 border-green-200 rounded-lg hover:bg-green-50 flex items-center">
-                    <svg className="w-4 h-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download Results
-                  </button>
+                  {request.status === 'completed' && request.results && (
+                    <button className="px-3 py-1.5 text-xs bg-white border-2 border-green-200 rounded-lg hover:bg-green-50 flex items-center">
+                      <svg className="w-4 h-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download Results
+                    </button>
+                  )}
                 </div>
+              </div>
+            )}
+            
+            {/* Error message */}
+            {hasError && (
+              <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-100 text-xs text-red-600">
+                {actionData.error}
+              </div>
+            )}
+            
+            {/* Success message */}
+            {hasSuccess && (
+              <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-100 text-xs text-green-600">
+                {actionData.message}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm flex items-center ${
+          notification.type === 'success' ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'
+        }`}>
+          <span className={`w-2 h-2 mr-2 rounded-full ${
+            notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          }`}></span>
+          <p className={`text-sm ${
+            notification.type === 'success' ? 'text-green-800' : 'text-red-800'
+          }`}>{notification.message}</p>
+          <button 
+            onClick={() => setNotification(null)}
+            className={`ml-3 text-sm ${
+              notification.type === 'success' ? 'text-green-600' : 'text-red-600'
+            } hover:opacity-75`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 } 

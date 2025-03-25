@@ -1,5 +1,5 @@
 import { json, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { useParams, Outlet, useLocation, useLoaderData, useNavigate } from "@remix-run/react";
+import { useParams, Outlet, useLocation, useLoaderData, useNavigate, Link, useFetcher } from "@remix-run/react";
 import { getTranslations } from "~/locale/i18next.server";
 import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 import { useTranslation } from "react-i18next";
@@ -8,41 +8,22 @@ import { serverTimingHeaders } from "~/modules/metrics/utils/defaultHeaders.serv
 import { createMetrics } from "~/modules/metrics/services/.server/MetricTracker";
 import { getTenant } from "~/utils/db/tenants.db.server";
 import { requireAuth } from "~/utils/loaders.middleware";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ResearchRequestsService, ResearchRequest } from "~/services/research/researchRequests.server";
+import { PlusIcon } from "@heroicons/react/24/outline";
 
 export { serverTimingHeaders as headers };
-
-// Types for the Reddit AI Agent system
-interface RedditRequest {
-  id: string;
-  name: string;
-  purpose: string;
-  subreddits: string[];
-  keywords: string[];
-  duration: 'day' | 'week' | 'month';
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  schedule?: {
-    frequency: 'daily' | 'weekly' | 'monthly';
-    lastRun: string;
-    nextRun: string;
-  };
-  createdAt: string;
-  results?: {
-    postsAnalyzed: number;
-    relevantPosts: number;
-    sentimentBreakdown: {
-      positive: number;
-      neutral: number;
-      negative: number;
-    };
-    downloadUrl?: string;
-  };
-}
 
 type LoaderData = {
   title: string;
   tenant: any;
-  requests: RedditRequest[];
+  requests: ResearchRequest[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -51,53 +32,52 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   let { t } = await time(getTranslations(request), "getTranslations");
   const tenantId = await time(getTenantIdFromUrl(params), "getTenantIdFromUrl");
   const tenant = await time(getTenant(tenantId), "getTenant");
+  
+  // Get the page and limit from URL params
+  const url = new URL(request.url);
+  const page = parseInt(url.searchParams.get("page") || "1", 10);
+  const limit = parseInt(url.searchParams.get("limit") || "10", 10);
 
-  // Test request data
-  const requests: RedditRequest[] = [{
-    id: "1",
-    name: "SaaS AI Prospects",
-    purpose: "Identify users interested in or seeking SaaS AI products to understand their needs and potentially offer relevant solutions.",
-    subreddits: ["SaaS"],
-    keywords: [
-      "SaaS AI",
-      "AI software",
-      "AI solutions",
-      "SaaS tools",
-      "AI platform",
-      "AI integration",
-      "machine learning SaaS",
-      "AI automation",
-      "AI SaaS pricing",
-      "SaaS AI benefits",
-      "AI SaaS demo",
-      "AI SaaS challenges",
-      "AI SaaS reviews",
-      "AI SaaS comparison",
-      "AI SaaS implementation"
-    ],
-    duration: "day",
-    status: "completed",
-    createdAt: "2024-03-19T10:34:39",
-    results: {
-      postsAnalyzed: 150,
-      relevantPosts: 45,
-      sentimentBreakdown: {
-        positive: 60,
-        neutral: 30,
-        negative: 10
-      },
-      downloadUrl: "#"
-    }
-  }];
+  console.log(`[dashboard.loader] Fetching research requests for tenant ${tenantId}, page ${page}, limit ${limit}`);
 
-  return json(
-    { 
-      title: "AI Research Hub",
-      tenant,
-      requests 
-    }, 
-    { headers: getServerTimingHeader() }
-  );
+  // Get research requests using the service
+  const researchService = ResearchRequestsService.getInstance();
+  try {
+    const requestsResponse = await time(
+      researchService.getRequests(tenantId, page, limit),
+      "getResearchRequests"
+    );
+
+    console.log(`[dashboard.loader] Successfully fetched ${requestsResponse.data.length} research requests`);
+    
+    return json(
+      { 
+        title: "AI Research Hub",
+        tenant,
+        requests: requestsResponse.data,
+        pagination: requestsResponse.pagination
+      }, 
+      { headers: getServerTimingHeader() }
+    );
+  } catch (error) {
+    console.error(`[dashboard.loader] Error fetching research requests: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    
+    // Return an empty list if there's an error, but don't break the page
+    return json(
+      { 
+        title: "AI Research Hub",
+        tenant,
+        requests: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0
+        }
+      }, 
+      { headers: getServerTimingHeader() }
+    );
+  }
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => [{ title: data?.title }];
@@ -107,10 +87,23 @@ export default function DashboardRoute() {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { requests } = useLoaderData<typeof loader>();
-  const isChildRoute = location.pathname.includes('/create') || location.pathname.includes('/file');
+  const fetcher = useFetcher();
+  const { requests, pagination } = useLoaderData<typeof loader>();
+  const isChildRoute = location.pathname.includes('/create') || 
+                      location.pathname.includes('/view/') ||
+                      location.pathname.includes('/edit/') ||
+                      location.pathname.includes('/diagnostics');
   
-  const [selectedRequest, setSelectedRequest] = useState<RedditRequest | null>(requests[0] || null);
+  const [selectedRequest, setSelectedRequest] = useState<ResearchRequest | null>(requests[0] || null);
+  const [currentPage, setCurrentPage] = useState(pagination?.page || 1);
+
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > pagination.totalPages) return;
+    
+    setCurrentPage(newPage);
+    navigate(`/app/${params.tenant}/dashboard?page=${newPage}&limit=${pagination.limit}`);
+  };
 
   if (isChildRoute) {
     return <Outlet />;
@@ -137,17 +130,21 @@ export default function DashboardRoute() {
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
                   <span className="px-2 py-1 bg-gray-100 rounded">System: Active</span>
                   <span className="px-2 py-1 bg-gray-100 rounded">UTC</span>
+                  <Link 
+                    to={`/app/${params.tenant}/dashboard/diagnostics`}
+                    className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 text-blue-600"
+                  >
+                    Diagnostics
+                  </Link>
                 </div>
               </div>
-              <button
-                onClick={() => navigate(`/app/${params.tenant}/dashboard/create`)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              <Link
+                to={`/app/${params.tenant}/dashboard/create`}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-md shadow-sm hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+                <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
                 Create New Research
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -162,15 +159,13 @@ export default function DashboardRoute() {
               <h3 className="mt-4 text-lg font-medium text-gray-900">No Research Requests Yet</h3>
               <p className="mt-1 text-sm text-gray-500">Get started by creating your first research request.</p>
               <div className="mt-6">
-                <button
-                  onClick={() => navigate(`/app/${params.tenant}/dashboard/create`)}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                <Link
+                  to={`/app/${params.tenant}/dashboard/create`}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-md shadow-sm hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
+                  <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
                   Start Your First Research
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -216,15 +211,15 @@ export default function DashboardRoute() {
       {/* Left Sidebar - Request Management */}
       <div className="w-72 border-r bg-white/80 backdrop-blur-sm">
         <div className="p-4">
-          <button 
-            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl py-2.5 px-4 flex items-center justify-center space-x-2 hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-            onClick={() => navigate(`/app/${params.tenant}/dashboard/create`)}
+          <Link
+            to={`/app/${params.tenant}/dashboard/create`}
+            className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-md shadow-sm hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            <span className="text-lg font-bold">+</span>
-            <span className="text-sm font-small">New Research Request</span>
-          </button>
+            <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            New Research Request
+          </Link>
         </div>
-        <div className="overflow-y-auto">
+        <div className="overflow-y-auto h-[calc(100vh-5rem)]">
           {requests.map((request) => (
             <div
               key={request.id}
@@ -252,11 +247,153 @@ export default function DashboardRoute() {
               </p>
             </div>
           ))}
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-xs text-gray-600">
+                  Page {currentPage} of {pagination.totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.totalPages}
+                  className="px-3 py-1 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
+        {/* Show this when no child route is active */}
+        {!location.pathname.includes('/view/') && 
+         !location.pathname.includes('/create/describe') && 
+         !location.pathname.includes('/create/form') && 
+         !location.pathname.includes('/edit/') && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                    Research Dashboard
+                  </h1>
+                  <p className="text-gray-600 mt-2">
+                    Select a research request from the sidebar or create a new one to get started.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Stats Overview */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500">Total Requests</p>
+                    <h3 className="text-xl font-bold text-gray-900 mt-1">{pagination.total}</h3>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500">Active Requests</p>
+                    <h3 className="text-xl font-bold text-gray-900 mt-1">
+                      {requests.filter(r => r.status === 'in_progress').length}
+                    </h3>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500">Completed Requests</p>
+                    <h3 className="text-xl font-bold text-gray-900 mt-1">
+                      {requests.filter(r => r.status === 'completed').length}
+                    </h3>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Recent Requests */}
+            <div className="mt-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Requests</h2>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {requests.slice(0, 5).map((request) => (
+                      <tr key={request.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{request.name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            request.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                            request.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                            request.status === 'failed' ? 'bg-red-100 text-red-800' : 
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {request.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(request.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <a 
+                            onClick={() => navigate(`/app/${params.tenant}/dashboard/view/${request.id}`)}
+                            className="text-indigo-600 hover:text-indigo-900 cursor-pointer"
+                          >
+                            View
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <Outlet />
       </div>
     </div>

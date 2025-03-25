@@ -5,10 +5,20 @@ interface RequestFormProps {
   mode: 'create' | 'edit';
   initialData?: {
     name: string;
-    purpose: string;
+    description?: string;
+    purpose?: string;
     subreddits: string[];
     keywords: string[];
-    duration: 'day' | 'week' | 'month';
+    schedule_type?: 'daily' | 'weekly' | 'monthly';
+    duration?: 'day' | 'week' | 'month';
+    min_score?: number;
+    min_comments?: number;
+    start_date?: string;
+    end_date?: string;
+    date_range?: {
+      start_date: string;
+      end_date: string;
+    };
   };
   onClose?: () => void;
 }
@@ -18,6 +28,45 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
   const [keywords, setKeywords] = useState<string[]>(initialData?.keywords || []);
   const [newSubreddit, setNewSubreddit] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
+
+  // Set default dates for the date range
+  const today = new Date();
+  const oneMonthLater = new Date();
+  oneMonthLater.setMonth(today.getMonth() + 1);
+  
+  const formatDateForInput = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  // Get description from either description or purpose field
+  const getDescription = () => {
+    if (initialData?.description) return initialData.description;
+    if (initialData?.purpose) return initialData.purpose;
+    return '';
+  };
+
+  // Get schedule type from either schedule_type or duration field
+  const getScheduleType = () => {
+    if (initialData?.schedule_type) return initialData.schedule_type;
+    if (initialData?.duration === 'day') return 'daily';
+    if (initialData?.duration === 'week') return 'weekly';
+    if (initialData?.duration === 'month') return 'monthly';
+    return 'daily';
+  };
+
+  // Get start date from either directly or from date_range
+  const getStartDate = () => {
+    if (initialData?.start_date) return initialData.start_date;
+    if (initialData?.date_range?.start_date) return initialData.date_range.start_date;
+    return formatDateForInput(today);
+  };
+
+  // Get end date from either directly or from date_range
+  const getEndDate = () => {
+    if (initialData?.end_date) return initialData.end_date;
+    if (initialData?.date_range?.end_date) return initialData.date_range.end_date;
+    return formatDateForInput(oneMonthLater);
+  };
 
   const handleSubredditKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newSubreddit.trim()) {
@@ -44,8 +93,8 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-500/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-gray-500/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -77,16 +126,16 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
               />
             </div>
 
-            {/* Purpose */}
+            {/* Description */}
             <div>
-              <label htmlFor="purpose" className="block text-sm font-medium text-gray-700">
-                Purpose
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Description
               </label>
               <textarea
-                name="purpose"
-                id="purpose"
+                name="description"
+                id="description"
                 rows={3}
-                defaultValue={initialData?.purpose}
+                defaultValue={getDescription()}
                 className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
                 required
               />
@@ -103,7 +152,7 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
                   value={newSubreddit}
                   onChange={(e) => setNewSubreddit(e.target.value)}
                   onKeyDown={handleSubredditKeyDown}
-                  placeholder="Add 1 subreddit. Press Enter to add it."
+                  placeholder="Add subreddit name (without r/). Press Enter to add it."
                   className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
                 />
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -139,7 +188,7 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
                   value={newKeyword}
                   onChange={(e) => setNewKeyword(e.target.value)}
                   onKeyDown={handleKeywordKeyDown}
-                  placeholder="Add up to 50 keywords. Press Enter to add each one."
+                  placeholder="Add search keywords. Press Enter to add each one."
                   className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
                 />
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -164,21 +213,87 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
               </div>
             </div>
 
-            {/* Duration */}
+            {/* Schedule Type */}
             <div>
-              <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
-                Duration
+              <label htmlFor="schedule_type" className="block text-sm font-medium text-gray-700">
+                Schedule Type
               </label>
               <select
-                id="duration"
-                name="duration"
-                defaultValue={initialData?.duration || 'day'}
+                id="schedule_type"
+                name="schedule_type"
+                defaultValue={getScheduleType()}
                 className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
               >
-                <option value="day">Day</option>
-                <option value="week">Week</option>
-                <option value="month">Month</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
               </select>
+            </div>
+
+            {/* Date Range */}
+            <div>
+              <h3 className="block text-sm font-medium text-gray-700 mb-2">Date Range</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    name="start_date"
+                    id="start_date"
+                    defaultValue={getStartDate()}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    name="end_date"
+                    id="end_date"
+                    defaultValue={getEndDate()}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Min Score and Min Comments */}
+            <div>
+              <h3 className="block text-sm font-medium text-gray-700 mb-2">Filter Settings</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="min_score" className="block text-sm font-medium text-gray-700">
+                    Minimum Score
+                  </label>
+                  <input
+                    type="number"
+                    name="min_score"
+                    id="min_score"
+                    defaultValue={initialData?.min_score || 10}
+                    min={0}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="min_comments" className="block text-sm font-medium text-gray-700">
+                    Minimum Comments
+                  </label>
+                  <input
+                    type="number"
+                    name="min_comments"
+                    id="min_comments"
+                    defaultValue={initialData?.min_comments || 5}
+                    min={0}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Hidden fields for form submission */}

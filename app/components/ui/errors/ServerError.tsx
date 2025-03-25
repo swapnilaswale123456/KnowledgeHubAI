@@ -1,12 +1,17 @@
-import { useRouteError } from "@remix-run/react";
+import { useRouteError, Link, useParams } from "@remix-run/react";
 import Page404 from "~/components/pages/Page404";
 import Page401 from "~/routes/401";
 
 export default function ServerError() {
   const error: any = useRouteError();
+  const params = useParams();
   let errorTitle = error?.data?.message || error?.message || error?.data?.error || "Error";
   let errorDescription = error?.data?.description;
   let errorStack = error?.stack;
+  const isApiError = errorTitle.includes('fetch failed') || 
+                     errorStack?.includes('fetch failed') || 
+                     errorTitle.toLowerCase().includes('api') ||
+                     errorStack?.toLowerCase().includes('api');
 
   // @ts-ignore
   if (error?.status === 404) {
@@ -27,6 +32,7 @@ export default function ServerError() {
       errorStack = knownError.stack;
     }
   }
+
   return (
     <div className="px-4 py-4">
       <div className="border-border bg-background text-foreground mx-auto w-full space-y-2 rounded-md border-2 border-dashed p-12 text-center shadow-md">
@@ -45,6 +51,22 @@ export default function ServerError() {
         </div>
         {/* @ts-ignore */}
         {errorDescription && <div className="">{errorDescription}</div>}
+        
+        {/* API Error Diagnostics Suggestion */}
+        {isApiError && params.tenant && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg text-blue-800 text-sm">
+            <p>It looks like there might be an issue connecting to the API.</p>
+            <p className="mt-2">
+              <Link 
+                to={`/app/${params.tenant}/dashboard/diagnostics`}
+                className="text-blue-600 hover:underline font-medium"
+              >
+                → Run API Diagnostics
+              </Link>
+            </p>
+          </div>
+        )}
+        
         {/* @ts-ignore */}
         {errorStack && (
           <div className="pt-4">
