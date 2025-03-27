@@ -304,27 +304,21 @@ export default function ViewRequest() {
   const handleDateRangeChange = async (fromDate: string, toDate: string) => {
     setIsLoadingResults(true);
     try {
-      const response = await fetch(
-        `/app/${params.tenant}/dashboard/view/${request.id}/results?tenant_id=${params.tenant}&from_date=${fromDate}&to_date=${toDate}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      const researchService = ResearchRequestsService.getInstance();
+      const results = await researchService.getRequestResults(
+        request.id,
+        params.tenant || '',
+        fromDate,
+        toDate
       );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch filtered results');
-      }
-
-      const data = await response.json();
-      setResearchResults(data);
+      
+      setResearchResults(results);
       setNotification({
         message: 'Results filtered successfully',
         type: 'success'
       });
     } catch (error) {
+      console.error('Error filtering results:', error);
       setNotification({
         message: error instanceof Error ? error.message : 'Failed to filter results',
         type: 'error'

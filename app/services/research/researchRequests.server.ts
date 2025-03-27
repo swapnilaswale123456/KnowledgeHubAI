@@ -59,12 +59,30 @@ export interface CreateResearchRequestData {
   };
 }
 
+interface ResearchResult {
+  id: string;
+  request_id: string;
+  run_date: string;
+  total_posts: number;
+  total_comments: number;
+  relevant_posts: number;
+  relevant_comments: number;
+  sentiment_analysis: {
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
+  top_topics: string[];
+  highlights: string[];
+  report: any;
+}
+
 export class ResearchRequestsService {
   private static instance: ResearchRequestsService;
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = process.env.API_BASE_URL || 'http://localhost:5000/api/v1';
+    this.baseUrl = 'http://localhost:5000/api/v1';
   }
 
   public static getInstance(): ResearchRequestsService {
@@ -100,12 +118,6 @@ export class ResearchRequestsService {
       
       // Handle both array response and object response formats
       const requests = Array.isArray(data) ? data : (data.data || []);
-      
-      // If no requests found, fall back to mock data
-      if (!requests || requests.length === 0) {
-        console.log(`[ResearchRequestsService] API returned no results, falling back to mock data`);
-        //return this.getMockRequests(page, limit);
-      }
       
       // Map the API response to match our ResearchRequest interface
       const mappedRequests = requests.map((request: {
@@ -159,10 +171,17 @@ export class ResearchRequestsService {
         } : error
       );
       
-      // Log fallback to mock data
-      console.log(`[ResearchRequestsService] Falling back to mock data for research requests`);
-      // Return mock data for development/testing
-      //return this.getMockRequests(page, limit);
+      // Return empty response with pagination
+      return {
+        success: false,
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0
+        }
+      };
     }
   }
 
@@ -730,7 +749,7 @@ export class ResearchRequestsService {
     }
   }
 
-  async getRequestResults(requestId: string, tenantId: string, fromDate?: string, toDate?: string): Promise<any[]> {
+  async getRequestResults(requestId: string, tenantId: string, fromDate?: string, toDate?: string): Promise<ResearchResult[]> {
     console.log(`[ResearchRequestsService.getRequestResults] Fetching results for request ${requestId}`);
     console.log(`[ResearchRequestsService.getRequestResults] Parameters:`, JSON.stringify({
       requestId,
@@ -742,7 +761,7 @@ export class ResearchRequestsService {
     try {
       let url = `${this.baseUrl}/research/requests/${requestId}/results?tenant_id=${tenantId}`;
       if (fromDate && toDate) {
-        url += `&from_date=${fromDate}&to_date=${toDate}`;
+        url += `&from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`;
       }
 
       console.log(`[ResearchRequestsService.getRequestResults] Fetching from URL: ${url}`);
@@ -767,7 +786,7 @@ export class ResearchRequestsService {
       const results = Array.isArray(data) ? data : (data.data || data.results || []);
       
       // Map the results to ensure consistent format
-      const mappedResults = results.map(result => ({
+      const mappedResults = results.map((result: any) => ({
         id: result.id,
         request_id: result.request_id,
         run_date: result.run_date,
