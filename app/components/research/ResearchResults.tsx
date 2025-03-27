@@ -1,5 +1,22 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  AreaChart,
+  Area
+} from 'recharts';
 
 interface ResearchResult {
   id: string;
@@ -82,10 +99,13 @@ interface ResearchResultsProps {
   onDateRangeChange?: (fromDate: string, toDate: string) => void;
 }
 
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
 export default function ResearchResults({ results, onDateRangeChange }: ResearchResultsProps) {
   const [selectedResult, setSelectedResult] = useState<ResearchResult | null>(results[0] || null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
 
   const handleDateRangeChange = () => {
     if (fromDate && toDate && onDateRangeChange) {
@@ -100,6 +120,32 @@ export default function ResearchResults({ results, onDateRangeChange }: Research
       </div>
     );
   }
+
+  // Prepare data for charts
+  const sentimentData = selectedResult ? [
+    { name: 'Positive', value: selectedResult.report.sentiment_distribution.positive },
+    { name: 'Neutral', value: selectedResult.report.sentiment_distribution.neutral },
+    { name: 'Negative', value: selectedResult.report.sentiment_distribution.negative }
+  ] : [];
+
+  const expertiseData = selectedResult ? Object.entries(selectedResult.report.user_insights.expertise_distribution)
+    .map(([name, value]) => ({ name, value })) : [];
+
+  const activityData = selectedResult ? Object.entries(selectedResult.report.user_insights.activity_distribution)
+    .map(([name, value]) => ({ name, value })) : [];
+
+  const engagementData = selectedResult ? [
+    {
+      name: 'Posts',
+      total: selectedResult.report.engagement_metrics.posts_vs_comments.posts,
+      relevant: selectedResult.report.engagement_metrics.relevance_metrics.relevant_posts
+    },
+    {
+      name: 'Comments',
+      total: selectedResult.report.engagement_metrics.posts_vs_comments.comments,
+      relevant: selectedResult.report.engagement_metrics.relevance_metrics.relevant_comments
+    }
+  ] : [];
 
   return (
     <div className="space-y-6">
@@ -173,139 +219,174 @@ export default function ResearchResults({ results, onDateRangeChange }: Research
       {/* Selected Result Details */}
       {selectedResult && (
         <div className="space-y-6">
-          {/* Engagement Metrics */}
+          {/* Navigation Tabs */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Engagement Metrics</h2>
+            <div className="flex space-x-4 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === 'overview'
+                    ? 'text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('engagement')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === 'engagement'
+                    ? 'text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Engagement
+              </button>
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === 'users'
+                    ? 'text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Users
+              </button>
+            </div>
+          </div>
+
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Posts vs Comments</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Posts</span>
-                    <span className="font-medium">{selectedResult.report.engagement_metrics.posts_vs_comments.posts}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Comments</span>
-                    <span className="font-medium">{selectedResult.report.engagement_metrics.posts_vs_comments.comments}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Ratio</span>
-                    <span className="font-medium">{selectedResult.report.engagement_metrics.posts_vs_comments.ratio.toFixed(2)}</span>
-                  </div>
+              {/* Sentiment Analysis Chart */}
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Distribution</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={sentimentData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {sentimentData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Relevance Metrics</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Relevant Posts</span>
-                    <span className="font-medium">{selectedResult.report.engagement_metrics.relevance_metrics.relevant_posts}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Relevant Comments</span>
-                    <span className="font-medium">{selectedResult.report.engagement_metrics.relevance_metrics.relevant_comments}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Relevance Rate</span>
-                    <span className="font-medium">{selectedResult.report.engagement_metrics.relevance_metrics.relevance_rate.toFixed(2)}%</span>
-                  </div>
+
+              {/* Engagement Overview */}
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Engagement Overview</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={engagementData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="total" name="Total" fill="#8884d8" />
+                      <Bar dataKey="relevant" name="Relevant" fill="#82ca9d" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Sentiment Analysis */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Analysis</h2>
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Positive</span>
-                  <span className="font-medium">{selectedResult.report.sentiment_distribution.positive.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-green-500 h-2 rounded-full"
-                    style={{ width: `${selectedResult.report.sentiment_distribution.positive}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Neutral</span>
-                  <span className="font-medium">{selectedResult.report.sentiment_distribution.neutral.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-gray-500 h-2 rounded-full"
-                    style={{ width: `${selectedResult.report.sentiment_distribution.neutral}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Negative</span>
-                  <span className="font-medium">{selectedResult.report.sentiment_distribution.negative.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-red-500 h-2 rounded-full"
-                    style={{ width: `${selectedResult.report.sentiment_distribution.negative}%` }}
-                  ></div>
-                </div>
+          {/* Engagement Tab */}
+          {activeTab === 'engagement' && (
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Engagement Trends</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={engagementData}>
+                    <defs>
+                      <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorRelevant" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#82ca9d" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area
+                      type="monotone"
+                      dataKey="total"
+                      name="Total"
+                      stroke="#8884d8"
+                      fillOpacity={1}
+                      fill="url(#colorTotal)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="relevant"
+                      name="Relevant"
+                      stroke="#82ca9d"
+                      fillOpacity={1}
+                      fill="url(#colorRelevant)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* User Insights */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">User Insights</h2>
+          {/* Users Tab */}
+          {activeTab === 'users' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Expertise Distribution</h3>
-                <div className="space-y-2">
-                  {Object.entries(selectedResult.report.user_insights.expertise_distribution).map(([level, count]) => (
-                    <div key={level} className="flex justify-between text-sm">
-                      <span>{level}</span>
-                      <span className="font-medium">{count}</span>
-                    </div>
-                  ))}
+              {/* Expertise Distribution */}
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Expertise Distribution</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={expertiseData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="value" name="Users" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Activity Distribution</h3>
-                <div className="space-y-2">
-                  {Object.entries(selectedResult.report.user_insights.activity_distribution).map(([level, count]) => (
-                    <div key={level} className="flex justify-between text-sm">
-                      <span>{level}</span>
-                      <span className="font-medium">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            {/* Top Influencers */}
-            <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Top Influencers</h3>
-              <div className="space-y-3">
-                {selectedResult.report.user_insights.top_influencers.map((influencer, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{influencer.username}</p>
-                      <p className="text-xs text-gray-500">
-                        {influencer.expertise} • {influencer.activity} • {influencer.karma.toLocaleString()} karma
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-indigo-600">{influencer.engagement.toFixed(1)}% engagement</p>
-                      <p className="text-xs text-gray-500">Score: {influencer.score.toFixed(2)}</p>
-                    </div>
-                  </div>
-                ))}
+              {/* Activity Distribution */}
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Distribution</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={activityData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="value" name="Users" fill="#82ca9d" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Content Insights */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
