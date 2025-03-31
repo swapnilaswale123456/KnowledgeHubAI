@@ -15,7 +15,7 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 export { serverTimingHeaders as headers };
 
 type LoaderData = {
-  title: string;
+  title: string; 
   tenant: any;
   requests: ResearchRequest[];
   pagination: {
@@ -210,13 +210,22 @@ export default function DashboardRoute() {
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50">
       {/* Left Sidebar - Request Management */}
       <div className="w-72 border-r bg-white/80 backdrop-blur-sm">
-        <div className="p-4">
+        <div className="p-4 space-y-2">
           <Link
             to={`/app/${params.tenant}/dashboard/create`}
             className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-md shadow-sm hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             New Research Request
+          </Link>
+          <Link
+            to={`/app/${params.tenant}/dashboard/create/template`}
+            className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+            Use Template
           </Link>
         </div>
         <div className="overflow-y-auto h-[calc(100vh-5rem)]">
@@ -396,8 +405,8 @@ export default function DashboardRoute() {
         
         <Outlet />
       </div>
-    </div>
-  );
+      </div>
+    );
 }
 
 export function ErrorBoundary() {

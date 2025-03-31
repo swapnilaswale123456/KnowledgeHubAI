@@ -253,27 +253,49 @@ export class ResearchRequestsService {
   
   async createRequest(requestData: CreateResearchRequestData): Promise<ResearchRequest | null> {
     try {
+      console.log(`[ResearchRequestsService] Creating new research request:`, JSON.stringify(requestData, null, 2));
       const response = await fetch(
         `${this.baseUrl}/research/requests`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
-          },
+                    },
           body: JSON.stringify(requestData)
         }
       );
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`[ResearchRequestsService] Failed to create request:`, {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(`Failed to create research request: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      return data.data;
+      console.log(`[ResearchRequestsService] Create request response:`, JSON.stringify(data, null, 2));
+
+      // Handle both direct object response and data property response
+      const request = data.data || data;
+      
+      if (!request?.id) {
+        console.error(`[ResearchRequestsService] Invalid response format:`, data);
+        throw new Error('Invalid response format: missing ID');
+      }
+
+      return request;
     } catch (error) {
-      console.error('Error creating research request:', error);
-      return null;
+      console.error(`[ResearchRequestsService] Error creating research request:`, 
+        error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : error
+      );
+      throw error; // Propagate the error instead of returning null
     }
   }
 
