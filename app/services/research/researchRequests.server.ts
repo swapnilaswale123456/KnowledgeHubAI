@@ -114,7 +114,7 @@ export class ResearchRequestsService {
       }
 
       const data = await response.json();
-      console.log(`[ResearchRequestsService] API Response:`, JSON.stringify(data, null, 2));
+      //console.log(`[ResearchRequestsService] API Response:`, JSON.stringify(data, null, 2));
       
       // Handle both array response and object response formats
       const requests = Array.isArray(data) ? data : (data.data || []);

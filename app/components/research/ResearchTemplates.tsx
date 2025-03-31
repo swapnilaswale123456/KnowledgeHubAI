@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from '@remix-run/react';
+import { useTranslation } from 'react-i18next';
 
 interface ResearchTemplate {
   id: string;
   name: string;
   description: string;
   category: string;
+  icon: string;
   config: {
     subreddits: string[];
     keywords: string[];
@@ -16,164 +17,164 @@ interface ResearchTemplate {
   };
 }
 
-const PREDEFINED_TEMPLATES: ResearchTemplate[] = [
-  {
-    id: 'market-research',
-    name: 'Product Launch Research',
-    description: 'Research consumer sentiment for new product launch',
-    category: 'Market Research',
-    config: {
-      subreddits: ['productreviews', 'gadgets', 'technology'],
-      keywords: ['product launch', 'user experience', 'feedback'],
-      min_score: 10,
-      min_comments: 5,
-      schedule_type: 'daily',
-      additional_settings: {
-        sentiment_analysis: true,
-        competitor_mentions: true,
-        feature_requests: true
-      }
-    }
-  },
-  {
-    id: 'competitor-analysis',
-    name: 'Competitor Monitoring',
-    description: 'Monitor competitor mentions and sentiment',
-    category: 'Competitor Analysis',
-    config: {
-      subreddits: ['industry_specific_subreddit'],
-      keywords: ['competitor_name', 'alternative', 'comparison'],
-      min_score: 5,
-      min_comments: 3,
-      schedule_type: 'weekly',
-      additional_settings: {
-        sentiment_analysis: true,
-        market_share_analysis: true,
-        feature_comparison: true
-      }
-    }
-  },
-  {
-    id: 'content-strategy',
-    name: 'Content Topic Research',
-    description: 'Find trending topics in target audience',
-    category: 'Content Strategy',
-    config: {
-      subreddits: ['target_audience_subreddit'],
-      keywords: ['how to', 'recommendation', 'help'],
-      min_score: 15,
-      min_comments: 10,
-      schedule_type: 'daily',
-      additional_settings: {
-        topic_clustering: true,
-        content_gaps: true,
-        audience_insights: true
-      }
-    }
-  }
-];
-
 interface ResearchTemplatesProps {
   onSelectTemplate: (template: ResearchTemplate) => void;
 }
 
+const templates: ResearchTemplate[] = [
+  {
+    id: "market-research",
+    name: "Market Research Analysis",
+    description: "Comprehensive market research to identify trends, opportunities, and competitive landscape in your industry.",
+    category: "Market Research",
+    icon: "📊",
+    config: {
+      subreddits: ["business", "entrepreneur", "startups", "marketing", "smallbusiness"],
+      keywords: ["market trends", "industry analysis", "competition", "opportunities", "market size"],
+      min_score: 10,
+      min_comments: 5,
+      schedule_type: "weekly"
+    }
+  },
+  {
+    id: "product-feedback",
+    name: "Product Feedback Analysis",
+    description: "Gather and analyze customer feedback about your product or similar products in the market.",
+    category: "Product Development",
+    icon: "💡",
+    config: {
+      subreddits: ["ProductManagement", "software", "technology", "webdev", "UXDesign"],
+      keywords: ["user feedback", "product review", "customer experience", "pain points", "feature request"],
+      min_score: 5,
+      min_comments: 3,
+      schedule_type: "daily"
+    }
+  },
+  {
+    id: "content-strategy",
+    name: "Content Strategy Research",
+    description: "Research content topics, formats, and distribution channels that resonate with your target audience.",
+    category: "Content Marketing",
+    icon: "📝",
+    config: {
+      subreddits: ["content_marketing", "marketing", "digital_marketing", "socialmedia", "blogging"],
+      keywords: ["content strategy", "content marketing", "blog topics", "content ideas", "content distribution"],
+      min_score: 8,
+      min_comments: 4,
+      schedule_type: "weekly"
+    }
+  },
+  {
+    id: "competitor-analysis",
+    name: "Competitor Analysis",
+    description: "Track competitor activities, product launches, and market positioning strategies.",
+    category: "Competitive Intelligence",
+    icon: "🔍",
+    config: {
+      subreddits: ["business", "marketing", "startups", "technology", "entrepreneur"],
+      keywords: ["competitor", "market share", "product launch", "pricing strategy", "brand positioning"],
+      min_score: 15,
+      min_comments: 8,
+      schedule_type: "daily"
+    }
+  },
+  {
+    id: "customer-insights",
+    name: "Customer Insights Research",
+    description: "Deep dive into customer behavior, preferences, and pain points to inform product decisions.",
+    category: "Customer Research",
+    icon: "👥",
+    config: {
+      subreddits: ["ProductManagement", "UXResearch", "startups", "technology", "business"],
+      keywords: ["customer behavior", "user needs", "pain points", "customer journey", "user experience"],
+      min_score: 10,
+      min_comments: 5,
+      schedule_type: "weekly"
+    }
+  },
+  {
+    id: "brand-monitoring",
+    name: "Brand Monitoring",
+    description: "Track brand mentions, sentiment, and customer feedback across social media platforms.",
+    category: "Brand Management",
+    icon: "🎯",
+    config: {
+      subreddits: ["marketing", "branding", "socialmedia", "business", "digital_marketing"],
+      keywords: ["brand mention", "brand sentiment", "customer feedback", "brand perception", "brand reputation"],
+      min_score: 5,
+      min_comments: 3,
+      schedule_type: "daily"
+    }
+  }
+];
+
 export default function ResearchTemplates({ onSelectTemplate }: ResearchTemplatesProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const { t } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const categories = ['all', ...new Set(PREDEFINED_TEMPLATES.map(t => t.category))];
-
-  const filteredTemplates = PREDEFINED_TEMPLATES.filter(template => {
-    const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
-    const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         template.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredTemplates = templates.filter(template => 
+    template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    template.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search templates..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-        <div className="flex gap-2">
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-3 py-2 text-sm rounded-md ${
-                selectedCategory === category
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+    <div className="space-y-4">
+      {/* Search Section */}
+      <div className="relative max-w-md">
+        <input
+          type="text"
+          placeholder={t("Search templates...")}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
       </div>
 
       {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTemplates.map(template => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredTemplates.map((template) => (
           <div
             key={template.id}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => onSelectTemplate(template)}
+            className="group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-500 hover:shadow-md transition-all duration-200 cursor-pointer"
           >
             <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">{template.name}</h3>
-                <p className="mt-1 text-xs text-gray-500">{template.description}</p>
-              </div>
-              <span className="px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full">
+              <div className="text-2xl mb-2">{template.icon}</div>
+              <div className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                 {template.category}
-              </span>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center text-xs text-gray-500">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                {template.config.subreddits.length} Subreddits
-              </div>
-              <div className="flex items-center text-xs text-gray-500">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-                {template.config.keywords.length} Keywords
-              </div>
-              <div className="flex items-center text-xs text-gray-500">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {template.config.schedule_type} Schedule
               </div>
             </div>
-
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(template.config.additional_settings || {}).map(([key, value]) => (
-                  <span
-                    key={key}
-                    className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full"
-                  >
-                    {key.replace(/_/g, ' ')}
-                  </span>
-                ))}
-              </div>
+            
+            <h3 className="text-sm font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+              {template.name}
+            </h3>
+            
+            <p className="text-xs text-gray-600 mb-2">
+              {template.description}
+            </p>
+            
+            <div className="flex items-center text-xs text-gray-500">
+              <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {template.config.schedule_type.charAt(0).toUpperCase() + template.config.schedule_type.slice(1)} updates
             </div>
           </div>
         ))}
       </div>
+
+      {filteredTemplates.length === 0 && (
+        <div className="text-center py-8">
+          <div className="text-gray-400 text-4xl mb-2">🔍</div>
+          <h3 className="text-sm font-medium text-gray-900 mb-1">{t("No templates found")}</h3>
+          <p className="text-xs text-gray-500">{t("Try adjusting your search")}</p>
+        </div>
+      )}
     </div>
   );
 } 
