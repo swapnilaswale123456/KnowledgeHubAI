@@ -12,33 +12,33 @@ type SiteTags = {
 };
 export function getDefaultSiteTags(): SiteTags {
   return {
-    title: "SaasRock Demo {Core} | The SaaS Building Framework",
+    title: "Reddit Research | Reddit Research & Analytics Platform",
     description:
-      "Build, Market, Manage your SaaS. Launch your MVP with built-in SaaS features: Authentication, Pricing & Subscriptions, Admin & App portals, Entity Builder (CRUD, API, Webhooks, Permissions, Logs...), Blogging, CRM, Email Marketing, Page Block Builder, Notifications, Onboarding, and more.",
-    keywords: "remix,saas,tailwindcss,prisma,react,typescript,boilerplate,saas-kit,saas-boilerplate,stripe,postmark,admin-portal,app-dashboard,multi-tenancy",
-    image: "https://yahooder.sirv.com/saasfrontends/remix/ss/cover.png",
-    thumbnail: "https://yahooder.sirv.com/saasfrontends/remix/thumbnail.png",
-    twitterCreator: "@AlexandroMtzG",
-    twitterSite: "@saas_rock",
+      "Transform Reddit discussions into actionable insights. Monitor trends, analyze sentiment, and track brand mentions across subreddits. AI-powered research platform for market analysis, product feedback, and brand monitoring.",
+    keywords: "reddit,research,analytics,market-research,product-feedback,brand-monitoring,sentiment-analysis,trend-tracking,subreddit,data-analysis,ai,insights",
+    image: "https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1703743532626-analytics%20(2).png",
+    thumbnail: "https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1703743532626-analytics%20(2).png",
+    twitterCreator: "@KnowledgeHubAI",
+    twitterSite: "@KnowledgeHubAI",
   };
 }
 
 export function defaultSeoMetaTags({ t, slug }: { t: TFunction; slug?: string }): MetaTagsDto {
   const siteTags = getDefaultSiteTags();
   if (slug === "/pricing") {
-    siteTags.title = `${t("front.pricing.title")} | ${siteTags.title}`;
+    siteTags.title = `${t("front.pricing.title")} | Reddit Research Plans`;
     siteTags.description = t("front.pricing.headline");
   } else if (slug === "/blog") {
-    siteTags.title = `${t("blog.title")} | ${siteTags.title}`;
+    siteTags.title = `${t("blog.title")} | Reddit Research Insights`;
     siteTags.description = t("blog.headline");
   } else if (slug === "/contact") {
-    siteTags.title = `${t("front.contact.title")} | ${siteTags.title}`;
+    siteTags.title = `${t("front.contact.title")} | Get Reddit Research Support`;
     siteTags.description = t("front.contact.headline");
   } else if (slug === "/newsletter") {
-    siteTags.title = `${t("front.newsletter.title")} | ${siteTags.title}`;
+    siteTags.title = `${t("front.newsletter.title")} | Reddit Research Updates`;
     siteTags.description = t("front.newsletter.headline");
   } else if (slug === "/changelog") {
-    siteTags.title = `${t("front.changelog.title")} | ${siteTags.title}`;
+    siteTags.title = `${t("front.changelog.title")} | Reddit Research Platform Updates`;
     siteTags.description = t("front.changelog.headline");
   }
   return parseMetaTags(siteTags);

@@ -10,13 +10,15 @@ export function defaultHeader({ t }: { t: TFunction }): HeaderBlockDto {
     withLanguageSelector: true,
     withThemeSelector: true,
     links: [
+      { path: "/features", title: "Research Features" },
+      { path: "/templates", title: "Research Templates" },
       { path: "/pricing", title: t("front.navbar.pricing") },
-      { path: "/blog", title: t("front.navbar.blog") },
       {
-        title: t("shared.more"),
+        title: "Resources",
         items: [
-          { path: "/contact", title: "front.navbar.contact" },
-          { path: "/newsletter", title: "Newsletter" },
+          { path: "/docs", title: "Documentation" },
+          { path: "/blog", title: "Research Blog" },
+          { path: "/contact", title: "Contact Support" },
         ],
       },
     ],

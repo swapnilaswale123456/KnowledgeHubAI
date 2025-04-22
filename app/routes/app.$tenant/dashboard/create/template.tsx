@@ -173,9 +173,9 @@ export default function CreateFromTemplate() {
         <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 shadow-lg shadow-purple-500/20">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-white">Create Research Request</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-white">Create Reddit Research Request</h1>
               <p className="mt-1 text-purple-100 text-sm">
-                Choose a template to quickly set up your research request
+                Choose a template to analyze Reddit discussions, trends, and insights
               </p>
             </div>
             <Link
@@ -207,15 +207,15 @@ export default function CreateFromTemplate() {
 
         {/* Template Categories with Enhanced Design */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Market Research Template */}
+          {/* Reddit Market Research Template */}
           <div className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Market Research</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Reddit Market Research</h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    Track industry trends, competitor mentions, and market sentiment
+                    Track Reddit discussions about industry trends and market sentiment
                   </p>
                 </div>
                 <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -229,26 +229,26 @@ export default function CreateFromTemplate() {
                   <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Weekly market trend analysis
+                  Track trending subreddits and topics
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Competitor strategy monitoring
+                  Monitor Reddit community sentiment
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Industry sentiment tracking
+                  Analyze Reddit engagement patterns
                 </div>
               </div>
               <button
                 onClick={() => handleTemplateSelect({
                   id: "market-research",
-                  name: "Market Research Analysis",
-                  description: "Track industry trends and market sentiment",
+                  name: "Reddit Market Research Analysis",
+                  description: "Track Reddit discussions about industry trends and market sentiment",
                   category: "market-research",
                   config: {
                     subreddits: ["business", "entrepreneur", "startups", "marketing", "smallbusiness"],
@@ -265,15 +265,15 @@ export default function CreateFromTemplate() {
             </div>
           </div>
 
-          {/* Product Feedback Template */}
+          {/* Reddit Product Feedback Template */}
           <div className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Product Feedback</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Reddit Product Feedback</h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    Monitor product reviews, feature requests, and user feedback
+                    Monitor Reddit discussions about product reviews and user experiences
                   </p>
                 </div>
                 <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -287,26 +287,26 @@ export default function CreateFromTemplate() {
                   <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Real-time user feedback analysis
+                  Track Reddit product reviews
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Feature request prioritization
+                  Monitor feature requests in Reddit
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Bug report tracking
+                  Track Reddit bug reports
                 </div>
               </div>
               <button
                 onClick={() => handleTemplateSelect({
                   id: "product-feedback",
-                  name: "Product Feedback Analysis",
-                  description: "Monitor product reviews and user feedback",
+                  name: "Reddit Product Feedback Analysis",
+                  description: "Monitor Reddit discussions about product reviews and user experiences",
                   category: "product-feedback",
                   config: {
                     subreddits: ["productreviews", "userexperience", "software", "techsupport", "gadgets"],
@@ -323,15 +323,15 @@ export default function CreateFromTemplate() {
             </div>
           </div>
 
-          {/* Brand Monitoring Template */}
+          {/* Reddit Brand Monitoring Template */}
           <div className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Brand Monitoring</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Reddit Brand Monitoring</h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    Track brand mentions, sentiment, and public perception
+                    Track brand mentions and sentiment across Reddit communities
                   </p>
                 </div>
                 <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -345,26 +345,26 @@ export default function CreateFromTemplate() {
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Brand mention tracking
+                  Track brand mentions in Reddit
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Sentiment analysis
+                  Monitor Reddit sentiment analysis
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Crisis monitoring
+                  Track Reddit brand reputation
                 </div>
               </div>
               <button
                 onClick={() => handleTemplateSelect({
                   id: "brand-monitoring",
-                  name: "Brand Monitoring Analysis",
-                  description: "Track brand mentions and sentiment",
+                  name: "Reddit Brand Monitoring Analysis",
+                  description: "Track brand mentions and sentiment across Reddit communities",
                   category: "brand-monitoring",
                   config: {
                     subreddits: ["marketing", "branding", "socialmedia", "publicrelations", "business"],
@@ -381,15 +381,15 @@ export default function CreateFromTemplate() {
             </div>
           </div>
 
-          {/* Competitor Analysis Template */}
+          {/* Reddit Competitor Analysis Template */}
           <div className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-red-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Competitor Analysis</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Reddit Competitor Analysis</h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    Monitor competitor activities, pricing, and market positioning
+                    Monitor competitor discussions and activities on Reddit
                   </p>
                 </div>
                 <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -403,26 +403,26 @@ export default function CreateFromTemplate() {
                   <svg className="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Competitor product launches
+                  Track competitor mentions on Reddit
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Pricing strategy analysis
+                  Monitor Reddit pricing discussions
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Market share tracking
+                  Track Reddit market share discussions
                 </div>
               </div>
               <button
                 onClick={() => handleTemplateSelect({
                   id: "competitor-analysis",
-                  name: "Competitor Analysis",
-                  description: "Monitor competitor activities and market positioning",
+                  name: "Reddit Competitor Analysis",
+                  description: "Monitor competitor discussions and activities on Reddit",
                   category: "competitor-analysis",
                   config: {
                     subreddits: ["business", "marketing", "entrepreneur", "startups", "smallbusiness"],
@@ -439,15 +439,15 @@ export default function CreateFromTemplate() {
             </div>
           </div>
 
-          {/* Industry Trends Template */}
+          {/* Reddit Industry Trends Template */}
           <div className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-cyan-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Industry Trends</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Reddit Industry Trends</h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    Track emerging trends, technologies, and industry developments
+                    Track emerging trends and discussions across Reddit communities
                   </p>
                 </div>
                 <div className="h-12 w-12 rounded-xl bg-teal-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -461,26 +461,26 @@ export default function CreateFromTemplate() {
                   <svg className="w-4 h-4 mr-2 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Emerging technology tracking
+                  Track trending Reddit topics
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Industry innovation monitoring
+                  Monitor Reddit innovation discussions
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Regulatory changes tracking
+                  Track Reddit regulatory discussions
                 </div>
               </div>
               <button
                 onClick={() => handleTemplateSelect({
                   id: "industry-trends",
-                  name: "Industry Trends Analysis",
-                  description: "Track emerging trends and industry developments",
+                  name: "Reddit Industry Trends Analysis",
+                  description: "Track emerging trends and discussions across Reddit communities",
                   category: "industry-trends",
                   config: {
                     subreddits: ["technology", "business", "innovation", "futurology", "science"],
@@ -497,15 +497,15 @@ export default function CreateFromTemplate() {
             </div>
           </div>
 
-          {/* Customer Insights Template */}
+          {/* Reddit Customer Insights Template */}
           <div className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-rose-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Customer Insights</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Reddit Customer Insights</h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    Analyze customer behavior, preferences, and pain points
+                    Analyze customer behavior and preferences from Reddit discussions
                   </p>
                 </div>
                 <div className="h-12 w-12 rounded-xl bg-pink-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -519,26 +519,26 @@ export default function CreateFromTemplate() {
                   <svg className="w-4 h-4 mr-2 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Customer behavior analysis
+                  Track Reddit user behavior
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Pain point identification
+                  Monitor Reddit pain points
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Preference tracking
+                  Track Reddit user preferences
                 </div>
               </div>
               <button
                 onClick={() => handleTemplateSelect({
                   id: "customer-insights",
-                  name: "Customer Insights Analysis",
-                  description: "Analyze customer behavior and preferences",
+                  name: "Reddit Customer Insights Analysis",
+                  description: "Analyze customer behavior and preferences from Reddit discussions",
                   category: "customer-insights",
                   config: {
                     subreddits: ["customerservice", "userexperience", "productreviews", "consumer", "shopping"],

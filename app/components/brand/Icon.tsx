@@ -1,31 +1,32 @@
 import clsx from "clsx";
 import { Link } from "@remix-run/react";
-import IconLight from "~/assets/img/icon-light.png";
-import IconDark from "~/assets/img/icon-dark.png";
-import { useRootData } from "~/utils/data/useRootData";
-import { Fragment } from "react";
+import IconLight from "~/assets/img/icon-light.svg";
+import IconDark from "~/assets/img/icon-dark.svg";
 
 interface Props {
   className?: string;
-  size?: string;
-  fromConfig?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
-export default function Icon({ className = "", size = "h-9", fromConfig = true }: Props) {
-  const { appConfiguration } = useRootData();
+export default function Icon({ className = "", size = "md" }: Props) {
+  const sizes = {
+    sm: "h-6 w-6",
+    md: "h-8 w-8",
+    lg: "h-10 w-10",
+  };
+
   return (
     <Link to="/" className={clsx(className, "flex")}>
-      {fromConfig && appConfiguration?.branding.icon ? (
-        <Fragment>
-          <img className={clsx(size, "hidden w-auto dark:block")} src={appConfiguration.branding.iconDarkMode ?? appConfiguration.branding.icon} alt="Icon" />
-          <img className={clsx(size, "w-auto dark:hidden")} src={appConfiguration.branding.icon} alt="Icon" />
-        </Fragment>
-      ) : (
-        <Fragment>
-          <img className={clsx(size, "hidden w-auto dark:block")} src={IconDark} alt="Logo" />
-          <img className={clsx(size, "w-auto dark:hidden")} src={IconLight} alt="Logo" />
-        </Fragment>
-      )}
+      <img 
+        className={clsx(sizes[size], "hidden w-auto dark:block")} 
+        src={IconDark} 
+        alt="Reddit Research Icon" 
+      />
+      <img 
+        className={clsx(sizes[size], "w-auto dark:hidden")} 
+        src={IconLight} 
+        alt="Reddit Research Icon" 
+      />
     </Link>
   );
 }

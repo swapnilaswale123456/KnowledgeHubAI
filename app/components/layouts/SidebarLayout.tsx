@@ -7,7 +7,7 @@ import QuickActionsButton from "./buttons/QuickActionsButton";
 import CurrentSubscriptionButton from "./buttons/CurrentSubscriptionButton";
 import TenantSelect from "./selectors/TenantSelect";
 import { Link, useNavigate, useParams } from "@remix-run/react";
-import LogoDark from "~/assets/img/logo-dark.png";
+import LogoDark from "~/assets/img/logo-dark.svg";
 import SearchButton from "./buttons/SearchButton";
 import { useTitleData } from "~/utils/data/useTitleData";
 import { useAppOrAdminData } from "~/utils/data/useAppOrAdminData";

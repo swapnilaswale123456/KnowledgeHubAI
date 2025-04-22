@@ -1,5 +1,5 @@
 {
-  "name": "saasrock",
+  "name": "knowledgehubai",
   "version": "1.4.0",
   "private": true,
   "sideEffects": false,
@@ -146,7 +146,7 @@
     "@remix-run/eslint-config": "^2.12.0",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.3",
-    "@tailwindcss/typography": "^0.5.9",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/bcryptjs": "^2.4.2",
     "@types/crypto-js": "^4.2.1",
     "@types/dagre": "^0.7.52",
@@ -173,6 +173,7 @@
     "prettier-plugin-tailwindcss": "^0.1.13",
     "prisma": "^5.15.0",
     "remix-flat-routes": "^0.6.2",
+    "sharp": "^0.34.1",
     "tailwindcss": "^3.3.5",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.6.2",

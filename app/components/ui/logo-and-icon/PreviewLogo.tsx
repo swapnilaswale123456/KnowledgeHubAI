@@ -1,5 +1,5 @@
-import LogoLight from "~/assets/img/logo-light.png";
-import LogoDark from "~/assets/img/logo-dark.png";
+import LogoLight from "~/assets/img/logo-light.svg";
+import LogoDark from "~/assets/img/logo-dark.svg";
 import { useRootData } from "~/utils/data/useRootData";
 
 export default function PreviewLogo() {

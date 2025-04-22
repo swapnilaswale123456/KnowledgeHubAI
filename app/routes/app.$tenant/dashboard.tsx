@@ -11,6 +11,7 @@ import { requireAuth } from "~/utils/loaders.middleware";
 import { useState, useEffect } from "react";
 import { ResearchRequestsService, ResearchRequest } from "~/services/research/researchRequests.server";
 import { PlusIcon } from "@heroicons/react/24/outline";
+import Logo from "~/components/brand/Logo";
 
 export { serverTimingHeaders as headers };
 
@@ -52,7 +53,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     
     return json(
       { 
-        title: "AI Research Hub",
+        title: "Reddit Research Hub",
         tenant,
         requests: requestsResponse.data,
         pagination: requestsResponse.pagination
@@ -65,7 +66,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     // Return an empty list if there's an error, but don't break the page
     return json(
       { 
-        title: "AI Research Hub",
+        title: "Reddit Research Hub",
         tenant,
         requests: [],
         pagination: {
@@ -96,6 +97,7 @@ export default function DashboardRoute() {
   
   const [selectedRequest, setSelectedRequest] = useState<ResearchRequest | null>(requests[0] || null);
   const [currentPage, setCurrentPage] = useState(pagination?.page || 1);
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('7d');
 
   // Handle pagination
   const handlePageChange = (newPage: number) => {
@@ -103,6 +105,17 @@ export default function DashboardRoute() {
     
     setCurrentPage(newPage);
     navigate(`/app/${params.tenant}/dashboard?page=${newPage}&limit=${pagination.limit}`);
+  };
+
+  // Calculate metrics
+  const metrics = {
+    totalRequests: requests.length,
+    activeRequests: requests.filter(r => r.status === 'in_progress').length,
+    completedRequests: requests.filter(r => r.status === 'completed').length,
+    totalSubreddits: [...new Set(requests.flatMap(r => r.configuration.subreddits))].length,
+    averageSentiment: 0.75, // This would be calculated from actual data
+    topSubreddits: ['r/technology', 'r/business', 'r/startups'].slice(0, 3),
+    recentActivity: requests.slice(0, 5),
   };
 
   if (isChildRoute) {
@@ -118,14 +131,7 @@ export default function DashboardRoute() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-4">
               <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                  </div>
-                  <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Research Hub</span>
-                </div>
+                <Logo size="lg" />
                 <div className="h-6 w-px bg-gray-200"></div>
                 <div className="flex items-center space-x-3">
                   <span className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-full flex items-center">
@@ -146,7 +152,7 @@ export default function DashboardRoute() {
               </div>
               <Link
                 to={`/app/${params.tenant}/dashboard/create`}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-200 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#FF4500] to-[#FF8B00] rounded-lg shadow-lg shadow-[#FF4500]/20 hover:shadow-xl hover:shadow-[#FF4500]/30 transition-all duration-200 hover:from-[#FF4500] hover:to-[#FF6B00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF4500]"
               >
                 <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
                 Create New Research
@@ -161,20 +167,20 @@ export default function DashboardRoute() {
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-32 h-32 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full animate-pulse"></div>
+                  <div className="w-32 h-32 bg-gradient-to-r from-[#FF4500]/10 to-[#FF8B00]/10 rounded-full animate-pulse"></div>
                 </div>
                 <div className="relative">
-                  <svg className="mx-auto h-24 w-24 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                  <svg className="mx-auto h-24 w-24 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 48 48">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v20c0 4.418 7.163 8 16 8s16-3.582 16-8V14M8 14c0 4.418 7.163 8 16 8s16-3.582 16-8M8 14c0-4.418 7.163-8 16-8s16 3.582 16 8m0 0v14m0-4c0 4.418-7.163 8-16 8S8 28.418 8 24v-4" />
                   </svg>
                 </div>
               </div>
-              <h3 className="mt-8 text-2xl font-bold text-gray-900">No Research Requests Yet</h3>
-              <p className="mt-2 text-lg text-gray-500">Get started by creating your first research request.</p>
+              <h3 className="mt-8 text-2xl font-bold text-gray-900">Welcome to Reddit Research Hub</h3>
+              <p className="mt-2 text-lg text-gray-500">Start analyzing Reddit discussions and gain valuable insights</p>
               <div className="mt-8">
                 <Link
                   to={`/app/${params.tenant}/dashboard/create`}
-                  className="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-200 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-gradient-to-r from-[#FF4500] to-[#FF8B00] rounded-lg shadow-lg shadow-[#FF4500]/20 hover:shadow-xl hover:shadow-[#FF4500]/30 transition-all duration-200 hover:from-[#FF4500] hover:to-[#FF6B00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF4500]"
                 >
                   <PlusIcon className="-ml-1 mr-2 h-6 w-6" aria-hidden="true" />
                   Start Your First Research
@@ -185,37 +191,80 @@ export default function DashboardRoute() {
             {/* Quick Start Guide */}
             <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               <div className="group bg-white rounded-2xl shadow-sm p-8 hover:shadow-lg transition-all duration-200 border border-gray-100">
-                <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200">
-                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-14 h-14 bg-[#FF4500]/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200">
+                  <svg className="w-7 h-7 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Define Your Search</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Define Your Research</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Specify subreddits and keywords to target your research effectively. Our AI helps you find the most relevant sources.
+                  Choose subreddits and keywords to target your research. Our AI helps you find the most relevant discussions.
                 </p>
               </div>
               <div className="group bg-white rounded-2xl shadow-sm p-8 hover:shadow-lg transition-all duration-200 border border-gray-100">
-                <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200">
-                  <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-14 h-14 bg-[#FF4500]/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200">
+                  <svg className="w-7 h-7 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Collect Data</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Monitor Discussions</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Our AI analyzes Reddit content to find relevant discussions and insights. Get comprehensive data collection and analysis.
+                  Track real-time discussions, analyze sentiment, and identify trending topics in your target subreddits.
                 </p>
               </div>
               <div className="group bg-white rounded-2xl shadow-sm p-8 hover:shadow-lg transition-all duration-200 border border-gray-100">
-                <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200">
-                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-14 h-14 bg-[#FF4500]/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200">
+                  <svg className="w-7 h-7 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">Get Insights</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Review analyzed data with sentiment analysis and key trends. Make data-driven decisions with confidence.
+                  Generate comprehensive reports with sentiment analysis, key trends, and actionable insights.
                 </p>
+              </div>
+            </div>
+
+            {/* Features Overview */}
+            <div className="mt-16">
+              <h3 className="text-2xl font-bold text-gray-900 mb-8">Key Features</h3>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="w-12 h-12 bg-[#FF4500]/10 rounded-lg flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Real-time Monitoring</h4>
+                  <p className="text-sm text-gray-600">Track discussions and trends as they happen</p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="w-12 h-12 bg-[#FF4500]/10 rounded-lg flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Sentiment Analysis</h4>
+                  <p className="text-sm text-gray-600">Understand community sentiment and reactions</p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="w-12 h-12 bg-[#FF4500]/10 rounded-lg flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Trend Detection</h4>
+                  <p className="text-sm text-gray-600">Identify emerging topics and patterns</p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="w-12 h-12 bg-[#FF4500]/10 rounded-lg flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Custom Reports</h4>
+                  <p className="text-sm text-gray-600">Generate detailed research reports</p>
+                </div>
               </div>
             </div>
           </div>
@@ -232,14 +281,14 @@ export default function DashboardRoute() {
         <div className="p-3 space-y-2">
           <Link
             to={`/app/${params.tenant}/dashboard/create`}
-            className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#FF4500] to-[#FF8B00] rounded-lg shadow-sm hover:shadow-md transition-all duration-200 hover:from-[#FF4500] hover:to-[#FF6B00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF4500]"
           >
             <PlusIcon className="-ml-1 mr-2 h-4 w-4" aria-hidden="true" />
             New Research
           </Link>
           <Link
             to={`/app/${params.tenant}/dashboard/create/template`}
-            className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-[#FF4500] bg-[#FF4500]/10 rounded-lg hover:bg-[#FF4500]/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF4500]"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
@@ -257,7 +306,7 @@ export default function DashboardRoute() {
               }}
               className={`p-3 cursor-pointer transition-all duration-200 hover:bg-gray-50/80 ${
                 selectedRequest?.id === request.id 
-                ? 'bg-gradient-to-r from-purple-50 to-indigo-50' 
+                ? 'bg-gradient-to-r from-[#FF4500]/10 to-[#FF8B00]/10' 
                 : ''
               }`}
             >
@@ -316,14 +365,14 @@ export default function DashboardRoute() {
          !location.pathname.includes('/edit/') && (
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
             {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 sm:p-6 shadow-lg shadow-purple-500/20">
+            <div className="bg-gradient-to-r from-[#FF4500] to-[#FF8B00] rounded-xl p-4 sm:p-6 shadow-lg shadow-[#FF4500]/20">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold text-white">
-                    Welcome back!
+                    Welcome to Reddit Research Hub
                   </h1>
-                  <p className="text-purple-100 mt-1 text-sm sm:text-base">
-                    Here's what's happening with your research requests.
+                  <p className="text-[#FF4500]/90 mt-1 text-sm sm:text-base">
+                    Monitor and analyze Reddit discussions to gain valuable insights
                   </p>
                 </div>
                 <div className="h-12 w-12 sm:h-14 sm:w-14 bg-white/10 rounded-lg flex items-center justify-center">
@@ -334,17 +383,53 @@ export default function DashboardRoute() {
               </div>
             </div>
             
+            {/* Time Range Selector */}
+            <div className="mt-4 flex justify-end">
+              <div className="inline-flex rounded-lg shadow-sm">
+                <button
+                  onClick={() => setTimeRange('24h')}
+                  className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+                    timeRange === '24h'
+                      ? 'bg-[#FF4500] text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  24h
+                </button>
+                <button
+                  onClick={() => setTimeRange('7d')}
+                  className={`px-4 py-2 text-sm font-medium ${
+                    timeRange === '7d'
+                      ? 'bg-[#FF4500] text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  7d
+                </button>
+                <button
+                  onClick={() => setTimeRange('30d')}
+                  className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+                    timeRange === '30d'
+                      ? 'bg-[#FF4500] text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  30d
+                </button>
+              </div>
+            </div>
+            
             {/* Stats Overview */}
-            <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs sm:text-sm text-gray-500">Total Requests</p>
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">{pagination.total}</h3>
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">{metrics.totalRequests}</h3>
                     <p className="text-xs sm:text-sm text-gray-500 mt-1">All time research requests</p>
                   </div>
-                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="h-10 w-10 rounded-lg bg-[#FF4500]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                    <svg className="w-5 h-5 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   </div>
@@ -356,7 +441,7 @@ export default function DashboardRoute() {
                   <div>
                     <p className="text-xs sm:text-sm text-gray-500">Active Requests</p>
                     <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">
-                      {requests.filter(r => r.status === 'in_progress').length}
+                      {metrics.activeRequests}
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-500 mt-1">Currently running research</p>
                   </div>
@@ -371,28 +456,90 @@ export default function DashboardRoute() {
               <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs sm:text-sm text-gray-500">Completed Requests</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Monitored Subreddits</p>
                     <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">
-                      {requests.filter(r => r.status === 'completed').length}
+                      {metrics.totalSubreddits}
                     </h3>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Successfully completed research</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Active subreddit monitoring</p>
                   </div>
-                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <div className="h-10 w-10 rounded-lg bg-[#FF4500]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                    <svg className="w-5 h-5 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs sm:text-sm text-gray-500">Average Sentiment</p>
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">
+                      {metrics.averageSentiment.toFixed(2)}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Overall sentiment score</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-[#FF4500]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                    <svg className="w-5 h-5 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                 </div>
               </div>
             </div>
             
-            {/* Recent Requests */}
+            {/* Top Subreddits and Recent Activity */}
+            <div className="mt-4 sm:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Top Subreddits */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Monitored Subreddits</h3>
+                <div className="space-y-3">
+                  {metrics.topSubreddits.map((subreddit, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-lg bg-[#FF4500]/10 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                          </svg>
+                        </div>
+                        <span className="ml-3 font-medium text-gray-900">{subreddit}</span>
+                      </div>
+                      <span className="text-sm text-gray-500">Active</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Recent Activity */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                <div className="space-y-3">
+                  {metrics.recentActivity.map((request) => (
+                    <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <div className={`w-2 h-2 rounded-full ${
+                          request.status === 'completed' ? 'bg-green-500' :
+                          request.status === 'in_progress' ? 'bg-blue-500' :
+                          request.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
+                        }`}></div>
+                        <span className="ml-3 font-medium text-gray-900">{request.name}</span>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Recent Requests Table */}
             <div className="mt-4 sm:mt-6">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">Recent Requests</h2>
                 <Link
                   to={`/app/${params.tenant}/dashboard/create`}
-                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#FF4500] bg-[#FF4500]/10 rounded-lg hover:bg-[#FF4500]/20 transition-colors"
                 >
                   View All
                   <svg className="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,8 +564,8 @@ export default function DashboardRoute() {
                           <td className="px-3 py-2 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-8 w-8">
-                                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#FF4500]/10 to-[#FF8B00]/10 flex items-center justify-center">
+                                  <svg className="w-4 h-4 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                   </svg>
                                 </div>
@@ -445,7 +592,7 @@ export default function DashboardRoute() {
                           <td className="px-3 py-2 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
                             <a 
                               onClick={() => navigate(`/app/${params.tenant}/dashboard/view/${request.id}`)}
-                              className="text-indigo-600 hover:text-indigo-900 cursor-pointer transition-colors inline-flex items-center"
+                              className="text-[#FF4500] hover:text-[#FF6B00] cursor-pointer transition-colors inline-flex items-center"
                             >
                               View Details
                               <svg className="w-3 h-3 sm:w-4 sm:h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -422,12 +422,28 @@
     "faq": {
       "title": "Frequently Asked Questions",
       "headline": "Add your own questions and answers to help your users understand your SaaS.",
-      "subheadline": "Common questions and answers about SaasRock.",
+      "subheadline": "Common questions and answers about Reddit Research Platform.",
       "questions": {
-        "q1": "How do I get the code after purchasing?",
-        "a1": "You will be invited to the saasrock repository on GitHub. If you bought SaasRock Enterprise you will also be invited to the saasrock-enterprise repository.",
-        "q2": "Can I get a refund?",
-        "a2": "Due to the nature of software development being a custom service, we do not offer refunds."
+        "q1": "What is Reddit Research Platform?",
+        "a1": "Reddit Research Platform is an AI-powered analytics tool that helps you monitor, analyze, and gain insights from Reddit discussions. It enables you to track trends, analyze sentiment, and understand community feedback across subreddits.",
+        "q2": "How does the AI analysis work?",
+        "a2": "Our platform uses advanced AI algorithms to analyze Reddit content, including natural language processing for sentiment analysis, topic modeling for trend detection, and machine learning for pattern recognition. This helps identify key insights and patterns in discussions.",
+        "q3": "What types of research can I conduct?",
+        "a3": "You can conduct various types of research including market research, product feedback analysis, brand monitoring, competitor analysis, and industry trend tracking. Each template is optimized for specific research goals.",
+        "q4": "How often is the data updated?",
+        "a4": "Data is collected and analyzed in real-time, with updates every few minutes. Historical data is also available for trend analysis and comparison.",
+        "q5": "Can I customize my research parameters?",
+        "a5": "Yes, you can fully customize your research by selecting specific subreddits, keywords, time periods, and analysis parameters. You can also create custom templates for recurring research needs.",
+        "q6": "What kind of insights can I get?",
+        "a6": "You can gain insights such as sentiment trends, key discussion topics, user sentiment analysis, engagement metrics, competitor mentions, and emerging trends in your industry or product category.",
+        "q7": "Is there a limit to how many subreddits I can monitor?",
+        "a7": "The number of subreddits you can monitor depends on your subscription plan. Our enterprise plans offer unlimited subreddit monitoring, while starter plans have specific limits.",
+        "q8": "How do I export my research findings?",
+        "a8": "You can export your research findings in various formats including PDF reports, CSV data exports, and interactive dashboards. All exports can be customized to include specific metrics and visualizations.",
+        "q9": "Can I share my research with my team?",
+        "a9": "Yes, you can share research findings with your team through collaborative dashboards, scheduled reports, and exportable insights. Team members can also collaborate on research projects.",
+        "q10": "What kind of support is available?",
+        "a10": "We offer comprehensive support including documentation, video tutorials, email support, and live chat for enterprise customers. Our knowledge base is regularly updated with guides and best practices."
       }
     },
     "footer": {

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="50" viewBox="0 0 240 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Analytics Elements -->
+  <path d="M10 35l5-15l8 8l6-20l7 12l4-8l6 23" stroke="#FF4500" stroke-width="1.5" stroke-opacity="0.3" fill="none"/>
+  
+  <!-- Reddit Alien with Glasses -->
+  <g transform="translate(15, 10)">
+    <!-- Antenna -->
+    <path d="M15 5c0-2.76 2.24-5 5-5s5 2.24 5 5v5" stroke="#FF4500" stroke-width="2"/>
+    
+    <!-- Head -->
+    <circle cx="20" cy="15" r="10" fill="#FF4500"/>
+    
+    <!-- Smart Glasses -->
+    <path d="M13 15h14" stroke="#FFFFFF" stroke-width="1.5"/>
+    <circle cx="15" cy="15" r="3" fill="#FFFFFF"/>
+    <circle cx="25" cy="15" r="3" fill="#FFFFFF"/>
+    
+    <!-- Data Points on Glasses -->
+    <circle cx="15" cy="15" r="1" fill="#1A1A1B"/>
+    <circle cx="25" cy="15" r="1" fill="#1A1A1B"/>
+  </g>
+
+  <!-- Analytics Icons -->
+  <g transform="translate(50, 12)">
+    <!-- Bar Chart Icon -->
+    <rect x="0" y="8" width="2" height="12" fill="#FF4500" opacity="0.8"/>
+    <rect x="3" y="4" width="2" height="16" fill="#FF4500" opacity="0.8"/>
+    <rect x="6" y="6" width="2" height="10" fill="#FF4500" opacity="0.8"/>
+  </g>
+
+  <!-- Text "Reddit Research" -->
+  <text x="65" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold" fill="#1A1A1B">
+    Reddit Research
+  </text>
+
+  <!-- Tagline -->
+  <text x="65" y="42" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="#666666">
+    AI-Powered Insights
+  </text>
+</svg> 

@@ -7,8 +7,8 @@ import ColorTextUtils from "~/utils/shared/colors/ColorTextUtils";
 import ColorFocusUtils from "~/utils/shared/colors/ColorFocusUtils";
 import ColorRingUtils from "~/utils/shared/colors/ColorRingUtils";
 import ColorGradientUtils from "~/utils/shared/colors/ColorGradientUtils";
-import LogoLight from "~/assets/img/logo-light.png";
-import LogoDark from "~/assets/img/logo-dark.png";
+import LogoLight from "~/assets/img/logo-light.svg";
+import LogoDark from "~/assets/img/logo-dark.svg";
 import KnowledgeBaseUtils from "../utils/KnowledgeBaseUtils";
 import KbSearch from "./KbSearch";
 

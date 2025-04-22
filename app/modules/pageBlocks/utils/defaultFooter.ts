@@ -5,29 +5,38 @@ import { defaultSocials } from "./defaultSocials";
 export function defaultFooter({ t }: { t: TFunction }): FooterBlockDto {
   return {
     style: "columns",
-    text: t("front.footer.headline"),
+    text: "Transform Reddit discussions into actionable insights",
     withDarkModeToggle: true,
     withLanguageSelector: true,
     withThemeSelector: true,
     sections: [
       {
-        name: t("front.footer.application"),
+        name: "Research Tools",
         items: [
-          { name: t("front.footer.pricing"), href: "/pricing" },
-          { name: t("front.footer.signIn"), href: "/login" },
-          { name: t("front.footer.signUp"), href: "/register" },
-          { name: t("front.footer.blog"), href: "/blog" },
-          // { name: t("front.footer.docs"), href: "/docs" },
+          { name: "Market Research", href: "/features/market-research" },
+          { name: "Product Feedback", href: "/features/product-feedback" },
+          { name: "Brand Monitoring", href: "/features/brand-monitoring" },
+          { name: "Research Templates", href: "/templates" },
+          { name: "Pricing", href: "/pricing" },
         ],
       },
       {
-        name: t("front.footer.product"),
+        name: "Resources",
         items: [
-          { name: t("front.footer.contact"), href: "/contact" },
-          { name: t("front.footer.newsletter"), href: "/newsletter" },
-          { name: t("front.footer.changelog"), href: "/changelog" },
-          { name: t("front.footer.termsAndConditions"), href: "/terms-and-conditions" },
-          { name: t("front.footer.privacyPolicy"), href: "/privacy-policy" },
+          { name: "Documentation", href: "/docs" },
+          { name: "Research Blog", href: "/blog" },
+          { name: "Contact Support", href: "/contact" },
+          { name: "Terms & Conditions", href: "/terms-and-conditions" },
+          { name: "Privacy Policy", href: "/privacy-policy" },
+        ],
+      },
+      {
+        name: "Account",
+        items: [
+          { name: "Sign In", href: "/login" },
+          { name: "Sign Up", href: "/register" },
+          { name: "Dashboard", href: "/dashboard" },
+          { name: "Settings", href: "/settings" },
         ],
       },
     ],
