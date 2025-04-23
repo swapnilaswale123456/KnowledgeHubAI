@@ -112,7 +112,7 @@ export default function DashboardRoute() {
     totalRequests: requests.length,
     activeRequests: requests.filter(r => r.status === 'in_progress').length,
     completedRequests: requests.filter(r => r.status === 'completed').length,
-    totalSubreddits: [...new Set(requests.flatMap(r => r.configuration.subreddits))].length,
+    totalSubreddits: [...new Set(requests.flatMap(r => r.subreddits))].length,
     averageSentiment: 0.75, // This would be calculated from actual data
     topSubreddits: ['r/technology', 'r/business', 'r/startups'].slice(0, 3),
     recentActivity: requests.slice(0, 5),
@@ -612,8 +612,8 @@ export default function DashboardRoute() {
         
         <Outlet />
       </div>
-    </div>
-  );
+      </div>
+    );
 }
 
 export function ErrorBoundary() {

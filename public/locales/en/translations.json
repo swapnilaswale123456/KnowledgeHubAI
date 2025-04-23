@@ -393,19 +393,19 @@
       "weCare": "We care about the protection of your data."
     },
     "contact": {
-      "title": "Contact us",
-      "headline": "We'd love to know how we can add value to your company",
+      "title": "Contact Reddit Research",
+      "headline": "Get in touch with our team to learn how Reddit Research can help you analyze discussions, track trends, and gain valuable insights from Reddit communities.",
       "firstName": "First name",
       "lastName": "Last name",
       "organization": "Organization",
       "jobTitle": "Job title",
       "email": "Email",
-      "send": "Send",
-      "users": "Number of users",
-      "comments": "Questions or comments",
+      "send": "Send Message",
+      "users": "Expected number of users",
+      "comments": "How can we help you?",
       "setup": "Update the .env variable INTEGRATIONS_CONTACT_FORMSPREE",
-      "success": "Thanks for reaching out {{0}}! We'll get back to you shortly.",
-      "error": "Oops! Something went wrong. Please try again."
+      "success": "Thanks for reaching out {{0}}! Our team will get back to you shortly to discuss how Reddit Research can help your organization.",
+      "error": "Oops! Something went wrong. Please try again or email us directly at support@redditresearch.com"
     },
     "brand": {
       "title": "Brand",
@@ -424,26 +424,22 @@
       "headline": "Add your own questions and answers to help your users understand your SaaS.",
       "subheadline": "Common questions and answers about Reddit Research Platform.",
       "questions": {
-        "q1": "What is Reddit Research Platform?",
-        "a1": "Reddit Research Platform is an AI-powered analytics tool that helps you monitor, analyze, and gain insights from Reddit discussions. It enables you to track trends, analyze sentiment, and understand community feedback across subreddits.",
+        "q1": "What is Reddit Research?",
+        "a1": "Reddit Research is an AI-powered platform that helps you analyze Reddit discussions, trends, and insights. It provides deep analytics, sentiment analysis, and trend tracking across subreddits to help you make data-driven decisions.",
         "q2": "How does the AI analysis work?",
-        "a2": "Our platform uses advanced AI algorithms to analyze Reddit content, including natural language processing for sentiment analysis, topic modeling for trend detection, and machine learning for pattern recognition. This helps identify key insights and patterns in discussions.",
-        "q3": "What types of research can I conduct?",
-        "a3": "You can conduct various types of research including market research, product feedback analysis, brand monitoring, competitor analysis, and industry trend tracking. Each template is optimized for specific research goals.",
+        "a2": "Our AI system uses advanced natural language processing to analyze Reddit posts and comments. It identifies key topics, sentiment, and trends while respecting Reddit's API guidelines and user privacy. The analysis includes engagement metrics, topic clustering, and sentiment tracking.",
+        "q3": "What kind of insights can I get?",
+        "a3": "You can get various insights including trending topics, sentiment analysis, user engagement patterns, competitor mentions, product feedback, and market trends. The platform provides visualizations and detailed reports to help you understand Reddit discussions better.",
         "q4": "How often is the data updated?",
-        "a4": "Data is collected and analyzed in real-time, with updates every few minutes. Historical data is also available for trend analysis and comparison.",
-        "q5": "Can I customize my research parameters?",
-        "a5": "Yes, you can fully customize your research by selecting specific subreddits, keywords, time periods, and analysis parameters. You can also create custom templates for recurring research needs.",
-        "q6": "What kind of insights can I get?",
-        "a6": "You can gain insights such as sentiment trends, key discussion topics, user sentiment analysis, engagement metrics, competitor mentions, and emerging trends in your industry or product category.",
-        "q7": "Is there a limit to how many subreddits I can monitor?",
-        "a7": "The number of subreddits you can monitor depends on your subscription plan. Our enterprise plans offer unlimited subreddit monitoring, while starter plans have specific limits.",
-        "q8": "How do I export my research findings?",
-        "a8": "You can export your research findings in various formats including PDF reports, CSV data exports, and interactive dashboards. All exports can be customized to include specific metrics and visualizations.",
-        "q9": "Can I share my research with my team?",
-        "a9": "Yes, you can share research findings with your team through collaborative dashboards, scheduled reports, and exportable insights. Team members can also collaborate on research projects.",
-        "q10": "What kind of support is available?",
-        "a10": "We offer comprehensive support including documentation, video tutorials, email support, and live chat for enterprise customers. Our knowledge base is regularly updated with guides and best practices."
+        "a4": "Data is updated in real-time for active monitoring, with comprehensive analysis refreshed daily. You can set custom update frequencies for different types of research requests, and receive notifications when significant trends or changes are detected.",
+        "q5": "Can I track specific subreddits?",
+        "a5": "Yes, you can track any public subreddit or combination of subreddits. The platform allows you to create custom research requests focusing on specific communities, topics, or keywords. You can also set up alerts for new discussions matching your criteria.",
+        "q6": "Is there a limit to how many research requests I can create?",
+        "a6": "The number of research requests depends on your subscription plan. Free users can create up to 3 basic research requests, while paid plans offer unlimited requests with advanced features like custom templates, API access, and priority processing.",
+        "q7": "How do I export my research data?",
+        "a7": "You can export your research data in multiple formats including CSV, PDF, and JSON. The platform also offers API access for enterprise users who need to integrate the data into their own systems. All exports include comprehensive metadata and analysis results.",
+        "q8": "What about data privacy and Reddit's terms of service?",
+        "a8": "We strictly adhere to Reddit's API terms of service and data usage guidelines. All data collection and analysis is done through official Reddit APIs, and we implement robust privacy measures to protect user data. We also provide transparency about our data collection methods."
       }
     },
     "footer": {
@@ -706,6 +702,69 @@
         "monthly": "{{0}} linked accounts/month",
         "unlimited": "Unlimited linked accounts",
         "moreThan": "+{{0}} linked accounts"
+      },
+      "brandMonitoring": {
+        "title": "Brand Monitoring",
+        "headline": "Monitor Your Brand's Online Presence",
+        "subheadline": "Track mentions, analyze sentiment, and stay ahead of potential crises with our comprehensive brand monitoring tools.",
+        "items": {
+          "mentionTracking": {
+            "name": "Mention Tracking",
+            "description": "Track every mention of your brand across Reddit communities in real-time. Never miss important conversations about your products or services."
+          },
+          "sentimentAnalysis": {
+            "name": "Sentiment Analysis",
+            "description": "Understand the emotional tone behind brand mentions with our advanced sentiment analysis. Identify positive trends and address negative feedback promptly."
+          },
+          "crisisMonitoring": {
+            "name": "Crisis Monitoring",
+            "description": "Get instant alerts when negative sentiment spikes or critical issues arise. Stay proactive in managing your brand's reputation."
+          }
+        },
+        "faq": {
+          "headline": "Frequently Asked Questions",
+          "items": {
+            "howItWorks": {
+              "question": "How does brand monitoring work?",
+              "answer": "Our AI-powered system continuously scans Reddit for mentions of your brand, analyzing the context and sentiment of each mention. You receive real-time notifications and detailed reports to help you understand and respond to brand-related discussions."
+            },
+            "accuracy": {
+              "question": "How accurate is the sentiment analysis?",
+              "answer": "Our sentiment analysis uses state-of-the-art natural language processing models, achieving over 90% accuracy in identifying positive, negative, and neutral sentiments. The system is continuously trained on Reddit-specific content to ensure high accuracy."
+            },
+            "integration": {
+              "question": "Can I integrate brand monitoring with other tools?",
+              "answer": "Yes! Our brand monitoring features can be integrated with popular CRM systems, social media management tools, and analytics platforms. We provide APIs and webhooks for seamless integration with your existing workflow."
+            }
+          }
+        },
+        "content": "Monitor your brand's presence across Reddit communities with our comprehensive suite of tools. From tracking mentions to analyzing sentiment and managing potential crises, we help you stay informed and responsive to your audience's needs.",
+        "useCases": {
+          "title": "Brand Monitoring Use Cases",
+          "subtitle": "Discover how our platform helps businesses protect and enhance their brand",
+          "items": {
+            "reputationManagement": {
+              "title": "Reputation Management",
+              "description": "Monitor and manage your brand's reputation by tracking mentions, sentiment, and addressing concerns proactively."
+            },
+            "crisisPrevention": {
+              "title": "Crisis Prevention",
+              "description": "Identify potential issues early and take action before they escalate into full-blown crises."
+            },
+            "sentimentAnalysis": {
+              "title": "Sentiment Analysis",
+              "description": "Track and analyze public sentiment about your brand to understand perception and improve customer satisfaction."
+            }
+          }
+        },
+        "cta": {
+          "title": "Ready to protect your brand?",
+          "subtitle": "Join hundreds of businesses using our platform to monitor and enhance their brand presence on Reddit.",
+          "buttons": {
+            "getStarted": "Get Started",
+            "contactSales": "Contact Sales"
+          }
+        }
       }
     }
   },

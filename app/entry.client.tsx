@@ -29,9 +29,12 @@ async function hydrate() {
         loadPath: "/locales/{{lng}}/{{ns}}.json",
       },
       detection: {
-        // We'll detect the language only server-side with remix-i18next.
-        // By using `<html lang>` attribute we communicate to the Client.
-        order: ["htmlTag"],
+        // We'll detect the language from cookies, localStorage, and HTML tag
+        order: ["cookie", "localStorage", "htmlTag"],
+        // Look for the _i18n cookie
+        lookupCookie: "_i18n",
+        // Cache the language in localStorage
+        caches: ["cookie", "localStorage"],
       },
     })
     .then(() => {

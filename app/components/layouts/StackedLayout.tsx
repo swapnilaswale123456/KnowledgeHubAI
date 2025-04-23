@@ -73,9 +73,9 @@ export default function StackedLayout({ layout, children }: Props) {
 
   return (
     <div>
-      <nav className="border-b border-gray-200 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between space-x-3">
+      <nav className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+        <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between space-x-4">
             <div className="flex items-center space-x-2 overflow-x-auto py-1">
               <div className="flex-shrink-0">
                 <Link to={UrlUtils.currentTenantUrl(params, "dashboard")}>
@@ -167,7 +167,7 @@ export default function StackedLayout({ layout, children }: Props) {
         )}
       </nav>
       <main>
-        <div className="mx-auto">
+        <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 py-6">
           {/*Replace with your content */}
           {children}
           {/*/End replace */}

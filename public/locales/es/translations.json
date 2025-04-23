@@ -423,10 +423,22 @@
       "headline": "Agrega tus propias preguntas y respuestas para ayudar a tus usuarios a entender tu SaaS.",
       "subheadline": "Preguntas frecuentes acerca de SaasRock.",
       "questions": {
-        "q1": "¿Cómo obtengo el código después de la compra?",
-        "a1": "Serás invitado al repositorio saasrock en GitHub. Si compraste SaasRock Enterprise también serás invitado al repositorio saasrock-enterprise.",
-        "q2": "¿Puedo obtener un reembolso?",
-        "a2": "Debido a la naturaleza del desarrollo de software como un servicio personalizado, no ofrecemos reembolsos."
+        "q1": "¿Qué es Reddit Research?",
+        "a1": "Reddit Research es una plataforma impulsada por IA que te ayuda a analizar discusiones, tendencias e insights de Reddit. Proporciona análisis profundo, análisis de sentimiento y seguimiento de tendencias en subreddits para ayudarte a tomar decisiones basadas en datos.",
+        "q2": "¿Cómo funciona el análisis de IA?",
+        "a2": "Nuestro sistema de IA utiliza procesamiento avanzado del lenguaje natural para analizar publicaciones y comentarios de Reddit. Identifica temas clave, sentimiento y tendencias mientras respeta las pautas de la API de Reddit y la privacidad del usuario. El análisis incluye métricas de participación, agrupación de temas y seguimiento de sentimiento.",
+        "q3": "¿Qué tipo de insights puedo obtener?",
+        "a3": "Puedes obtener varios insights incluyendo temas de tendencia, análisis de sentimiento, patrones de participación de usuarios, menciones de competidores, retroalimentación de productos y tendencias del mercado. La plataforma proporciona visualizaciones e informes detallados para ayudarte a entender mejor las discusiones de Reddit.",
+        "q4": "¿Con qué frecuencia se actualizan los datos?",
+        "a4": "Los datos se actualizan en tiempo real para el monitoreo activo, con análisis completo actualizado diariamente. Puedes establecer frecuencias de actualización personalizadas para diferentes tipos de solicitudes de investigación y recibir notificaciones cuando se detecten tendencias o cambios significativos.",
+        "q5": "¿Puedo rastrear subreddits específicos?",
+        "a5": "Sí, puedes rastrear cualquier subreddit público o combinación de subreddits. La plataforma te permite crear solicitudes de investigación personalizadas enfocadas en comunidades, temas o palabras clave específicas. También puedes configurar alertas para nuevas discusiones que coincidan con tus criterios.",
+        "q6": "¿Hay un límite en la cantidad de solicitudes de investigación que puedo crear?",
+        "a6": "El número de solicitudes de investigación depende de tu plan de suscripción. Los usuarios gratuitos pueden crear hasta 3 solicitudes de investigación básicas, mientras que los planes pagos ofrecen solicitudes ilimitadas con funciones avanzadas como plantillas personalizadas, acceso a API y procesamiento prioritario.",
+        "q7": "¿Cómo exporto mis datos de investigación?",
+        "a7": "Puedes exportar tus datos de investigación en múltiples formatos incluyendo CSV, PDF y JSON. La plataforma también ofrece acceso a API para usuarios empresariales que necesiten integrar los datos en sus propios sistemas. Todas las exportaciones incluyen metadatos completos y resultados de análisis.",
+        "q8": "¿Qué hay de la privacidad de datos y los términos de servicio de Reddit?",
+        "a8": "Nos adherimos estrictamente a los términos de servicio de la API de Reddit y las pautas de uso de datos. Toda la recopilación y análisis de datos se realiza a través de las APIs oficiales de Reddit, e implementamos medidas robustas de privacidad para proteger los datos de los usuarios. También proporcionamos transparencia sobre nuestros métodos de recopilación de datos."
       }
     },
     "footer": {
@@ -597,6 +609,43 @@
         "monthly": "{{0}} enlaces/mes",
         "unlimited": "Enlaces ilimitados",
         "moreThan": "+{{0}} enlaces"
+      },
+      "brandMonitoring": {
+        "title": "Monitoreo de Marca",
+        "headline": "Monitorea la Presencia Online de tu Marca",
+        "subheadline": "Rastrea menciones, analiza el sentimiento y mantente adelante de posibles crisis con nuestras herramientas completas de monitoreo de marca.",
+        "items": {
+          "mentionTracking": {
+            "name": "Seguimiento de Menciones",
+            "description": "Rastrea cada mención de tu marca en las comunidades de Reddit en tiempo real. Nunca te pierdas conversaciones importantes sobre tus productos o servicios."
+          },
+          "sentimentAnalysis": {
+            "name": "Análisis de Sentimiento",
+            "description": "Comprende el tono emocional detrás de las menciones de marca con nuestro análisis de sentimiento avanzado. Identifica tendencias positivas y aborda comentarios negativos rápidamente."
+          },
+          "crisisMonitoring": {
+            "name": "Monitoreo de Crisis",
+            "description": "Recibe alertas instantáneas cuando aumenta el sentimiento negativo o surgen problemas críticos. Mantente proactivo en la gestión de la reputación de tu marca."
+          }
+        },
+        "faq": {
+          "headline": "Preguntas Frecuentes",
+          "items": {
+            "howItWorks": {
+              "question": "¿Cómo funciona el monitoreo de marca?",
+              "answer": "Nuestro sistema impulsado por IA escanea continuamente Reddit en busca de menciones de tu marca, analizando el contexto y el sentimiento de cada mención. Recibes notificaciones en tiempo real e informes detallados para ayudarte a comprender y responder a las discusiones relacionadas con la marca."
+            },
+            "accuracy": {
+              "question": "¿Qué tan preciso es el análisis de sentimiento?",
+              "answer": "Nuestro análisis de sentimiento utiliza modelos de procesamiento de lenguaje natural de última generación, logrando más del 90% de precisión en la identificación de sentimientos positivos, negativos y neutrales. El sistema se entrena continuamente con contenido específico de Reddit para garantizar una alta precisión."
+            },
+            "integration": {
+              "question": "¿Puedo integrar el monitoreo de marca con otras herramientas?",
+              "answer": "¡Sí! Nuestras funciones de monitoreo de marca se pueden integrar con sistemas CRM populares, herramientas de gestión de redes sociales y plataformas de análisis. Proporcionamos APIs y webhooks para una integración perfecta con tu flujo de trabajo existente."
+            }
+          }
+        },
+        "content": "Monitorea la presencia de tu marca en las comunidades de Reddit con nuestra suite completa de herramientas. Desde el seguimiento de menciones hasta el análisis de sentimiento y la gestión de posibles crisis, te ayudamos a mantenerte informado y receptivo a las necesidades de tu audiencia."
       }
     }
   },
