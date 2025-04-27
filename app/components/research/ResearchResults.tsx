@@ -719,6 +719,49 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                       <option value="active">Most Active</option>
                       <option value="expert">Experts</option>
                     </select>
+                    <button
+                      onClick={() => {
+                        const csvContent = selectedResult.report.redditor_leads.map(lead => ({
+                          Username: lead.basic_info.username,
+                          'Influence Score': (lead.basic_info.influence_score * 100).toFixed(1) + '%',
+                          'Expertise Level': lead.basic_info.expertise_level,
+                          'Activity Level': lead.basic_info.activity_level,
+                          'Engagement Quality': (lead.engagement_metrics.engagement_quality * 100).toFixed(1) + '%',
+                          'Content Quality': (lead.engagement_metrics.content_quality * 100).toFixed(1) + '%',
+                          'Relevance Score': (lead.engagement_metrics.relevance_score * 100).toFixed(1) + '%',
+                          'Profile URL': lead.basic_info.profile_url,
+                          'Active Subreddits': lead.community_presence.active_subreddits.join(', '),
+                          'Relevant Topics': lead.community_presence.relevant_topics.join(', '),
+                          'Community Impact': lead.community_presence.community_impact
+                        }));
+
+                        const headers = Object.keys(csvContent[0]);
+                        const csvRows = [
+                          headers.join(','),
+                          ...csvContent.map(row => 
+                            headers.map(header => 
+                              JSON.stringify(row[header as keyof typeof row])
+                            ).join(',')
+                          )
+                        ].join('\n');
+
+                        const blob = new Blob([csvRows], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement('a');
+                        const url = URL.createObjectURL(blob);
+                        link.setAttribute('href', url);
+                        link.setAttribute('download', `redditor_leads_${new Date().toISOString().split('T')[0]}.csv`);
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 transition-colors duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      <span>Export CSV</span>
+                    </button>
                   </div>
                 </div>
                 <div className="overflow-x-auto">
