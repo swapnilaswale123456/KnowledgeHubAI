@@ -159,7 +159,97 @@ interface ResearchResultsProps {
   onDateRangeChange?: (fromDate: string, toDate: string) => void;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+type ColorScale = {
+  [key: number]: string;
+  50: string;
+  100: string;
+  200: string;
+  300: string;
+  400: string;
+  500: string;
+  600: string;
+  700: string;
+  800: string;
+  900: string;
+};
+
+const COLORS: {
+  primary: ColorScale;
+  success: ColorScale;
+  warning: ColorScale;
+  danger: ColorScale;
+} = {
+  primary: {
+    50: '#f0f9ff',
+    100: '#e0f2fe',
+    200: '#bae6fd',
+    300: '#7dd3fc',
+    400: '#38bdf8',
+    500: '#0ea5e9',
+    600: '#0284c7',
+    700: '#0369a1',
+    800: '#075985',
+    900: '#0c4a6e',
+  },
+  success: {
+    50: '#f0fdf4',
+    100: '#dcfce7',
+    200: '#bbf7d0',
+    300: '#86efac',
+    400: '#4ade80',
+    500: '#22c55e',
+    600: '#16a34a',
+    700: '#15803d',
+    800: '#166534',
+    900: '#14532d',
+  },
+  warning: {
+    50: '#fffbeb',
+    100: '#fef3c7',
+    200: '#fde68a',
+    300: '#fcd34d',
+    400: '#fbbf24',
+    500: '#f59e0b',
+    600: '#d97706',
+    700: '#b45309',
+    800: '#92400e',
+    900: '#78350f',
+  },
+  danger: {
+    50: '#fef2f2',
+    100: '#fee2e2',
+    200: '#fecaca',
+    300: '#fca5a5',
+    400: '#f87171',
+    500: '#ef4444',
+    600: '#dc2626',
+    700: '#b91c1c',
+    800: '#991b1b',
+    900: '#7f1d1d',
+  }
+};
+
+interface FetcherData {
+  results: ResearchResult[];
+}
+
+const calculateAnalysisDuration = (runDate: string): string => {
+  const startTime = new Date(runDate);
+  const endTime = new Date();
+  const durationInMinutes = differenceInMinutes(endTime, startTime);
+  
+  if (durationInMinutes < 60) {
+    return `${durationInMinutes} minutes`;
+  } else if (durationInMinutes < 1440) { // less than 24 hours
+    const hours = Math.floor(durationInMinutes / 60);
+    const minutes = durationInMinutes % 60;
+    return `${hours} hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  } else {
+    const days = Math.floor(durationInMinutes / 1440);
+    const hours = Math.floor((durationInMinutes % 1440) / 60);
+    return `${days} day${days > 1 ? 's' : ''} ${hours} hour${hours !== 1 ? 's' : ''}`;
+  }
+};
 
 export default function ResearchResults({ results: initialResults, onDateRangeChange }: ResearchResultsProps) {
   const [selectedResult, setSelectedResult] = useState<ResearchResult | null>(initialResults[0] || null);
@@ -168,7 +258,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
   const [activeTab, setActiveTab] = useState('quick-insights');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [results, setResults] = useState(initialResults);
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
 
   // Set initial dates from the first result if available
   useEffect(() => {
@@ -322,239 +412,176 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
           {activeTab === 'quick-insights' && (
             <div className="space-y-6">
               {/* Executive Summary */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Executive Summary</h3>
-                <p className="text-sm text-gray-600">{selectedResult.report.summary.overview.executive_summary}</p>
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Executive Summary
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{selectedResult.report.summary.overview.executive_summary}</p>
               </div>
 
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <h3 className="text-xs font-medium text-gray-500 mb-2">Total Activities</h3>
-                  <p className="text-sm font-bold text-gray-900">{selectedResult.total_posts + selectedResult.total_comments}</p>
+                <div className="bg-gradient-to-br from-green-50 to-white rounded-xl p-6 shadow-sm border border-green-100 hover:shadow-md transition-shadow duration-200">
+                  <h3 className="text-xs font-medium text-green-600 mb-2">Total Activities</h3>
+                  <p className="text-lg font-bold text-green-900">{selectedResult.total_posts + selectedResult.total_comments}</p>
                   <div className="mt-1 space-y-1">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-green-600">
                       Posts: {selectedResult.total_posts} (Relevant: {selectedResult.relevant_posts})
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-green-600">
                       Comments: {selectedResult.total_comments} (Relevant: {selectedResult.relevant_comments})
                     </p>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <h3 className="text-xs font-medium text-gray-500 mb-2">Engagement Level</h3>
-                  <p className="text-sm font-bold text-gray-900 capitalize">{selectedResult?.report?.subreddit_analytics?.analytics_summary?.engagement_level || 'N/A'}</p>
-                  <p className="text-xs text-gray-500 mt-1">Total Engagement: {selectedResult?.research_metrics?.total_engagement || 0}</p>
+                <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-6 shadow-sm border border-purple-100 hover:shadow-md transition-shadow duration-200">
+                  <h3 className="text-xs font-medium text-purple-600 mb-2">Topic Diversity</h3>
+                  <p className="text-lg font-bold text-purple-900">
+                    {selectedResult.report.topics.topic_insights.topic_count} Topics
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    {selectedResult.report.topics.topic_insights.topic_diversity}
+                  </p>
                 </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <h3 className="text-xs font-medium text-gray-500 mb-2">Content Relevance</h3>
-                  <p className="text-sm font-bold text-gray-900">{selectedResult?.research_metrics?.relevance_score || 0}%</p>
-                  <p className="text-xs text-gray-500 mt-1">Relevance Ratio: {selectedResult?.report?.subreddit_analytics?.analytics_summary?.content_volume?.relevance_ratio || 0}%</p>
-                </div>
-              </div>
-
-              {/* Key Findings */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Key Findings</h3>
-                <ul className="space-y-3">
-                  {selectedResult.report.summary.overview.key_findings.map((finding, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-indigo-500 mr-2">•</span>
-                      <span className="text-sm text-gray-600">{finding}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Sentiment Analysis */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Sentiment Distribution</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={sentimentData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {sentimentData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                    <div>
-                    <h4 className="text-xs font-medium text-gray-500 mb-3">Sentiment Insights</h4>
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Dominant Sentiment</span>
-                        <span className="text-xs font-medium text-gray-900 capitalize">{selectedResult.report.sentiment_analysis.insights.dominant_sentiment}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Sentiment Balance</span>
-                        <span className="text-xs font-medium text-gray-900 capitalize">{selectedResult.report.sentiment_analysis.insights.sentiment_balance}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Engagement Correlation</span>
-                        <span className="text-xs font-medium text-gray-900 capitalize">{selectedResult.report.sentiment_analysis.insights.engagement_correlation}</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-shadow duration-200">
+                  <h3 className="text-xs font-medium text-blue-600 mb-2">Community Impact</h3>
+                  <p className="text-lg font-bold text-blue-900">
+                    {selectedResult.report.subreddit_analytics.analytics_summary.engagement_level}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {selectedResult.report.subreddit_analytics.analytics_summary.content_volume.relevance_ratio}% Relevance
+                  </p>
                 </div>
               </div>
 
-              {/* Topic Analysis */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Topic Analysis</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={topicData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {topicData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-500 mb-3">Topic Insights</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Topic Count</span>
-                        <span className="text-xs font-medium text-gray-900">{selectedResult.report.topics.topic_insights.topic_count}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Topic Diversity</span>
-                        <span className="text-xs font-medium text-gray-900 capitalize">{selectedResult.report.topics.topic_insights.topic_diversity}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Primary Focus</span>
-                        <span className="text-xs font-medium text-gray-900">{selectedResult.report.topics.topic_insights.primary_focus}</span>
-                      </div>
-                      <div className="mt-4">
-                        <h5 className="text-xs font-medium text-gray-500 mb-2">Topic Categories</h5>
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-600">Technical</span>
-                            <span className="text-xs font-medium text-gray-900">{selectedResult.report.topics.topic_insights.topic_categories.technical}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-600">Business</span>
-                            <span className="text-xs font-medium text-gray-900">{selectedResult.report.topics.topic_insights.topic_categories.business}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-600">Community</span>
-                            <span className="text-xs font-medium text-gray-900">{selectedResult.report.topics.topic_insights.topic_categories.community}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              {/* Redditor Leads Table */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Top Redditor Leads
+                  </h3>
                 </div>
-              </div>
-
-              {/* Top Redditor Leads */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Top Redditor Leads</h3>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Influence Score</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expertise Level</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Activity Level</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Influence Score</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expertise Level</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity Level</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement Quality</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Content Quality</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relevance Score</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {selectedResult.report.redditor_leads.slice(0, 5).map((lead, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            <a 
-                              href={lead.basic_info.profile_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-indigo-600 hover:text-indigo-800"
-                            >
-                              {lead.basic_info.username}
-                            </a>
+                        <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <span className="text-indigo-600 font-medium text-sm">
+                                  {lead.basic_info.username.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="ml-4">
+                                <a 
+                                  href={lead.basic_info.profile_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                >
+                                  {lead.basic_info.username}
+                                </a>
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {(lead.basic_info.influence_score * 100).toFixed(2)}%
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-indigo-600 h-2 rounded-full" 
+                                  style={{ width: `${lead.basic_info.influence_score * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-900">{(lead.basic_info.influence_score * 100).toFixed(1)}%</span>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {lead.basic_info.expertise_level}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              lead.basic_info.expertise_level === 'High' ? 'bg-green-100 text-green-800' :
+                              lead.basic_info.expertise_level === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {lead.basic_info.expertise_level}
+                            </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {lead.basic_info.activity_level}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              lead.basic_info.activity_level === 'High' ? 'bg-blue-100 text-blue-800' :
+                              lead.basic_info.activity_level === 'Moderate' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {lead.basic_info.activity_level}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-green-600 h-2 rounded-full" 
+                                  style={{ width: `${lead.engagement_metrics.engagement_quality * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-900">{(lead.engagement_metrics.engagement_quality * 100).toFixed(1)}%</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-purple-600 h-2 rounded-full" 
+                                  style={{ width: `${lead.engagement_metrics.content_quality * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-900">{(lead.engagement_metrics.content_quality * 100).toFixed(1)}%</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full" 
+                                  style={{ width: `${lead.engagement_metrics.relevance_score * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-900">{(lead.engagement_metrics.relevance_score * 100).toFixed(1)}%</span>
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div className="mt-4 text-right">
+                <div className="px-6 py-4 border-t border-gray-100">
                   <button 
                     onClick={() => setActiveTab('leads')}
-                    className="text-xs text-indigo-600 hover:text-indigo-800"
+                    className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center"
                   >
-                    View All Leads →
+                    View All Leads
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 </div>
               </div>
-
-              {/* Recommendations */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Recommendations</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-500 mb-2">Suggestions</h4>
-                    <ul className="space-y-2">
-                      {selectedResult.report.summary.recommendations.suggestions.map((suggestion, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-indigo-500 mr-2">•</span>
-                          <span className="text-sm text-gray-600">{suggestion}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                    <h4 className="text-xs font-medium text-gray-500 mb-2">Action Items</h4>
-                    <ul className="space-y-2">
-                      {selectedResult.report.summary.recommendations.action_items.map((item, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-indigo-500 mr-2">•</span>
-                          <span className="text-sm text-gray-600">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
           {/* Overview Tab */}
           {activeTab === 'overview' && (
@@ -580,14 +607,37 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                   </div>
                 </div>
                 <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <h3 className="text-xs font-medium text-gray-500 mb-2">Research Quality</h3>
-                  <p className="text-sm font-bold text-gray-900">{selectedResult.research_metrics.research_quality}%</p>
-                  <p className="text-xs text-gray-500 mt-1">Total Engagement: {selectedResult.research_metrics.total_engagement}</p>
+                  <h3 className="text-xs font-medium text-gray-500 mb-2">Topic Diversity</h3>
+                  <p className="text-sm font-bold text-gray-900">
+                    {selectedResult.report.topics.topic_insights.topic_count} Topics
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedResult.report.topics.topic_insights.topic_diversity}
+                  </p>
                 </div>
                 <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <h3 className="text-xs font-medium text-gray-500 mb-2">Content Relevance</h3>
-                  <p className="text-sm font-bold text-gray-900">{selectedResult.research_metrics.relevance_score}%</p>
-                  <p className="text-xs text-gray-500 mt-1">Relevance Ratio: {selectedResult.report.subreddit_analytics.analytics_summary.content_volume.relevance_ratio}%</p>
+                  <h3 className="text-xs font-medium text-gray-500 mb-2">Community Impact</h3>
+                  <p className="text-sm font-bold text-gray-900">
+                    {selectedResult.report.subreddit_analytics.analytics_summary.engagement_level}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedResult.report.subreddit_analytics.analytics_summary.content_volume.relevance_ratio}% Relevance
+                  </p>
+                </div>
+              </div>
+
+              {/* Key Findings */}
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">Key Findings</h3>
+                <div className="space-y-4">
+                  {selectedResult.report.summary.overview.key_findings.map((finding, index) => (
+                    <div key={index} className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <span className="text-indigo-600 text-xs font-medium">{index + 1}</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{finding}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -603,33 +653,46 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                         cy="50%"
                         labelLine={false}
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
+                        outerRadius={120}
+                        innerRadius={60}
                         fill="#8884d8"
                         dataKey="value"
+                        paddingAngle={2}
                       >
-                        {sentimentData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                        {sentimentData.map((entry, index) => {
+                          const colorKeys = Object.keys(COLORS.primary).map(Number);
+                          const colorIndex = index % colorKeys.length;
+                          const colorKey = colorKeys[colorIndex];
+                          return (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={COLORS.primary[colorKey]}
+                              stroke="#fff"
+                              strokeWidth={2}
+                            />
+                          );
+                        })}
                       </Pie>
-                      <Tooltip />
-                      <Legend />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '0.5rem',
+                          padding: '0.5rem'
+                        }}
+                        formatter={(value: number) => [`${value.toFixed(1)}%`, 'Percentage']}
+                      />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36}
+                        formatter={(value) => <span className="text-sm text-gray-600">{value}</span>}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Key Findings */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Key Findings</h3>
-                <ul className="space-y-3">
-                  {selectedResult.report.topics.values.slice(10).map((finding, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-indigo-500 mr-2">•</span>
-                      <span className="text-gray-600">{finding}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            
             </div>
           )}
 
@@ -637,50 +700,124 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
           {activeTab === 'leads' && (
             <div className="space-y-6">
               <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Redditor Leads</h3>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Redditor Leads</h3>
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search leads..."
+                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                      <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <select className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                      <option value="all">All Leads</option>
+                      <option value="high-influence">High Influence</option>
+                      <option value="active">Most Active</option>
+                      <option value="expert">Experts</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Influence Score</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expertise Level</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Activity Level</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Engagement Quality</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Content Quality</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Relevance Score</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Redditor</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Influence Score</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expertise Level</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity Level</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement Quality</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Content Quality</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {selectedResult.report.redditor_leads.map((lead, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            <a 
-                              href={lead.basic_info.profile_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-indigo-600 hover:text-indigo-800"
-                            >
-                              {lead.basic_info.username}
-                            </a>
+                        <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <span className="text-indigo-600 font-medium">
+                                  {lead.basic_info.username.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {lead.basic_info.username}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {lead.basic_info.profile_url}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${lead.basic_info.influence_score * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm text-gray-900">
+                                {(lead.basic_info.influence_score * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              lead.basic_info.expertise_level === 'High' ? 'bg-green-100 text-green-800' :
+                              lead.basic_info.expertise_level === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {lead.basic_info.expertise_level}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              lead.basic_info.activity_level === 'High' ? 'bg-blue-100 text-blue-800' :
+                              lead.basic_info.activity_level === 'Moderate' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {lead.basic_info.activity_level}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${lead.engagement_metrics.engagement_quality * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm text-gray-900">
+                                {(lead.engagement_metrics.engagement_quality * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${lead.engagement_metrics.content_quality * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm text-gray-900">
+                                {(lead.engagement_metrics.content_quality * 100).toFixed(1)}%
+                              </span>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {(lead.basic_info.influence_score * 100).toFixed(2)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {lead.basic_info.expertise_level}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {lead.basic_info.activity_level}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {(lead.engagement_metrics.engagement_quality * 100).toFixed(2)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {(lead.engagement_metrics.content_quality * 100).toFixed(2)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {(lead.engagement_metrics.relevance_score * 100).toFixed(2)}%
+                            <button className="text-indigo-600 hover:text-indigo-900 mr-3">
+                              View Profile
+                            </button>
+                            <button className="text-green-600 hover:text-green-900">
+                              Contact
+                            </button>
                           </td>
                         </tr>
                       ))}

@@ -586,34 +586,21 @@ export default function ViewRequest() {
               </div>
             </div>
 
-            {/* Analysis Duration */}
+            {/* Search Keywords */}
             <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
               <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center">
-                <svg className="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                Analysis Duration
+                Search Keywords
               </h2>
-              <div className="inline-flex items-center px-2 py-1 text-xs rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 capitalize">
-                {request.duration}
+              <div className="flex flex-wrap gap-1.5">
+                {request.keywords.map((keyword, index) => (
+                  <span key={index} className="px-2 py-1 text-xs rounded-lg bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100">
+                    {keyword}
+                  </span>
+                ))}
               </div>
-            </div>
-          </div>
-
-          {/* Search Keywords */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center">
-              <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              Search Keywords
-            </h2>
-            <div className="flex flex-wrap gap-1.5">
-              {request.keywords.map((keyword, index) => (
-                <span key={index} className="px-2 py-1 text-xs rounded-lg bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100">
-                  {keyword}
-                </span>
-              ))}
             </div>
           </div>
 
