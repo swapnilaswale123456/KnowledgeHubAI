@@ -816,14 +816,91 @@ export class ResearchRequestsService {
         total_comments: result.total_comments,
         relevant_posts: result.relevant_posts,
         relevant_comments: result.relevant_comments,
-        sentiment_analysis: {
-          positive: result.sentiment_analysis?.positive || 0,
-          negative: result.sentiment_analysis?.negative || 0,
-          neutral: result.sentiment_analysis?.neutral || 0
+        research_metrics: {
+          total_engagement: result.research_metrics?.total_engagement || 0,
+          relevance_score: result.research_metrics?.relevance_score || 0,
+          research_quality: result.research_metrics?.research_quality || 0
         },
-        top_topics: result.top_topics || [],
-        highlights: result.highlights || [],
-        report: result.report || null
+        report: {
+          sentiment_analysis: result.report?.sentiment_analysis || {
+            labels: [],
+            values: [],
+            colors: [],
+            insights: {
+              dominant_sentiment: '',
+              sentiment_balance: '',
+              engagement_correlation: ''
+            }
+          },
+          topics: result.report?.topics || {
+            labels: [],
+            values: [],
+            colors: [],
+            topic_insights: {
+              topic_count: 0,
+              topic_diversity: '',
+              primary_focus: '',
+              topic_categories: {
+                technical: 0,
+                business: 0,
+                community: 0
+              }
+            }
+          },
+          summary: {
+            overview: {
+              key_findings: result.report?.summary?.overview?.key_findings || [],
+              executive_summary: result.report?.summary?.overview?.executive_summary || ''
+            },
+            discussion_analysis: {
+              content_analysis: result.report?.summary?.discussion_analysis?.content_analysis || {
+                post_summary: '',
+                comment_summary: '',
+                content_quality: {
+                  depth: 0,
+                  breadth: 0,
+                  controversy_level: 0
+                }
+              },
+              engagement_analysis: result.report?.summary?.discussion_analysis?.engagement_analysis || {
+                interaction_patterns: '',
+                knowledge_sharing: '',
+                user_engagement: {
+                  consensus_strength: 0,
+                  discussion_health: 0
+                }
+              },
+              thematic_analysis: result.report?.summary?.discussion_analysis?.thematic_analysis || {
+                main_themes: [],
+                expertise_areas: [],
+                controversial_topics: [],
+                consensus_points: [],
+                theme_coherence: 0,
+                expertise_depth: 0
+              }
+            },
+            recommendations: {
+              suggestions: result.report?.summary?.recommendations?.suggestions || [],
+              action_items: result.report?.summary?.recommendations?.action_items || []
+            }
+          },
+          redditor_leads: result.report?.redditor_leads || [],
+          subreddit_analytics: result.report?.subreddit_analytics || {
+            raw_data: {
+              subreddit: '',
+              total_posts: 0,
+              total_comments: 0
+            },
+            analytics_summary: {
+              engagement_level: '',
+              content_volume: {
+                posts: 0,
+                comments: 0,
+                relevance_ratio: 0
+              }
+            }
+          }
+        }
       }));
 
       console.log(`[ResearchRequestsService.getRequestResults] Mapped ${mappedResults.length} results:`, JSON.stringify(mappedResults, null, 2));
