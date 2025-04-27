@@ -162,6 +162,8 @@ export default function ViewRequest() {
   } | null>(null);
   const [researchResults, setResearchResults] = useState(results || []);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const [fromDate, setFromDate] = useState<string>(new Date(request.createdAt).toISOString());
+  const [toDate, setToDate] = useState<string>(new Date().toISOString());
 
   // Type guards to check actionData properties
   const hasError = actionData && 'error' in actionData;
@@ -228,11 +230,10 @@ export default function ViewRequest() {
     if (refreshing) return; // Prevent multiple simultaneous refreshes
     
     setRefreshing(true);
-    const formData = new FormData();
-    formData.append("_action", "refresh");
     
     try {
-      const response = await fetch(
+      // First, fetch the current status
+      const statusResponse = await fetch(
         `/app/${params.tenant}/dashboard/view/${request.id}/status`,
         {
           method: "GET",
@@ -242,24 +243,24 @@ export default function ViewRequest() {
         }
       );
 
-      if (!response.ok) {
+      if (!statusResponse.ok) {
         throw new Error('Failed to refresh status');
       }
 
-      const data = await response.json();
+      const statusData = await statusResponse.json();
       
-      if (data.success) {
+      if (statusData.success) {
         // Update status and request info
-        setRequestStatus(data.status);
+        setRequestStatus(statusData.status);
         setRequestInfo({
-          lastRunAt: data.requestInfo?.lastRunAt,
-          nextRunAt: data.requestInfo?.nextRunAt,
-          updatedAt: data.requestInfo?.updatedAt
+          lastRunAt: statusData.requestInfo?.lastRunAt,
+          nextRunAt: statusData.requestInfo?.nextRunAt,
+          updatedAt: statusData.requestInfo?.updatedAt
         });
 
         // Show notification based on status
         let message = '';
-        switch (data.status) {
+        switch (statusData.status) {
           case 'completed':
             message = 'Research request completed successfully!';
             break;
@@ -273,20 +274,44 @@ export default function ViewRequest() {
             message = 'Research request is pending execution.';
             break;
           default:
-            message = data.message || `Request status: ${data.status}`;
+            message = statusData.message || `Request status: ${statusData.status}`;
         }
 
         setNotification({
           message,
-          type: data.status === 'failed' ? 'error' : 'success'
+          type: statusData.status === 'failed' ? 'error' : 'success'
         });
 
-        // If status is completed or failed, update the request data
-        if (data.shouldUpdate) {
-          navigate(`/app/${params.tenant}/dashboard/view/${request.id}`, { replace: true });
+        // Always fetch new results after status update, regardless of status
+        try {
+          // Fetch new results using the research service
+          const researchService = ResearchRequestsService.getInstance();
+          const newResults = await researchService.getRequestResults(
+            request.id,
+            params.tenant || '',
+            fromDate,
+            toDate
+          );
+          
+          // Update the results state
+          setResearchResults(newResults);
+          
+          // Show success notification if we got results
+          if (newResults && newResults.length > 0) {
+            setNotification({
+              message: 'Research results refreshed successfully!',
+              type: 'success'
+            });
+          }
+        } catch (resultsError) {
+          console.error('Error fetching new results:', resultsError);
+          setNotification({
+            message: 'Status updated, but failed to fetch new results',
+            type: 'error'
+          });
         }
       } else {
-        throw new Error(data.message || 'Failed to refresh status');
+        throw new Error(statusData.message || 'Failed to refresh status');
       }
 
       setLastRefreshTime(new Date());
@@ -377,7 +402,7 @@ export default function ViewRequest() {
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-orange-600 bg-clip-text text-transparent">
                   {request.name}
                 </h1>
                 <p className="text-gray-600 mt-1 text-sm">{request.purpose}</p>
@@ -391,7 +416,7 @@ export default function ViewRequest() {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="px-3 py-1.5 text-xs border-2 border-gray-200 rounded-lg hover:bg-gray-50 flex items-center"
+                  className="px-3 py-1.5 text-xs border-2 border-orange-200 rounded-lg hover:bg-orange-50 flex items-center text-orange-600"
                 >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -400,7 +425,7 @@ export default function ViewRequest() {
                 </button>
                 <button
                   onClick={() => setShowScheduleOptions(!showScheduleOptions)}
-                  className="px-3 py-1.5 text-xs border-2 border-gray-200 rounded-lg hover:bg-gray-50 flex items-center"
+                  className="px-3 py-1.5 text-xs border-2 border-orange-200 rounded-lg hover:bg-orange-50 flex items-center text-orange-600"
                 >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -436,7 +461,7 @@ export default function ViewRequest() {
                 <button 
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className={`px-3 py-1.5 text-xs border-2 border-gray-200 rounded-lg hover:bg-gray-50 flex items-center ${
+                  className={`px-3 py-1.5 text-xs border-2 border-orange-200 rounded-lg hover:bg-orange-50 flex items-center text-orange-600 ${
                     refreshing ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -451,10 +476,10 @@ export default function ViewRequest() {
                     className={`px-3 py-1.5 text-xs ${
                       request.schedule 
                         ? 'border-2 border-green-100 text-green-600 hover:bg-green-50' 
-                        : 'border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50'
+                        : 'border-2 border-orange-200 text-orange-600 hover:bg-orange-50'
                     } rounded-lg flex items-center`}
                   >
-                    <svg className={`w-4 h-4 mr-1 ${request.schedule ? 'text-green-500' : 'text-indigo-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-4 h-4 mr-1 ${request.schedule ? 'text-green-500' : 'text-orange-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     {request.schedule ? 'Scheduled' : 'Schedule'}
@@ -466,7 +491,7 @@ export default function ViewRequest() {
                         <select
                           value={scheduleType}
                           onChange={(e) => setScheduleType(e.target.value as 'daily' | 'weekly' | 'monthly')}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs"
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-xs"
                         >
                           <option value="daily">Daily</option>
                           <option value="weekly">Weekly</option>
@@ -489,7 +514,7 @@ export default function ViewRequest() {
                         )}
                         <button
                           onClick={handleSchedule}
-                          className="px-2 py-1 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                          className="px-2 py-1 text-xs bg-orange-600 text-white rounded-md hover:bg-orange-700"
                         >
                           {request.schedule ? 'Update Schedule' : 'Save Schedule'}
                         </button>
@@ -500,7 +525,7 @@ export default function ViewRequest() {
                 <button 
                   onClick={handleExecute}
                   disabled={request.status === 'in_progress' || executionStarted}
-                  className="px-3 py-1.5 text-xs text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-700 hover:to-indigo-700 flex items-center shadow-sm disabled:opacity-50"
+                  className="px-3 py-1.5 text-xs text-white bg-gradient-to-r from-orange-600 to-orange-700 rounded-lg hover:from-orange-700 hover:to-orange-800 flex items-center shadow-sm disabled:opacity-50"
                 >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -515,27 +540,27 @@ export default function ViewRequest() {
                 requestStatus === 'completed' 
                   ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-100' 
                   : requestStatus === 'in_progress'
-                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'
-                  : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100'
+                  ? 'bg-gradient-to-r from-orange-50 to-orange-100 border-orange-100'
+                  : 'bg-gradient-to-r from-orange-50 to-orange-100 border-orange-100'
               } rounded-lg border`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className={`w-2 h-2 ${
                       requestStatus === 'completed' ? 'bg-green-500' : 
-                      requestStatus === 'in_progress' ? 'bg-blue-500' : 
-                      'bg-indigo-500'
+                      requestStatus === 'in_progress' ? 'bg-orange-500' : 
+                      'bg-orange-500'
                     } rounded-full`}></span>
                     <span className={`text-xs font-semibold ${
                       requestStatus === 'completed' ? 'text-green-800' : 
-                      requestStatus === 'in_progress' ? 'text-blue-800' : 
-                      'text-indigo-800'
+                      requestStatus === 'in_progress' ? 'text-orange-800' : 
+                      'text-orange-800'
                     } capitalize`}>
                       {requestStatus === 'pending' && request.schedule ? 'Scheduled' : requestStatus}
                     </span>
                     <span className={`text-xs ${
                       requestStatus === 'completed' ? 'text-green-600' : 
-                      requestStatus === 'in_progress' ? 'text-blue-600' : 
-                      'text-indigo-600'
+                      requestStatus === 'in_progress' ? 'text-orange-600' : 
+                      'text-orange-600'
                     }`}>
                       {requestInfo?.lastRunAt && `Last run: ${new Date(requestInfo.lastRunAt).toLocaleString()}`}
                       {requestInfo?.nextRunAt && ` | Next run: ${new Date(requestInfo.nextRunAt).toLocaleString()}`}

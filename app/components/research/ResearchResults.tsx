@@ -128,7 +128,7 @@ interface RedditorLead {
   };
   engagement_metrics: {
     engagement_quality: number;
-    content_quality: number;
+        content_quality: number;
     relevance_score: number;
   };
   community_presence: {
@@ -180,16 +180,16 @@ const COLORS: {
   danger: ColorScale;
 } = {
   primary: {
-    50: '#f0f9ff',
-    100: '#e0f2fe',
-    200: '#bae6fd',
-    300: '#7dd3fc',
-    400: '#38bdf8',
-    500: '#0ea5e9',
-    600: '#0284c7',
-    700: '#0369a1',
-    800: '#075985',
-    900: '#0c4a6e',
+    50: '#fff7ed',
+    100: '#ffedd5',
+    200: '#fed7aa',
+    300: '#fdba74',
+    400: '#fb923c',
+    500: '#f97316',
+    600: '#ea580c',
+    700: '#c2410c',
+    800: '#9a3412',
+    900: '#7c2d12',
   },
   success: {
     50: '#f0fdf4',
@@ -348,7 +348,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
               type="datetime-local"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm"
             />
           </div>
           <div>
@@ -357,12 +357,12 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
               type="datetime-local"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm"
             />
           </div>
           <button
             onClick={handleDateRangeChange}
-            className="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm"
+            className="mt-6 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm"
           >
             Apply Filter
           </button>
@@ -379,34 +379,34 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                 onClick={() => setActiveTab('quick-insights')}
                 className={`px-4 py-2 text-xs font-medium ${
                   activeTab === 'quick-insights'
-                    ? 'text-indigo-600 border-b-2 border-indigo-600'
+                    ? 'text-orange-600 border-b-2 border-orange-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 Quick Insights
               </button>
-              <button
+                <button
                 onClick={() => setActiveTab('overview')}
                 className={`px-4 py-2 text-xs font-medium ${
                   activeTab === 'overview'
-                    ? 'text-indigo-600 border-b-2 border-indigo-600'
+                    ? 'text-orange-600 border-b-2 border-orange-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 Overview
-              </button>
+                </button>
               <button
                 onClick={() => setActiveTab('leads')}
                 className={`px-4 py-2 text-xs font-medium ${
                   activeTab === 'leads'
-                    ? 'text-indigo-600 border-b-2 border-indigo-600'
+                    ? 'text-orange-600 border-b-2 border-orange-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 Redditor Leads
               </button>
-        </div>
-      </div>
+                </div>
+              </div>
 
           {/* Quick Insights Tab */}
           {activeTab === 'quick-insights' && (
@@ -414,7 +414,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
               {/* Executive Summary */}
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Executive Summary
@@ -424,33 +424,33 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
 
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-green-50 to-white rounded-xl p-6 shadow-sm border border-green-100 hover:shadow-md transition-shadow duration-200">
-                  <h3 className="text-xs font-medium text-green-600 mb-2">Total Activities</h3>
-                  <p className="text-lg font-bold text-green-900">{selectedResult.total_posts + selectedResult.total_comments}</p>
+                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-6 shadow-sm border border-orange-100 hover:shadow-md transition-shadow duration-200">
+                  <h3 className="text-xs font-medium text-orange-600 mb-2">Total Activities</h3>
+                  <p className="text-lg font-bold text-orange-900">{selectedResult.total_posts + selectedResult.total_comments}</p>
                   <div className="mt-1 space-y-1">
-                    <p className="text-xs text-green-600">
+                    <p className="text-xs text-orange-600">
                       Posts: {selectedResult.total_posts} (Relevant: {selectedResult.relevant_posts})
                     </p>
-                    <p className="text-xs text-green-600">
+                    <p className="text-xs text-orange-600">
                       Comments: {selectedResult.total_comments} (Relevant: {selectedResult.relevant_comments})
                     </p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-6 shadow-sm border border-purple-100 hover:shadow-md transition-shadow duration-200">
-                  <h3 className="text-xs font-medium text-purple-600 mb-2">Topic Diversity</h3>
-                  <p className="text-lg font-bold text-purple-900">
+                        </div>
+                    </div>
+                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-6 shadow-sm border border-orange-100 hover:shadow-md transition-shadow duration-200">
+                  <h3 className="text-xs font-medium text-orange-600 mb-2">Topic Diversity</h3>
+                  <p className="text-lg font-bold text-orange-900">
                     {selectedResult.report.topics.topic_insights.topic_count} Topics
                   </p>
-                  <p className="text-xs text-purple-600 mt-1">
+                  <p className="text-xs text-orange-600 mt-1">
                     {selectedResult.report.topics.topic_insights.topic_diversity}
                   </p>
-                </div>
-                <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-shadow duration-200">
-                  <h3 className="text-xs font-medium text-blue-600 mb-2">Community Impact</h3>
-                  <p className="text-lg font-bold text-blue-900">
+                  </div>
+                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-6 shadow-sm border border-orange-100 hover:shadow-md transition-shadow duration-200">
+                  <h3 className="text-xs font-medium text-orange-600 mb-2">Community Impact</h3>
+                  <p className="text-lg font-bold text-orange-900">
                     {selectedResult.report.subreddit_analytics.analytics_summary.engagement_level}
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">
+                  <p className="text-xs text-orange-600 mt-1">
                     {selectedResult.report.subreddit_analytics.analytics_summary.content_volume.relevance_ratio}% Relevance
                   </p>
                 </div>
@@ -460,12 +460,12 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     Top Redditor Leads
                   </h3>
-                </div>
+                      </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -484,37 +484,37 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                         <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="flex-shrink-0 h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                <span className="text-indigo-600 font-medium text-sm">
+                              <div className="flex-shrink-0 h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
+                                <span className="text-orange-600 font-medium text-sm">
                                   {lead.basic_info.username.charAt(0).toUpperCase()}
                                 </span>
-                              </div>
+                      </div>
                               <div className="ml-4">
                                 <a 
                                   href={lead.basic_info.profile_url} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                  className="text-sm font-medium text-orange-600 hover:text-orange-800"
                                 >
                                   {lead.basic_info.username}
                                 </a>
-                              </div>
-                            </div>
+                    </div>
+                  </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
                                 <div 
-                                  className="bg-indigo-600 h-2 rounded-full" 
+                                  className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.basic_info.influence_score * 100}%` }}
                                 ></div>
-                              </div>
+                      </div>
                               <span className="text-sm text-gray-900">{(lead.basic_info.influence_score * 100).toFixed(1)}%</span>
-                            </div>
+                      </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 text-xs rounded-full ${
-                              lead.basic_info.expertise_level === 'High' ? 'bg-green-100 text-green-800' :
+                              lead.basic_info.expertise_level === 'High' ? 'bg-orange-100 text-orange-800' :
                               lead.basic_info.expertise_level === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
@@ -523,8 +523,8 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 text-xs rounded-full ${
-                              lead.basic_info.activity_level === 'High' ? 'bg-blue-100 text-blue-800' :
-                              lead.basic_info.activity_level === 'Moderate' ? 'bg-purple-100 text-purple-800' :
+                              lead.basic_info.activity_level === 'High' ? 'bg-orange-100 text-orange-800' :
+                              lead.basic_info.activity_level === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {lead.basic_info.activity_level}
@@ -532,54 +532,54 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
                                 <div 
-                                  className="bg-green-600 h-2 rounded-full" 
+                                  className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.engagement_metrics.engagement_quality * 100}%` }}
                                 ></div>
-                              </div>
+                    </div>
                               <span className="text-sm text-gray-900">{(lead.engagement_metrics.engagement_quality * 100).toFixed(1)}%</span>
-                            </div>
+                  </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
                                 <div 
-                                  className="bg-purple-600 h-2 rounded-full" 
+                                  className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.engagement_metrics.content_quality * 100}%` }}
                                 ></div>
-                              </div>
+                </div>
                               <span className="text-sm text-gray-900">{(lead.engagement_metrics.content_quality * 100).toFixed(1)}%</span>
-                            </div>
+              </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
                                 <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
+                                  className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.engagement_metrics.relevance_score * 100}%` }}
                                 ></div>
-                              </div>
+              </div>
                               <span className="text-sm text-gray-900">{(lead.engagement_metrics.relevance_score * 100).toFixed(1)}%</span>
-                            </div>
+                    </div>
                           </td>
                         </tr>
-                      ))}
+                  ))}
                     </tbody>
                   </table>
                 </div>
                 <div className="px-6 py-4 border-t border-gray-100">
-                  <button 
+              <button
                     onClick={() => setActiveTab('leads')}
-                    className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center"
+                    className="text-sm text-orange-600 hover:text-orange-800 font-medium flex items-center"
                   >
                     View All Leads
                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </button>
-                </div>
-              </div>
+              </button>
+            </div>
+          </div>
             </div>
           )}
 
@@ -594,46 +594,46 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
 
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <h3 className="text-xs font-medium text-gray-500 mb-2">Total Activities</h3>
-                  <p className="text-sm font-bold text-gray-900">{selectedResult.total_posts + selectedResult.total_comments}</p>
+                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-5 shadow-sm border border-orange-100">
+                  <h3 className="text-xs font-medium text-orange-600 mb-2">Total Activities</h3>
+                  <p className="text-sm font-bold text-orange-900">{selectedResult.total_posts + selectedResult.total_comments}</p>
                   <div className="mt-1 space-y-1">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-orange-600">
                       Posts: {selectedResult.total_posts} (Relevant: {selectedResult.relevant_posts})
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-orange-600">
                       Comments: {selectedResult.total_comments} (Relevant: {selectedResult.relevant_comments})
                     </p>
-                  </div>
                 </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <h3 className="text-xs font-medium text-gray-500 mb-2">Topic Diversity</h3>
-                  <p className="text-sm font-bold text-gray-900">
+                </div>
+                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-5 shadow-sm border border-orange-100">
+                  <h3 className="text-xs font-medium text-orange-600 mb-2">Topic Diversity</h3>
+                  <p className="text-sm font-bold text-orange-900">
                     {selectedResult.report.topics.topic_insights.topic_count} Topics
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-orange-600 mt-1">
                     {selectedResult.report.topics.topic_insights.topic_diversity}
                   </p>
                 </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <h3 className="text-xs font-medium text-gray-500 mb-2">Community Impact</h3>
-                  <p className="text-sm font-bold text-gray-900">
+                <div className="bg-gradient-to-br from-orange-50 to-white rounded-xl p-5 shadow-sm border border-orange-100">
+                  <h3 className="text-xs font-medium text-orange-600 mb-2">Community Impact</h3>
+                  <p className="text-sm font-bold text-orange-900">
                     {selectedResult.report.subreddit_analytics.analytics_summary.engagement_level}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-orange-600 mt-1">
                     {selectedResult.report.subreddit_analytics.analytics_summary.content_volume.relevance_ratio}% Relevance
                   </p>
                 </div>
               </div>
 
               {/* Key Findings */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">Key Findings</h3>
                 <div className="space-y-4">
                   {selectedResult.report.summary.overview.key_findings.map((finding, index) => (
                     <div key={index} className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <span className="text-indigo-600 text-xs font-medium">{index + 1}</span>
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
+                        <span className="text-orange-600 text-xs font-medium">{index + 1}</span>
                       </div>
                       <p className="text-sm text-gray-600">{finding}</p>
                     </div>
@@ -659,19 +659,14 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                         dataKey="value"
                         paddingAngle={2}
                       >
-                        {sentimentData.map((entry, index) => {
-                          const colorKeys = Object.keys(COLORS.primary).map(Number);
-                          const colorIndex = index % colorKeys.length;
-                          const colorKey = colorKeys[colorIndex];
-                          return (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={COLORS.primary[colorKey]}
-                              stroke="#fff"
-                              strokeWidth={2}
-                            />
-                          );
-                        })}
+                        {sentimentData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={Object.values(COLORS.primary)[Math.floor(index * 2 + 2)]}
+                            stroke="#fff"
+                            strokeWidth={2}
+                          />
+                        ))}
                       </Pie>
                       <Tooltip 
                         contentStyle={{ 
@@ -707,13 +702,13 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                       <input
                         type="text"
                         placeholder="Search leads..."
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       />
                       <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
-                    </div>
-                    <select className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                    <select className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                       <option value="all">All Leads</option>
                       <option value="high-influence">High Influence</option>
                       <option value="active">Most Active</option>
@@ -755,15 +750,15 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                         link.click();
                         document.body.removeChild(link);
                       }}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 transition-colors duration-200"
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center space-x-2 transition-colors duration-200"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                       <span>Export CSV</span>
                     </button>
-                  </div>
-                </div>
+                    </div>
+                    </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -774,7 +769,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity Level</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement Quality</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Content Quality</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relevance Score</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -782,18 +777,18 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                         <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                                <span className="text-indigo-600 font-medium">
+                              <div className="flex-shrink-0 h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                <span className="text-orange-600 font-medium">
                                   {lead.basic_info.username.charAt(0).toUpperCase()}
                                 </span>
-                              </div>
+                    </div>
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900">
                                   {lead.basic_info.username}
-                                </div>
+                  </div>
                                 <div className="text-sm text-gray-500">
                                   {lead.basic_info.profile_url}
-                                </div>
+                </div>
                               </div>
                             </div>
                           </td>
@@ -801,9 +796,9 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                             <div className="flex items-center">
                               <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
                                 <div 
-                                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
+                                  className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.basic_info.influence_score * 100}%` }}
-                                />
+                                ></div>
                               </div>
                               <span className="text-sm text-gray-900">
                                 {(lead.basic_info.influence_score * 100).toFixed(1)}%
@@ -812,7 +807,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 text-xs rounded-full ${
-                              lead.basic_info.expertise_level === 'High' ? 'bg-green-100 text-green-800' :
+                              lead.basic_info.expertise_level === 'High' ? 'bg-orange-100 text-orange-800' :
                               lead.basic_info.expertise_level === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
@@ -821,8 +816,8 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 text-xs rounded-full ${
-                              lead.basic_info.activity_level === 'High' ? 'bg-blue-100 text-blue-800' :
-                              lead.basic_info.activity_level === 'Moderate' ? 'bg-purple-100 text-purple-800' :
+                              lead.basic_info.activity_level === 'High' ? 'bg-orange-100 text-orange-800' :
+                              lead.basic_info.activity_level === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {lead.basic_info.activity_level}
@@ -832,9 +827,9 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                             <div className="flex items-center">
                               <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
                                 <div 
-                                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                                  className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.engagement_metrics.engagement_quality * 100}%` }}
-                                />
+                                ></div>
                               </div>
                               <span className="text-sm text-gray-900">
                                 {(lead.engagement_metrics.engagement_quality * 100).toFixed(1)}%
@@ -845,22 +840,27 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                             <div className="flex items-center">
                               <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
                                 <div 
-                                  className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                                  className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.engagement_metrics.content_quality * 100}%` }}
-                                />
+                                ></div>
                               </div>
                               <span className="text-sm text-gray-900">
                                 {(lead.engagement_metrics.content_quality * 100).toFixed(1)}%
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                              View Profile
-                            </button>
-                            <button className="text-green-600 hover:text-green-900">
-                              Contact
-                            </button>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-orange-600 h-2 rounded-full" 
+                                  style={{ width: `${lead.engagement_metrics.relevance_score * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-900">
+                                {(lead.engagement_metrics.relevance_score * 100).toFixed(1)}%
+                              </span>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -870,7 +870,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
               </div>
 
               {/* Community Presence */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">Community Presence</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {selectedResult.report.redditor_leads.map((lead, index) => (
@@ -881,21 +881,21 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                             href={lead.basic_info.profile_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-indigo-600 hover:text-indigo-800"
+                            className="text-orange-600 hover:text-orange-800"
                           >
                             {lead.basic_info.username}
                           </a>
                         </h4>
                         <span className={`px-2 py-1 text-xs rounded-full ${
-                          lead.community_presence.community_impact === 'High' ? 'bg-green-100 text-green-800' :
+                          lead.community_presence.community_impact === 'High' ? 'bg-orange-100 text-orange-800' :
                           lead.community_presence.community_impact === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {lead.community_presence.community_impact} Impact
                         </span>
-                      </div>
+                    </div>
                       <div className="space-y-2">
-                  <div>
+                    <div>
                           <p className="text-xs text-gray-500">Active Subreddits</p>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {lead.community_presence.active_subreddits.map((subreddit, idx) => (
@@ -904,25 +904,25 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                               </span>
                             ))}
                           </div>
-                  </div>
-                  <div>
+                    </div>
+                    <div>
                           <p className="text-xs text-gray-500">Relevant Topics</p>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {lead.community_presence.relevant_topics.map((topic, idx) => (
-                              <span key={idx} className="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded-full">
+                              <span key={idx} className="px-2 py-1 text-xs bg-orange-50 text-orange-700 rounded-full">
                                 {topic}
                               </span>
                             ))}
-                          </div>
+                    </div>
                   </div>
-                  </div>
-                  </div>
-                  ))}
                 </div>
               </div>
+                  ))}
+              </div>
+            </div>
 
               {/* Reference Links */}
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">Reference Links</h3>
                 <div className="space-y-6">
                   {selectedResult.report.redditor_leads.map((lead, index) => (
@@ -932,7 +932,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                           href={lead.basic_info.profile_url} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-800"
+                          className="text-orange-600 hover:text-orange-800"
                         >
                           {lead.basic_info.username}
                         </a>
@@ -950,24 +950,24 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                                     href={post.url} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-sm text-indigo-600 hover:text-indigo-800"
+                                    className="text-sm text-orange-600 hover:text-orange-800"
                                   >
                                     {post.title}
                                   </a>
                                   <span className="text-xs text-gray-500 ml-2">
                                     Score: {post.score}
                                   </span>
-                                </div>
+                  </div>
                                 <div className="text-xs text-gray-500 mt-1">
                                   Posted: {new Date(post.created_utc).toLocaleString()}
-                                </div>
-                              </div>
+                </div>
+                  </div>
                             ))}
-                          </div>
+                </div>
                         ) : (
                           <p className="text-xs text-gray-500 italic">No posts found</p>
                         )}
-                      </div>
+              </div>
 
                       {/* Comments */}
                       <div className="mt-4">
@@ -981,7 +981,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                                     href={comment.url} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-sm text-indigo-600 hover:text-indigo-800"
+                                    className="text-sm text-orange-600 hover:text-orange-800"
                                   >
                                     {comment.content || 'View Comment'}
                                   </a>
@@ -994,11 +994,11 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                                 </div>
                               </div>
                             ))}
-                          </div>
+                </div>
                         ) : (
                           <p className="text-xs text-gray-500 italic">No comments found</p>
                         )}
-                      </div>
+              </div>
                     </div>
                   ))}
                 </div>
@@ -1010,18 +1010,18 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
 
       {/* Subreddit Analytics */}
       {selectedResult && (
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Subreddit Analytics</h3>
           <div className="space-y-6">
             {/* Subreddit Overview */}
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between mb-4">
-                <div>
+                  <div>
                   <h4 className="text-sm font-medium text-gray-900">r/{selectedResult.report.subreddit_analytics.raw_data.subreddit}</h4>
                   <p className="text-xs text-gray-500">Subreddit Analysis</p>
-                </div>
+                  </div>
                 <span className={`px-2 py-1 text-xs rounded-full ${
-                  selectedResult.report.subreddit_analytics.analytics_summary.engagement_level === 'High' ? 'bg-green-100 text-green-800' :
+                  selectedResult.report.subreddit_analytics.analytics_summary.engagement_level === 'High' ? 'bg-orange-100 text-orange-800' :
                   selectedResult.report.subreddit_analytics.analytics_summary.engagement_level === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
@@ -1029,21 +1029,21 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+                  <div>
                   <p className="text-xs text-gray-500">Total Posts</p>
                   <p className="text-sm font-medium text-gray-900">{selectedResult.report.subreddit_analytics.analytics_summary.content_volume.posts}</p>
-                </div>
-                <div>
+                  </div>
+                  <div>
                   <p className="text-xs text-gray-500">Total Comments</p>
                   <p className="text-sm font-medium text-gray-900">{selectedResult.report.subreddit_analytics.analytics_summary.content_volume.comments}</p>
-                </div>
-                <div>
+                  </div>
+                  <div>
                   <p className="text-xs text-gray-500">Relevance Ratio</p>
                   <p className="text-sm font-medium text-gray-900">{selectedResult.report.subreddit_analytics.analytics_summary.content_volume.relevance_ratio}%</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+              </div>
         </div>
       )}
     </div>

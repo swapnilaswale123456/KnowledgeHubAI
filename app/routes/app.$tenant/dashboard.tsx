@@ -113,9 +113,27 @@ export default function DashboardRoute() {
     activeRequests: requests.filter(r => r.status === 'in_progress').length,
     completedRequests: requests.filter(r => r.status === 'completed').length,
     totalSubreddits: [...new Set(requests.flatMap(r => r.subreddits))].length,
-    averageSentiment: 0.75, // This would be calculated from actual data
-    topSubreddits: ['r/technology', 'r/business', 'r/startups'].slice(0, 3),
-    recentActivity: requests.slice(0, 5),
+    averageSentiment: requests.reduce((acc, req) => {
+      if (req.results?.sentimentBreakdown) {
+        const { positive, neutral, negative } = req.results.sentimentBreakdown;
+        const total = positive + neutral + negative;
+        if (total > 0) {
+          return acc + ((positive - negative) / total);
+        }
+      }
+      return acc;
+    }, 0) / requests.filter(r => r.results?.sentimentBreakdown).length || 0,
+    topSubreddits: [...new Set(requests.flatMap(r => r.subreddits))]
+      .map(subreddit => ({
+        name: subreddit,
+        count: requests.filter(r => r.subreddits.includes(subreddit)).length
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3)
+      .map(s => s.name),
+    recentActivity: requests
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
   };
 
   if (isChildRoute) {
@@ -371,7 +389,7 @@ export default function DashboardRoute() {
                   <h1 className="text-xl sm:text-2xl font-bold text-white">
                     Welcome to Reddit Research Hub
                   </h1>
-                  <p className="text-[#FF4500]/90 mt-1 text-sm sm:text-base">
+                  <p className="text-white/90 mt-1 text-sm sm:text-base">
                     Monitor and analyze Reddit discussions to gain valuable insights
                   </p>
                 </div>
