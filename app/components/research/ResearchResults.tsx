@@ -339,35 +339,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
 
   return (
     <div className="space-y-6">
-      {/* Date Range Filter */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <div className="flex items-center space-x-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">From Date</label>
-            <input
-              type="datetime-local"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">To Date</label>
-            <input
-              type="datetime-local"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm"
-            />
-          </div>
-          <button
-            onClick={handleDateRangeChange}
-            className="mt-6 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm"
-          >
-            Apply Filter
-          </button>
-        </div>
-      </div>
+      
 
       {/* Selected Result Details */}
       {selectedResult && (
