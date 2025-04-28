@@ -252,11 +252,11 @@ export default function RequestForm({ mode, initialData, onClose, updateRequest 
                 onChange={(e) => setTimeFilter(e.target.value)}
                 className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
               >
-                <option value="all">All Time</option>
+                
                 <option value="day">Past 24 Hours</option>
                 <option value="week">Past Week</option>
                 <option value="month">Past Month</option>
-                <option value="year">Past Year</option>
+              
               </select>
             </div>
 
