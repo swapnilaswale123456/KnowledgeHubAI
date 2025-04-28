@@ -15,10 +15,10 @@ export interface ResearchRequest {
   };
   min_score?: number;
   min_comments?: number;
-  date_range?: {
-    start_date: string;
-    end_date: string;
-  };
+  time_filter?: string;
+  sort?: string;
+  limit?: number;
+  comments_limit?: number;
   createdAt: string;
   results?: {
     postsAnalyzed: number;
@@ -53,13 +53,13 @@ export interface CreateResearchRequestData {
   keywords: string[];
   min_score: number;
   min_comments: number;
-  date_range: {
-    start_date: string;
-    end_date: string;
-  };
+  time_filter: string;
+  sort: string;
+  limit: number;
+  comments_limit: number;
 }
 
-interface ResearchResult {
+export interface ResearchResult {
   id: string;
   request_id: string;
   run_date: string;
@@ -67,14 +67,129 @@ interface ResearchResult {
   total_comments: number;
   relevant_posts: number;
   relevant_comments: number;
-  sentiment_analysis: {
-    positive: number;
-    negative: number;
-    neutral: number;
+  research_metrics: {
+    total_engagement: number;
+    relevance_score: number;
+    research_quality: number;
   };
-  top_topics: string[];
-  highlights: string[];
-  report: any;
+  report: {
+    sentiment_analysis: {
+      labels: string[];
+      values: number[];
+      colors: string[];
+      insights: {
+        dominant_sentiment: string;
+        sentiment_balance: string;
+        engagement_correlation: string;
+      };
+    };
+    topics: {
+      labels: string[];
+      values: number[];
+      colors: string[];
+      topic_insights: {
+        topic_count: number;
+        topic_diversity: string;
+        primary_focus: string;
+        topic_categories: {
+          technical: number;
+          business: number;
+          community: number;
+        };
+      };
+    };
+    summary: {
+      overview: {
+        executive_summary: string;
+        key_findings: string[];
+        notable_patterns: string[];
+      };
+      recommendations: {
+        suggestions: string[];
+        action_items: string[];
+      };
+      discussion_analysis: {
+        content_analysis: {
+          post_summary: string;
+          comment_summary: string;
+          content_quality: string;
+          content_metrics: {
+            depth: number;
+            breadth: number;
+            controversy_level: number;
+          };
+        };
+        engagement_analysis: {
+          interaction_patterns: string;
+          user_engagement: string;
+          knowledge_sharing: string;
+          engagement_metrics: {
+            consensus_strength: number;
+            discussion_health: string;
+          };
+        };
+        thematic_analysis: {
+          main_themes: string[];
+          expertise_areas: string[];
+          controversial_topics: string[];
+          consensus_points: string[];
+          theme_metrics: {
+            theme_coherence: string;
+            expertise_depth: string;
+          };
+        };
+      };
+    };
+    subreddit_analytics: {
+      raw_data: {
+        subreddit: string;
+      };
+      analytics_summary: {
+        subreddit_count: number;
+        engagement_level: string;
+        content_volume: {
+          posts: number;
+          comments: number;
+          relevance_ratio: number;
+        };
+      };
+    };
+    redditor_leads: Array<{
+      basic_info: {
+        username: string;
+        influence_score: number;
+        expertise_level: string;
+        activity_level: string;
+        profile_url: string;
+      };
+      engagement_metrics: {
+        engagement_quality: number;
+        content_quality: number;
+        relevance_score: number;
+      };
+      community_presence: {
+        active_subreddits: string[];
+        relevant_topics: string[];
+        community_impact: string;
+      };
+      reference_links: {
+        posts: Array<{
+          id: string;
+          title: string;
+          url: string;
+          score: number;
+          created_utc: string;
+        }>;
+        comments: Array<{
+          id: string;
+          content: string | null;
+          url: string;
+          score: number;
+          created_utc: string;
+        }>;
+      };
+    }>;
+  };
 }
 
 export class ResearchRequestsService {
@@ -230,7 +345,14 @@ export class ResearchRequestsService {
           lastRun: request.last_run_at || ''
         } : undefined,
         createdAt: request.created_at,
-        results: request.results || undefined
+        results: request.results || undefined,
+        min_score: request.min_score || 10,
+        min_comments: request.min_comments || 5,
+        time_filter: request.time_filter || 'all',
+        sort: request.sort || 'relevance',
+        limit: request.limit || 100,
+        comments_limit: request.comments_limit || 50,
+        schedule_type: request.schedule_type || 'daily'
       };
       
       console.log(`[ResearchRequestsService] Successfully mapped research request with ID ${id}`);
@@ -301,27 +423,77 @@ export class ResearchRequestsService {
 
   async updateRequest(id: string, requestData: Partial<CreateResearchRequestData>): Promise<ResearchRequest | null> {
     try {
+      console.log(`[ResearchRequestsService] Updating request ${id} with data:`, requestData);
+
+      // Extract tenant_id from requestData
+      const { tenant_id, ...updateData } = requestData;
+
+      // Structure the update data according to the API's ResearchRequestUpdate model
+      const updateBody = {
+        name: updateData.name,
+        description: updateData.description,
+        subreddits: updateData.subreddits,
+        keywords: updateData.keywords,
+        schedule_type: updateData.schedule_type,
+        min_score: updateData.min_score,
+        min_comments: updateData.min_comments,
+        time_filter: updateData.time_filter,
+        sort: updateData.sort,
+        limit: updateData.limit,
+        comments_limit: updateData.comments_limit
+      };
+
       const response = await fetch(
-        `${this.baseUrl}/research/requests/${id}`,
+        `${this.baseUrl}/research/requests/${id}?tenant_id=${tenant_id}`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.PYTHON_API_KEY || ''}`
           },
-          body: JSON.stringify(requestData)
+          body: JSON.stringify(updateBody)
         }
       );
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error(`[ResearchRequestsService] Error updating request ${id}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          errorData: JSON.stringify(errorData, null, 2)
+        });
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.data;
+      console.log(`[ResearchRequestsService] Successfully updated request ${id}:`, data);
+
+      // Map the response to match our ResearchRequest interface
+      const mappedRequest: ResearchRequest = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        subreddits: data.subreddits || [],
+        keywords: data.keywords || [],
+        status: data.status || 'pending',
+        schedule: data.next_run_at ? {
+          frequency: data.schedule_type || 'daily',
+          nextRun: data.next_run_at,
+          lastRun: data.last_run_at || ''
+        } : undefined,
+        min_score: data.min_score,
+        min_comments: data.min_comments,
+        time_filter: data.time_filter,
+        sort: data.sort,
+        limit: data.limit,
+        comments_limit: data.comments_limit,
+        createdAt: data.created_at
+      };
+
+      return mappedRequest;
     } catch (error) {
-      console.error(`Error updating research request with id ${id}:`, error);
-      return null;
+      console.error(`[ResearchRequestsService] Error updating research request with id ${id}:`, error);
+      throw error; // Propagate the error instead of returning null
     }
   }
 

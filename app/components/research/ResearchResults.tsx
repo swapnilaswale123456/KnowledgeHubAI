@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { format, differenceInMinutes } from 'date-fns';
 import {
   BarChart,
@@ -258,7 +258,43 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
   const [activeTab, setActiveTab] = useState('quick-insights');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [results, setResults] = useState(initialResults);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
   const fetcher = useFetcher<FetcherData>();
+
+  // Filter Redditor leads based on search query and filter type
+  const filteredLeads = useMemo(() => {
+    if (!selectedResult) return [];
+    
+    let filtered = selectedResult.report.redditor_leads;
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(lead => 
+        lead.basic_info.username.toLowerCase().includes(query) ||
+        lead.community_presence.relevant_topics.some(topic => topic.toLowerCase().includes(query)) ||
+        lead.community_presence.active_subreddits.some(subreddit => subreddit.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply type filter
+    switch (filterType) {
+      case 'high-influence':
+        filtered = filtered.filter(lead => lead.basic_info.influence_score >= 0.7);
+        break;
+      case 'active':
+        filtered = filtered.filter(lead => lead.basic_info.activity_level === 'High');
+        break;
+      case 'expert':
+        filtered = filtered.filter(lead => lead.basic_info.expertise_level === 'High');
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [selectedResult, searchQuery, filterType]);
 
   // Set initial dates from the first result if available
   useEffect(() => {
@@ -456,22 +492,32 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                         <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="flex-shrink-0 h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                <span className="text-orange-600 font-medium text-sm">
+                              <div className="flex-shrink-0 h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                <span className="text-orange-600 font-medium">
                                   {lead.basic_info.username.charAt(0).toUpperCase()}
                                 </span>
-                      </div>
+                              </div>
                               <div className="ml-4">
                                 <a 
-                                  href={lead.basic_info.profile_url} 
-                                  target="_blank" 
+                                  href={`https://reddit.com/user/${lead.basic_info.username}`}
+                                  target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-sm font-medium text-orange-600 hover:text-orange-800"
+                                  className="text-sm font-medium text-orange-600 hover:text-orange-800 hover:underline"
                                 >
                                   {lead.basic_info.username}
                                 </a>
-                    </div>
-                  </div>
+                                <div className="text-xs text-gray-500">
+                                  <a 
+                                    href={`https://reddit.com/user/${lead.basic_info.username}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-orange-600"
+                                  >
+                                    View Profile →
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -480,9 +526,9 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                                   className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.basic_info.influence_score * 100}%` }}
                                 ></div>
-                      </div>
+                              </div>
                               <span className="text-sm text-gray-900">{(lead.basic_info.influence_score * 100).toFixed(1)}%</span>
-                      </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 text-xs rounded-full ${
@@ -509,9 +555,9 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                                   className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.engagement_metrics.engagement_quality * 100}%` }}
                                 ></div>
-                    </div>
+                              </div>
                               <span className="text-sm text-gray-900">{(lead.engagement_metrics.engagement_quality * 100).toFixed(1)}%</span>
-                  </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -520,9 +566,9 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                                   className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.engagement_metrics.content_quality * 100}%` }}
                                 ></div>
-                </div>
+                              </div>
                               <span className="text-sm text-gray-900">{(lead.engagement_metrics.content_quality * 100).toFixed(1)}%</span>
-              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -531,12 +577,12 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                                   className="bg-orange-600 h-2 rounded-full" 
                                   style={{ width: `${lead.engagement_metrics.relevance_score * 100}%` }}
                                 ></div>
-              </div>
+                              </div>
                               <span className="text-sm text-gray-900">{(lead.engagement_metrics.relevance_score * 100).toFixed(1)}%</span>
-                    </div>
+                            </div>
                           </td>
                         </tr>
-                  ))}
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -673,14 +719,20 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                     <div className="relative">
                       <input
                         type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search leads..."
                         className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       />
                       <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
-                </div>
-                    <select className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                    <select 
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    >
                       <option value="all">All Leads</option>
                       <option value="high-influence">High Influence</option>
                       <option value="active">Most Active</option>
@@ -688,7 +740,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                     </select>
                     <button
                       onClick={() => {
-                        const csvContent = selectedResult.report.redditor_leads.map(lead => ({
+                        const csvContent = filteredLeads.map(lead => ({
                           Username: lead.basic_info.username,
                           'Influence Score': (lead.basic_info.influence_score * 100).toFixed(1) + '%',
                           'Expertise Level': lead.basic_info.expertise_level,
@@ -729,8 +781,8 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                       </svg>
                       <span>Export CSV</span>
                     </button>
-                    </div>
-                    </div>
+                  </div>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -745,7 +797,7 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {selectedResult.report.redditor_leads.map((lead, index) => (
+                      {filteredLeads.map((lead, index) => (
                         <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -753,14 +805,26 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                                 <span className="text-orange-600 font-medium">
                                   {lead.basic_info.username.charAt(0).toUpperCase()}
                                 </span>
-                    </div>
+                              </div>
                               <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
+                                <a 
+                                  href={`https://reddit.com/user/${lead.basic_info.username}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-orange-600 hover:text-orange-800 hover:underline"
+                                >
                                   {lead.basic_info.username}
-                  </div>
-                                <div className="text-sm text-gray-500">
-                                  {lead.basic_info.profile_url}
-                </div>
+                                </a>
+                                <div className="text-xs text-gray-500">
+                                  <a 
+                                    href={`https://reddit.com/user/${lead.basic_info.username}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-orange-600"
+                                  >
+                                    View Profile →
+                                  </a>
+                                </div>
                               </div>
                             </div>
                           </td>

@@ -4,69 +4,45 @@ import { useState } from "react";
 interface RequestFormProps {
   mode: 'create' | 'edit';
   initialData?: {
+    id?: string;
     name: string;
     description?: string;
     purpose?: string;
     subreddits: string[];
     keywords: string[];
     schedule_type?: 'daily' | 'weekly' | 'monthly';
-    duration?: 'day' | 'week' | 'month';
     min_score?: number;
     min_comments?: number;
-    start_date?: string;
-    end_date?: string;
-    date_range?: {
-      start_date: string;
-      end_date: string;
-    };
+    time_filter?: string;
+    sort?: string;
+    limit?: number;
+    comments_limit?: number;
   };
   onClose?: () => void;
+  updateRequest?: (data: any) => Promise<void>;
 }
 
-export default function RequestForm({ mode, initialData, onClose }: RequestFormProps) {
+export default function RequestForm({ mode, initialData, onClose, updateRequest }: RequestFormProps) {
   const [subreddits, setSubreddits] = useState<string[]>(initialData?.subreddits || []);
   const [keywords, setKeywords] = useState<string[]>(initialData?.keywords || []);
   const [newSubreddit, setNewSubreddit] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
-
-  // Set default dates for the date range
-  const today = new Date();
-  const oneMonthLater = new Date();
-  oneMonthLater.setMonth(today.getMonth() + 1);
-  
-  const formatDateForInput = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
+  const [name, setName] = useState(initialData?.name || "");
+  const [description, setDescription] = useState(getDescription());
+  const [scheduleType, setScheduleType] = useState(initialData?.schedule_type || "daily");
+  const [timeFilter, setTimeFilter] = useState(initialData?.time_filter || "all");
+  const [sort, setSort] = useState(initialData?.sort || "relevance");
+  const [minScore, setMinScore] = useState(50);
+  const [minComments, setMinComments] = useState(5);
+  const [limit, setLimit] = useState(5);
+  const [commentsLimit, setCommentsLimit] = useState(initialData?.comments_limit || 50);
 
   // Get description from either description or purpose field
-  const getDescription = () => {
+  function getDescription() {
     if (initialData?.description) return initialData.description;
     if (initialData?.purpose) return initialData.purpose;
     return '';
-  };
-
-  // Get schedule type from either schedule_type or duration field
-  const getScheduleType = () => {
-    if (initialData?.schedule_type) return initialData.schedule_type;
-    if (initialData?.duration === 'day') return 'daily';
-    if (initialData?.duration === 'week') return 'weekly';
-    if (initialData?.duration === 'month') return 'monthly';
-    return 'daily';
-  };
-
-  // Get start date from either directly or from date_range
-  const getStartDate = () => {
-    if (initialData?.start_date) return initialData.start_date;
-    if (initialData?.date_range?.start_date) return initialData.date_range.start_date;
-    return formatDateForInput(today);
-  };
-
-  // Get end date from either directly or from date_range
-  const getEndDate = () => {
-    if (initialData?.end_date) return initialData.end_date;
-    if (initialData?.date_range?.end_date) return initialData.date_range.end_date;
-    return formatDateForInput(oneMonthLater);
-  };
+  }
 
   const handleSubredditKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newSubreddit.trim()) {
@@ -92,8 +68,39 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
     setKeywords(keywords.filter((_, i) => i !== index));
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (mode === 'edit' && updateRequest && initialData?.id) {
+      const formData = {
+        id: initialData.id,
+        name,
+        description,
+        subreddits,
+        keywords,
+        schedule_type: scheduleType,
+        min_score: minScore,
+        min_comments: minComments,
+        time_filter: timeFilter,
+        sort: sort,
+        limit: limit,
+        comments_limit: commentsLimit
+      };
+      
+      try {
+        await updateRequest(formData);
+        if (onClose) {
+          onClose();
+        }
+      } catch (error) {
+        console.error('Error updating request:', error);
+        // You might want to show an error message to the user here
+      }
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-gray-500/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 space-y-4">
           <div className="flex justify-between items-center">
@@ -110,7 +117,7 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
             </button>
           </div>
 
-          <Form method="post" className="space-y-4">
+          <Form method="post" className="space-y-4" onSubmit={handleSubmit}>
             {/* Request Name */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -120,7 +127,8 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
                 type="text"
                 name="name"
                 id="name"
-                defaultValue={initialData?.name}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
                 required
               />
@@ -135,7 +143,8 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
                 name="description"
                 id="description"
                 rows={3}
-                defaultValue={getDescription()}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
                 required
               />
@@ -221,7 +230,8 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
               <select
                 id="schedule_type"
                 name="schedule_type"
-                defaultValue={getScheduleType()}
+                value={scheduleType}
+                onChange={(e) => setScheduleType(e.target.value as 'daily' | 'weekly' | 'monthly')}
                 className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
               >
                 <option value="daily">Daily</option>
@@ -230,70 +240,89 @@ export default function RequestForm({ mode, initialData, onClose }: RequestFormP
               </select>
             </div>
 
-            {/* Date Range */}
+            {/* Time Filter */}
             <div>
-              <h3 className="block text-sm font-medium text-gray-700 mb-2">Date Range</h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    name="start_date"
-                    id="start_date"
-                    defaultValue={getStartDate()}
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    name="end_date"
-                    id="end_date"
-                    defaultValue={getEndDate()}
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                    required
-                  />
-                </div>
-              </div>
+              <label htmlFor="time_filter" className="block text-sm font-medium text-gray-700">
+                Time Filter
+              </label>
+              <select
+                id="time_filter"
+                name="time_filter"
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+              >
+                <option value="all">All Time</option>
+                <option value="day">Past 24 Hours</option>
+                <option value="week">Past Week</option>
+                <option value="month">Past Month</option>
+                <option value="year">Past Year</option>
+              </select>
             </div>
 
-            {/* Min Score and Min Comments */}
+            {/* Sort Method */}
             <div>
-              <h3 className="block text-sm font-medium text-gray-700 mb-2">Filter Settings</h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="min_score" className="block text-sm font-medium text-gray-700">
-                    Minimum Score
-                  </label>
-                  <input
-                    type="number"
-                    name="min_score"
-                    id="min_score"
-                    defaultValue={initialData?.min_score || 10}
-                    min={0}
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="min_comments" className="block text-sm font-medium text-gray-700">
-                    Minimum Comments
-                  </label>
-                  <input
-                    type="number"
-                    name="min_comments"
-                    id="min_comments"
-                    defaultValue={initialData?.min_comments || 5}
-                    min={0}
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  />
-                </div>
-              </div>
+              <label htmlFor="sort" className="block text-sm font-medium text-gray-700">
+                Sort Method
+              </label>
+              <select
+                id="sort"
+                name="sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+              >
+                <option value="relevance">Relevance</option>
+                <option value="hot">Hot</option>
+                <option value="top">Top</option>
+                <option value="new">New</option>
+                <option value="comments">Most Comments</option>
+              </select>
+            </div>
+
+            {/* Minimum Score */}
+            <div>
+              <label htmlFor="min_score" className="block text-sm font-medium text-gray-700">
+                Minimum Score
+              </label>
+              <input
+                type="number"
+                name="min_score"
+                id="min_score"
+                value={minScore}
+                disabled
+                className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
+              />
+            </div>
+
+            {/* Minimum Comments */}
+            <div>
+              <label htmlFor="min_comments" className="block text-sm font-medium text-gray-700">
+                Minimum Comments
+              </label>
+              <input
+                type="number"
+                name="min_comments"
+                id="min_comments"
+                value={minComments}
+                disabled
+                className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
+              />
+            </div>
+
+            {/* Maximum Posts */}
+            <div>
+              <label htmlFor="limit" className="block text-sm font-medium text-gray-700">
+                Maximum Posts
+              </label>
+              <input
+                type="number"
+                name="limit"
+                id="limit"
+                value={limit}
+                disabled
+                className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
+              />
             </div>
 
             {/* Hidden fields for form submission */}

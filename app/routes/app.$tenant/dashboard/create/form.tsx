@@ -3,7 +3,7 @@ import { Form, useNavigate, useParams, useLoaderData, useFetcher } from "@remix-
 import { useState, useEffect } from "react";
 import { requireAuth } from "~/utils/loaders.middleware";
 import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
-import { ResearchRequestsService } from "~/services/research/researchRequests.server";
+import { ResearchRequestsService, CreateResearchRequestData } from "~/services/research/researchRequests.server";
 import { ResearchSuggestions } from "~/services/ai/researchSuggestions.server";
 import { getUserInfo } from "~/utils/session.server";
 
@@ -16,40 +16,68 @@ type SuggestionsResponse = {
   suggestions: ResearchSuggestions;
 };
 
-export async function action({ request, params }: ActionFunctionArgs) {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
   await requireAuth({ request, params });
+  
+  // Get the tenant ID and user ID
   const userInfo = await getUserInfo(request);
-  const formData = await request.formData();
   const tenantId = await getTenantIdFromUrl(params);
-
-  try {
-    const researchService = ResearchRequestsService.getInstance();
-    const response = await researchService.createRequest({
-      tenant_id: tenantId,
-      created_by: userInfo.userId,
-      name: formData.get("name") as string,
-      description: formData.get("description") as string,
-      schedule_type: formData.get("schedule_type") as "daily" | "weekly" | "monthly",
-      subreddits: formData.getAll("subreddits") as string[],
-      keywords: formData.getAll("keywords") as string[],
-      min_score: parseInt(formData.get("min_score") as string),
-      min_comments: parseInt(formData.get("min_comments") as string),
-      date_range: {
-        start_date: formData.get("start_date") as string,
-        end_date: formData.get("end_date") as string
-      }
-    });
-
-    // Redirect to dashboard after successful creation
-    return redirect(`/app/${params.tenant}/dashboard`);
-  } catch (error) {
-    console.error("Error creating research request:", error);
-    return json(
-      { error: "Failed to create research request" },
-      { status: 500 }
-    );
+  
+  if (!userInfo.userId || !tenantId) {
+    return json({ error: "Unauthorized" }, { status: 401 });
   }
-}
+  
+  // Process form data for the request
+  const formData = await request.formData();
+  const name = formData.get("name") as string;
+  const description = formData.get("description") as string;
+  const subredditsJson = formData.get("subreddits") as string;
+  const keywordsJson = formData.get("keywords") as string;
+  const scheduleType = formData.get("schedule_type") as "daily" | "weekly" | "monthly";
+  const minScore = parseInt(formData.get("min_score") as string) || 10;
+  const minComments = parseInt(formData.get("min_comments") as string) || 5;
+  const timeFilter = formData.get("time_filter") as string || "all";
+  const sort = formData.get("sort") as string || "relevance";
+  const limit = parseInt(formData.get("limit") as string) || 100;
+  const commentsLimit = parseInt(formData.get("comments_limit") as string) || 50;
+  
+  const subreddits = JSON.parse(subredditsJson) as string[];
+  const keywords = JSON.parse(keywordsJson) as string[];
+  
+  // Add validation logic if needed
+  if (!name || !description || !subreddits.length || !keywords.length) {
+    return json({ error: "All fields are required" }, { status: 400 });
+  }
+  
+  // Create the request data
+  const requestData: CreateResearchRequestData = {
+    tenant_id: tenantId,
+    created_by: userInfo.userId,
+    name,
+    description,
+    schedule_type: scheduleType,
+    subreddits,
+    keywords,
+    min_score: minScore,
+    min_comments: minComments,
+    time_filter: timeFilter,
+    sort: sort,
+    limit: limit,
+    comments_limit: commentsLimit
+  };
+  
+  console.log("Creating research request:", requestData);
+  
+  // Create the request
+  const researchService = ResearchRequestsService.getInstance();
+  const newRequest = await researchService.createRequest(requestData);
+  
+  if (!newRequest?.id) {
+    return json({ error: "Failed to create research request" }, { status: 500 });
+  }
+  
+  return redirect(`/app/${params.tenant}/dashboard/view/${newRequest.id}`);
+};
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   await requireAuth({ request, params });
@@ -90,6 +118,9 @@ export default function CreateResearchRequestForm() {
   const [newSubreddit, setNewSubreddit] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
+  const [minScore, setMinScore] = useState(50);
+  const [minComments, setMinComments] = useState(5);
+  const [limit, setLimit] = useState(5);
 
   // Fetch suggestions when component mounts
   useEffect(() => {
@@ -279,7 +310,7 @@ export default function CreateResearchRequestForm() {
                 </select>
               </div>
 
-              {/* Min Score and Comments */}
+              {/* Min Score and Min Comments */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="min_score" className="block text-sm font-medium text-gray-700">
@@ -289,7 +320,9 @@ export default function CreateResearchRequestForm() {
                     type="number"
                     name="min_score"
                     id="min_score"
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                    value={minScore}
+                    disabled
+                    className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
                   />
                 </div>
                 <div>
@@ -300,35 +333,62 @@ export default function CreateResearchRequestForm() {
                     type="number"
                     name="min_comments"
                     id="min_comments"
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                    value={minComments}
+                    disabled
+                    className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
                   />
                 </div>
               </div>
 
-              {/* Date Range */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    name="start_date"
-                    id="start_date"
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    name="end_date"
-                    id="end_date"
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  />
-                </div>
+              {/* Time Filter */}
+              <div>
+                <label htmlFor="time_filter" className="block text-sm font-medium text-gray-700">
+                  Time Filter
+                </label>
+                <select
+                  id="time_filter"
+                  name="time_filter"
+                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                >
+                  <option value="all">All Time</option>
+                  <option value="day">Past 24 Hours</option>
+                  <option value="week">Past Week</option>
+                  <option value="month">Past Month</option>
+                  <option value="year">Past Year</option>
+                </select>
+              </div>
+
+              {/* Sort Method */}
+              <div>
+                <label htmlFor="sort" className="block text-sm font-medium text-gray-700">
+                  Sort Method
+                </label>
+                <select
+                  id="sort"
+                  name="sort"
+                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                >
+                  <option value="relevance">Relevance</option>
+                  <option value="hot">Hot</option>
+                  <option value="top">Top</option>
+                  <option value="new">New</option>
+                  <option value="comments">Most Comments</option>
+                </select>
+              </div>
+
+              {/* Post Limit */}
+              <div>
+                <label htmlFor="limit" className="block text-sm font-medium text-gray-700">
+                  Maximum Posts
+                </label>
+                <input
+                  type="number"
+                  name="limit"
+                  id="limit"
+                  value={limit}
+                  disabled
+                  className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
+                />
               </div>
 
               {/* Form Actions */}

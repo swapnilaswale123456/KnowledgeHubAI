@@ -55,8 +55,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const scheduleType = formData.get("schedule_type") as "daily" | "weekly" | "monthly";
   const minScore = parseInt(formData.get("min_score") as string) || 10;
   const minComments = parseInt(formData.get("min_comments") as string) || 5;
-  const startDate = formData.get("start_date") as string;
-  const endDate = formData.get("end_date") as string;
+  const timeFilter = formData.get("time_filter") as string || "all";
+  const sort = formData.get("sort") as string || "relevance";
+  const limit = parseInt(formData.get("limit") as string) || 100;
+  const commentsLimit = parseInt(formData.get("comments_limit") as string) || 50;
   
   const subreddits = JSON.parse(subredditsJson) as string[];
   const keywords = JSON.parse(keywordsJson) as string[];
@@ -76,10 +78,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     keywords,
     min_score: minScore,
     min_comments: minComments,
-    date_range: {
-      start_date: startDate,
-      end_date: endDate
-    }
+    time_filter: timeFilter,
+    sort: sort,
+    limit: limit,
+    comments_limit: commentsLimit
   };
   
   console.log("Updating research request:", requestData);
@@ -168,7 +170,7 @@ export default function EditRequest() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Form method="post" className="space-y-6">
           {/* Request Name */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -289,37 +291,42 @@ export default function EditRequest() {
             </select>
           </div>
 
-          {/* Date Range */}
+          {/* Time Filter */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h3 className="block text-sm font-medium text-gray-700 mb-4">Date Range</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  name="start_date"
-                  id="start_date"
-                  defaultValue={researchRequest.date_range?.start_date ? formatDateString(researchRequest.date_range.start_date) : undefined}
-                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  name="end_date"
-                  id="end_date"
-                  defaultValue={researchRequest.date_range?.end_date ? formatDateString(researchRequest.date_range.end_date) : undefined}
-                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  required
-                />
-              </div>
-            </div>
+            <label htmlFor="time_filter" className="block text-sm font-medium text-gray-700">
+              Time Filter
+            </label>
+            <select
+              id="time_filter"
+              name="time_filter"
+              defaultValue={researchRequest.time_filter || "all"}
+              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+            >
+              <option value="all">All Time</option>
+              <option value="day">Past 24 Hours</option>
+              <option value="week">Past Week</option>
+              <option value="month">Past Month</option>
+              <option value="year">Past Year</option>
+            </select>
+          </div>
+
+          {/* Sort Method */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <label htmlFor="sort" className="block text-sm font-medium text-gray-700">
+              Sort Method
+            </label>
+            <select
+              id="sort"
+              name="sort"
+              defaultValue={researchRequest.sort || "relevance"}
+              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+            >
+              <option value="relevance">Relevance</option>
+              <option value="hot">Hot</option>
+              <option value="top">Top</option>
+              <option value="new">New</option>
+              <option value="comments">Most Comments</option>
+            </select>
           </div>
 
           {/* Min Score and Min Comments */}
@@ -352,6 +359,31 @@ export default function EditRequest() {
                   className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Post and Comment Limits */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h3 className="block text-sm font-medium text-gray-700 mb-4">Result Limits</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="limit" className="block text-sm font-medium text-gray-700">
+                  Maximum Posts
+                </label>
+                <input
+                  type="number"
+                  name="limit"
+                  id="limit"
+                  defaultValue={researchRequest.limit || 100}
+                  min={1}
+                  max={100}
+                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Maximum number of posts to analyze (1-100)
+                </p>
+              </div>
+             
             </div>
           </div>
 

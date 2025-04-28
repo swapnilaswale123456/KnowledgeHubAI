@@ -8,7 +8,7 @@ import { serverTimingHeaders } from "~/modules/metrics/utils/defaultHeaders.serv
 import { createMetrics } from "~/modules/metrics/services/.server/MetricTracker";
 import { getTenant } from "~/utils/db/tenants.db.server";
 import { requireAuth } from "~/utils/loaders.middleware";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ResearchRequestsService, ResearchRequest } from "~/services/research/researchRequests.server";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import Logo from "~/components/brand/Logo";
@@ -107,34 +107,47 @@ export default function DashboardRoute() {
     navigate(`/app/${params.tenant}/dashboard?page=${newPage}&limit=${pagination.limit}`);
   };
 
-  // Calculate metrics
-  const metrics = {
-    totalRequests: requests.length,
-    activeRequests: requests.filter(r => r.status === 'in_progress').length,
-    completedRequests: requests.filter(r => r.status === 'completed').length,
-    totalSubreddits: [...new Set(requests.flatMap(r => r.subreddits))].length,
-    averageSentiment: requests.reduce((acc, req) => {
+  // Filter requests based on time range
+  const filteredRequests = useMemo(() => {
+    const now = new Date();
+    const timeRanges = {
+      '24h': 24 * 60 * 60 * 1000,
+      '7d': 7 * 24 * 60 * 60 * 1000,
+      '30d': 30 * 24 * 60 * 60 * 1000
+    };
+    
+    return requests.filter(request => {
+      const requestDate = new Date(request.createdAt);
+      const timeDiff = now.getTime() - requestDate.getTime();
+      return timeDiff <= timeRanges[timeRange];
+    });
+  }, [requests, timeRange]);
+
+  // Calculate metrics based on filtered requests
+  const metrics = useMemo(() => ({
+    totalRequests: filteredRequests.length,
+    activeRequests: filteredRequests.filter(r => r.status === 'in_progress').length,
+    completedRequests: filteredRequests.filter(r => r.status === 'completed').length,
+    totalSubreddits: [...new Set(filteredRequests.flatMap(r => r.subreddits))].length,
+    averageSentiment: filteredRequests.reduce((acc, req) => {
       if (req.results?.sentimentBreakdown) {
         const { positive, neutral, negative } = req.results.sentimentBreakdown;
         const total = positive + neutral + negative;
         if (total > 0) {
-          return acc + ((positive - negative) / total);
+          return acc + (positive / total);
         }
       }
       return acc;
-    }, 0) / requests.filter(r => r.results?.sentimentBreakdown).length || 0,
-    topSubreddits: [...new Set(requests.flatMap(r => r.subreddits))]
+    }, 0) / filteredRequests.filter(r => r.results?.sentimentBreakdown).length || 0,
+    topSubreddits: [...new Set(filteredRequests.flatMap(r => r.subreddits))]
       .map(subreddit => ({
         name: subreddit,
-        count: requests.filter(r => r.subreddits.includes(subreddit)).length
+        count: filteredRequests.filter(r => r.subreddits.includes(subreddit)).length
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 3)
-      .map(s => s.name),
-    recentActivity: requests
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5)
-  };
+      .map(s => s.name)
+  }), [filteredRequests]);
 
   if (isChildRoute) {
     return <Outlet />;
@@ -438,7 +451,7 @@ export default function DashboardRoute() {
             </div>
             
             {/* Stats Overview */}
-            <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group">
                 <div className="flex items-center justify-between">
                   <div>
@@ -487,69 +500,9 @@ export default function DashboardRoute() {
                   </div>
                 </div>
               </div>
-              
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm text-gray-500">Average Sentiment</p>
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">
-                      {metrics.averageSentiment.toFixed(2)}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Overall sentiment score</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-[#FF4500]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <svg className="w-5 h-5 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
             </div>
             
-            {/* Top Subreddits and Recent Activity */}
-            <div className="mt-4 sm:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Top Subreddits */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Monitored Subreddits</h3>
-                <div className="space-y-3">
-                  {metrics.topSubreddits.map((subreddit, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-lg bg-[#FF4500]/10 flex items-center justify-center">
-                          <svg className="w-4 h-4 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-                          </svg>
-                        </div>
-                        <span className="ml-3 font-medium text-gray-900">{subreddit}</span>
-                      </div>
-                      <span className="text-sm text-gray-500">Active</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Recent Activity */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-                <div className="space-y-3">
-                  {metrics.recentActivity.map((request) => (
-                    <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center">
-                        <div className={`w-2 h-2 rounded-full ${
-                          request.status === 'completed' ? 'bg-green-500' :
-                          request.status === 'in_progress' ? 'bg-blue-500' :
-                          request.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
-                        }`}></div>
-                        <span className="ml-3 font-medium text-gray-900">{request.name}</span>
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {new Date(request.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            
             
             {/* Recent Requests Table */}
             <div className="mt-4 sm:mt-6">
@@ -559,7 +512,7 @@ export default function DashboardRoute() {
                   to={`/app/${params.tenant}/dashboard/create`}
                   className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#FF4500] bg-[#FF4500]/10 rounded-lg hover:bg-[#FF4500]/20 transition-colors"
                 >
-                  View All
+                  Create New Request
                   <svg className="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -577,7 +530,7 @@ export default function DashboardRoute() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {requests.slice(0, 5).map((request) => (
+                      {filteredRequests.slice(0, 5).map((request) => (
                         <tr key={request.id} className="hover:bg-gray-50/80 transition-colors">
                           <td className="px-3 py-2 whitespace-nowrap">
                             <div className="flex items-center">

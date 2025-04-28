@@ -39,7 +39,54 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         { status: 500, headers: getServerTimingHeader() }
       );
     }
-  } else if (action === "execute") {
+  }
+
+  if (action === "update") {
+    const updateData = {
+      tenant_id: tenantId,
+      name: formData.get("name") as string,
+      description: formData.get("description") as string,
+      subreddits: JSON.parse(formData.get("subreddits") as string) as string[],
+      keywords: JSON.parse(formData.get("keywords") as string) as string[],
+      schedule_type: formData.get("schedule_type") as "daily" | "weekly" | "monthly",
+      min_score: parseInt(formData.get("min_score") as string) || 10,
+      min_comments: parseInt(formData.get("min_comments") as string) || 5,
+      time_filter: formData.get("time_filter") as string || "all",
+      sort: formData.get("sort") as string || "relevance",
+      limit: parseInt(formData.get("limit") as string) || 100,
+      comments_limit: parseInt(formData.get("comments_limit") as string) || 50
+    };
+
+    console.log("Updating research request with data:", updateData);
+
+    try {
+      const result = await time(
+        researchService.updateRequest(requestId, updateData),
+        "updateResearchRequest"
+      );
+
+      if (!result) {
+        return json(
+          { error: "Failed to update research request" },
+          { status: 500, headers: getServerTimingHeader() }
+        );
+      }
+
+      return json({ 
+        success: true,
+        message: "Research request updated successfully",
+        request: result
+      }, { headers: getServerTimingHeader() });
+    } catch (error) {
+      console.error("Error updating research request:", error);
+      return json(
+        { error: error instanceof Error ? error.message : "Failed to update research request" },
+        { status: 500, headers: getServerTimingHeader() }
+      );
+    }
+  }
+
+  if (action === "execute") {
     const success = await time(
       researchService.executeRequest(requestId, tenantId, true),
       "executeResearchRequest"
@@ -143,7 +190,12 @@ export const loader = async ({ request: req, params }: LoaderFunctionArgs) => {
 
 export default function ViewRequest() {
   const { request, results } = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
+  const actionData = useActionData<{
+    success?: boolean;
+    message?: string;
+    error?: string;
+    request?: ResearchRequest;
+  }>();
   const navigate = useNavigate();
   const params = useParams();
   const submit = useSubmit();
@@ -160,6 +212,7 @@ export default function ViewRequest() {
     nextRunAt?: string;
     updatedAt?: string;
   } | null>(null);
+  const [currentRequest, setCurrentRequest] = useState<ResearchRequest>(request);
   const [researchResults, setResearchResults] = useState(results || []);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [fromDate, setFromDate] = useState<string>(new Date(request.createdAt).toISOString());
@@ -173,16 +226,22 @@ export default function ViewRequest() {
   useEffect(() => {
     if (hasError) {
       setNotification({
-        message: actionData.error,
+        message: actionData?.error || 'An error occurred',
         type: 'error'
       });
       setTimeout(() => setNotification(null), 5000);
     } else if (hasSuccess) {
       setNotification({
-        message: actionData.message,
+        message: actionData?.message || 'Operation successful',
         type: 'success'
       });
       setTimeout(() => setNotification(null), 5000);
+      // Update the current request if it was updated
+      if (actionData?.request) {
+        setCurrentRequest(actionData.request);
+      }
+      // Close the edit form if it was open
+      setIsEditing(false);
     }
   }, [actionData, hasError, hasSuccess]);
 
@@ -358,18 +417,38 @@ export default function ViewRequest() {
       <RequestForm
         mode="edit"
         initialData={{
-          name: request.name,
-          description: request.description,
-          purpose: request.purpose,
-          subreddits: request.subreddits,
-          keywords: request.keywords,
-          duration: request.duration,
-          min_score: request.min_score,
-          min_comments: request.min_comments,
-          schedule_type: request.schedule_type,
-          date_range: request.date_range
+          id: currentRequest.id,
+          name: currentRequest.name,
+          description: currentRequest.description,
+          purpose: currentRequest.purpose,
+          subreddits: currentRequest.subreddits,
+          keywords: currentRequest.keywords,
+          min_score: currentRequest.min_score,
+          min_comments: currentRequest.min_comments,
+          schedule_type: currentRequest.schedule_type,
+          time_filter: currentRequest.time_filter,
+          sort: currentRequest.sort,
+          limit: currentRequest.limit,
+          comments_limit: currentRequest.comments_limit
         }}
         onClose={() => setIsEditing(false)}
+        updateRequest={async (data) => {
+          const formData = new FormData();
+          formData.append("_action", "update");
+          formData.append("name", data.name);
+          formData.append("description", data.description);
+          formData.append("subreddits", JSON.stringify(data.subreddits));
+          formData.append("keywords", JSON.stringify(data.keywords));
+          formData.append("schedule_type", data.schedule_type);
+          formData.append("min_score", data.min_score.toString());
+          formData.append("min_comments", data.min_comments.toString());
+          formData.append("time_filter", data.time_filter);
+          formData.append("sort", data.sort);
+          formData.append("limit", data.limit.toString());
+          formData.append("comments_limit", data.comments_limit.toString());
+          
+          await submit(formData, { method: "post" });
+        }}
       />
     );
   }
@@ -403,14 +482,14 @@ export default function ViewRequest() {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-orange-600 bg-clip-text text-transparent">
-                  {request.name}
+                  {currentRequest.name}
                 </h1>
-                <p className="text-gray-600 mt-1 text-sm">{request.purpose}</p>
+                <p className="text-gray-600 mt-1 text-sm">{currentRequest.purpose}</p>
                 <div className="flex items-center mt-2 text-xs text-gray-500">
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  {new Date(request.createdAt).toLocaleString()}
+                  {new Date(currentRequest.createdAt).toLocaleString()}
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -474,15 +553,15 @@ export default function ViewRequest() {
                   <button 
                     onClick={() => setShowScheduleOptions(!showScheduleOptions)}
                     className={`px-3 py-1.5 text-xs ${
-                      request.schedule 
+                      currentRequest.schedule 
                         ? 'border-2 border-green-100 text-green-600 hover:bg-green-50' 
                         : 'border-2 border-orange-200 text-orange-600 hover:bg-orange-50'
                     } rounded-lg flex items-center`}
                   >
-                    <svg className={`w-4 h-4 mr-1 ${request.schedule ? 'text-green-500' : 'text-orange-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-4 h-4 mr-1 ${currentRequest.schedule ? 'text-green-500' : 'text-orange-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    {request.schedule ? 'Scheduled' : 'Schedule'}
+                    {currentRequest.schedule ? 'Scheduled' : 'Schedule'}
                   </button>
                   {showScheduleOptions && (
                     <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white p-3 ring-1 ring-black ring-opacity-5 z-10">
@@ -491,32 +570,25 @@ export default function ViewRequest() {
                         <select
                           value={scheduleType}
                           onChange={(e) => setScheduleType(e.target.value as 'daily' | 'weekly' | 'monthly')}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-xs"
+                          className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
                         >
                           <option value="daily">Daily</option>
                           <option value="weekly">Weekly</option>
                           <option value="monthly">Monthly</option>
                         </select>
                       </div>
-                      <div className="flex justify-between">
-                        {request.schedule && (
-                          <button
-                            onClick={() => {
-                              const formData = new FormData();
-                              formData.append("_action", "cancel_schedule");
-                              submit(formData, { method: "post" });
-                              setShowScheduleOptions(false);
-                            }}
-                            className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200"
-                          >
-                            Cancel Schedule
-                          </button>
-                        )}
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => setShowScheduleOptions(false)}
+                          className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800"
+                        >
+                          Cancel
+                        </button>
                         <button
                           onClick={handleSchedule}
-                          className="px-2 py-1 text-xs bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                          className="px-2 py-1 text-xs text-purple-600 hover:text-purple-800"
                         >
-                          {request.schedule ? 'Update Schedule' : 'Save Schedule'}
+                          Save
                         </button>
                       </div>
                     </div>
@@ -630,7 +702,7 @@ export default function ViewRequest() {
           </div>
 
           {/* Research Results Section */}
-          {request.status === 'completed' && researchResults && researchResults.length > 0 && (
+          {currentRequest.status === 'completed' && researchResults && researchResults.length > 0 && (
             <div className="mt-6">
               {isLoadingResults ? (
                 <div className="flex justify-center items-center py-12">
