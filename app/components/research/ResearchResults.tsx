@@ -101,9 +101,7 @@ interface ResearchResult {
       };
     };
     subreddit_analytics: {
-      raw_data: {
-        subreddit: string;
-      };
+      raw_data: string;
       analytics_summary: {
         subreddit_count: number;
         engagement_level: string;
@@ -1046,16 +1044,26 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
 
       {/* Subreddit Analytics */}
       {selectedResult && (
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Subreddit Analytics</h3>
           <div className="space-y-6">
             {/* Subreddit Overview */}
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between mb-4">
-                  <div>
-                  <h4 className="text-sm font-medium text-gray-900">r/{selectedResult.report.subreddit_analytics.raw_data.subreddit}</h4>
-                  <p className="text-xs text-gray-500">Subreddit Analysis</p>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">Monitored Subreddits</h4>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedResult.report.subreddit_analytics.raw_data ? (
+                      selectedResult.report.subreddit_analytics.raw_data.split(',').map((subreddit, index) => (
+                        <span key={index} className="px-2 py-1 text-xs bg-white rounded-full border border-gray-200">
+                          r/{subreddit.trim()}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-500">No subreddits monitored</span>
+                    )}
                   </div>
+                </div>
                 <span className={`px-2 py-1 text-xs rounded-full ${
                   selectedResult.report.subreddit_analytics.analytics_summary.engagement_level === 'High' ? 'bg-orange-100 text-orange-800' :
                   selectedResult.report.subreddit_analytics.analytics_summary.engagement_level === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
@@ -1065,21 +1073,21 @@ export default function ResearchResults({ results: initialResults, onDateRangeCh
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
+                <div>
                   <p className="text-xs text-gray-500">Total Posts</p>
                   <p className="text-sm font-medium text-gray-900">{selectedResult.report.subreddit_analytics.analytics_summary.content_volume.posts}</p>
-                  </div>
-                  <div>
+                </div>
+                <div>
                   <p className="text-xs text-gray-500">Total Comments</p>
                   <p className="text-sm font-medium text-gray-900">{selectedResult.report.subreddit_analytics.analytics_summary.content_volume.comments}</p>
-                  </div>
-                  <div>
+                </div>
+                <div>
                   <p className="text-xs text-gray-500">Relevance Ratio</p>
                   <p className="text-sm font-medium text-gray-900">{selectedResult.report.subreddit_analytics.analytics_summary.content_volume.relevance_ratio}%</p>
-                  </div>
                 </div>
               </div>
-              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -36,7 +36,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const scheduleType = formData.get("schedule_type") as "daily" | "weekly" | "monthly";
   const minScore = parseInt(formData.get("min_score") as string) || 10;
   const minComments = parseInt(formData.get("min_comments") as string) || 5;
-  const timeFilter = formData.get("time_filter") as string || "all";
+  const timeFilter = formData.get("time_filter") as string || "day";
   const sort = formData.get("sort") as string || "relevance";
   const limit = parseInt(formData.get("limit") as string) || 100;
   const commentsLimit = parseInt(formData.get("comments_limit") as string) || 50;

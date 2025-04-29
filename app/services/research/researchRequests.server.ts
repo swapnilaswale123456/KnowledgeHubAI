@@ -348,7 +348,7 @@ export class ResearchRequestsService {
         results: request.results || undefined,
         min_score: request.min_score || 10,
         min_comments: request.min_comments || 5,
-        time_filter: request.time_filter || 'all',
+        time_filter: request.time_filter || 'day',
         sort: request.sort || 'relevance',
         limit: request.limit || 100,
         comments_limit: request.comments_limit || 50,
