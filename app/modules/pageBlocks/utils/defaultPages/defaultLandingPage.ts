@@ -13,8 +13,8 @@ export function defaultLandingPage({ t }: { t: TFunction }) {
     {
       banner: {
         style: "top",
-        text: "Reddit Research Hub - Your AI-Powered Research Assistant",
-        textMd: "Transform Reddit discussions into actionable insights",
+        text: "Find Your Next Customer on Reddit - Ready to Buy Now",
+        textMd: "Stop cold outreach. Our AI finds Reddit users actively seeking solutions like yours.",
         cta: [{ text: "Get Started", href: "/pricing", isPrimary: true, target: "_blank" }],
       },
     },
@@ -24,12 +24,12 @@ export function defaultLandingPage({ t }: { t: TFunction }) {
     {
       hero: {
         style: "simple",
-        headline: "Unlock Reddit's Hidden Insights with AI",
-        description: "Monitor discussions, track trends, and analyze sentiment across subreddits to make data-driven decisions.",
+        headline: "Find Your Next Customer on Reddit",
+        description: "Transform Reddit discussions into actionable insights. Our AI-powered platform analyzes millions of conversations to identify high-intent prospects, track trends, and uncover valuable market intelligence. Get comprehensive research reports and data-driven recommendations to make informed business decisions.",
         image: "https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1703743532626-analytics%20(2).png",
         cta: [
           {
-            text: "Start Researching",
+            text: "Get Started",
             href: "/pricing",
             isPrimary: true,
           },
@@ -40,7 +40,7 @@ export function defaultLandingPage({ t }: { t: TFunction }) {
           },
         ],
         topText: {
-          text: "Powered by Advanced AI",
+          text: "AI-Powered Research Platform",
         },
         bottomText: {
           link: {
@@ -50,37 +50,14 @@ export function defaultLandingPage({ t }: { t: TFunction }) {
         },
       },
     },
-    // Logo Clouds
-    {
-      logoClouds: {
-        style: "custom",
-        headline: "Trusted by Research Teams",
-        logos: [
-          {
-            alt: "Market Research",
-            href: "#",
-            src: "https://yahooder.sirv.com/saasrock/logos/clouds/colors/remix.png",
-          },
-          {
-            alt: "Product Teams",
-            href: "#",
-            src: "https://yahooder.sirv.com/saasrock/logos/clouds/colors/tailwindcss.png",
-          },
-          {
-            alt: "Brand Managers",
-            href: "#",
-            src: "https://yahooder.sirv.com/saasrock/logos/clouds/colors/prisma.png",
-          },
-        ],
-      },
-    },
+   
     // Features
     {
       features: {
         style: "cards",
-        topText: "Comprehensive Reddit Research",
-        headline: "Everything You Need for Reddit Analysis",
-        subheadline: "Monitor discussions, track trends, and analyze sentiment across subreddits with our powerful research tools.",
+        topText: "AI-Powered Lead Generation",
+        headline: "Everything You Need to Convert",
+        subheadline: "Get direct access to qualified leads with complete context and engagement metrics.",
         cta: [
           { text: "View Pricing", isPrimary: true, href: "/pricing" },
           { text: "Contact Sales", isPrimary: false, href: "/contact" },
@@ -91,40 +68,40 @@ export function defaultLandingPage({ t }: { t: TFunction }) {
         },
         items: [
           {
-            name: "Market Research",
-            description: "Track industry trends, monitor competitor discussions, and analyze market sentiment across subreddits.",
+            name: "Target Your Market",
+            description: "Select subreddits where your ideal customers are actively discussing problems your product solves.",
             img: `https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1703743532626-analytics%20(2).png`,
             link: { text: "Learn More", href: "/features/market-research" },
             subFeatures: [
-              { name: "Trend Analysis" },
-              { name: "Sentiment Tracking" },
-              { name: "Competitor Monitoring" }
+              { name: "Subreddit Selection" },
+              { name: "Audience Targeting" },
+              { name: "Problem Analysis" }
             ],
-            highlight: { text: "Real-time Insights" },
+            highlight: { text: "Precision Targeting" },
           },
           {
-            name: "Product Feedback",
-            description: "Gather user feedback, track feature requests, and monitor product discussions to improve your offerings.",
+            name: "AI-Powered Discovery",
+            description: "Our advanced AI analyzes millions of conversations in real-time to identify high-intent prospects actively seeking solutions.",
             img: `https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1704917949886-my-subscription.png`,
             link: { text: "Learn More", href: "/features/product-feedback" },
             subFeatures: [
-              { name: "User Reviews" },
-              { name: "Feature Requests" },
-              { name: "Bug Reports" }
+              { name: "Real-time Analysis" },
+              { name: "Intent Detection" },
+              { name: "Lead Scoring" }
             ],
-            highlight: { text: "User-Centric" },
+            highlight: { text: "Smart Discovery" },
           },
           {
-            name: "Brand Monitoring",
-            description: "Track brand mentions, analyze sentiment, and monitor customer discussions across Reddit communities.",
+            name: "Ready for Sales",
+            description: "Convert warm leads into customers with direct links to relevant discussions and personalized outreach suggestions.",
             img: `https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1703830927472-app-portal-dashboard.png`,
             link: { text: "Learn More", href: "/features/brand-monitoring" },
             subFeatures: [
-              { name: "Mention Tracking" },
-              { name: "Sentiment Analysis" },
-              { name: "Crisis Monitoring" }
+              { name: "Direct Links" },
+              { name: "Engagement Metrics" },
+              { name: "Outreach Templates" }
             ],
-            highlight: { text: "Brand Protection" },
+            highlight: { text: "Sales Ready" },
           },
         ],
       },
@@ -136,24 +113,187 @@ export function defaultLandingPage({ t }: { t: TFunction }) {
       },
       gallery: {
         style: "carousel",
-        topText: "Powerful Research Tools",
-        headline: "Transform Reddit Data into Actionable Insights",
-        subheadline: "Our comprehensive research platform helps you monitor discussions, track trends, and analyze sentiment across subreddits.",
+        topText: "Platform Overview",
+        headline: "Comprehensive Research Dashboard",
+        subheadline: "Get detailed insights and analytics about Reddit discussions, user sentiment, and potential leads.",
         items: [
           {
             type: "image",
-            title: "Market Research Dashboard - Track industry trends and competitor discussions in real-time",
-            src: "https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1703743532626-analytics%20(2).png",
+            title: "Executive Summary Dashboard - View total activities, topic diversity, and community impact at a glance",
+            src: "/images/dashboard/executive-summary.png"
           },
           {
             type: "image",
-            title: "Sentiment Analysis - Understand community sentiment and brand perception",
-            src: "https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1704917949886-my-subscription.png",
+            title: "Top Redditor Leads - Track influence score, expertise level, activity level, and engagement quality",
+            src: "/images/dashboard/redditor-leads.PNG"
           },
           {
             type: "image",
-            title: "Trend Tracking - Identify emerging trends and topics in your industry",
-            src: "https://qwcsbptoezmuwgyijrxp.supabase.co/storage/v1/object/public/novel/1703830927472-app-portal-dashboard.png",
+            title: "Sentiment Analysis - Analyze sentiment distribution and topic diversity across discussions",
+            src: "/images/dashboard/sentiment-analysis.PNG"
+          },
+          {
+            type: "image",
+            title: "Research Metrics - Monitor key metrics including relevance scores, content quality, and engagement rates",
+            src: "/images/dashboard/research-metrics.PNG"
+          }
+        ],
+      },
+    },
+    // How It Works Section
+    {
+      features: {
+        style: "cards",
+        topText: "Simple Process",
+        headline: "Find Reddit Users in Minutes",
+        subheadline: "Our AI-powered platform makes it easy to find and connect with your ideal customers.",
+        grid: {
+          columns: "3",
+          gap: "md",
+        },
+        items: [
+          {
+            name: "Describe Your Request",
+            description: "Tell us exactly what you're looking for - your target audience, product category, and goals.",
+            icon: "✍️",
+            highlight: { text: "Step 1" },
+          },
+          {
+            name: "AI Agent Generation",
+            description: "Our custom AI analyzes your needs and creates a specialized search agent.",
+            icon: "🤖",
+            highlight: { text: "Step 2" },
+          },
+          {
+            name: "Find Reddit Users",
+            description: "Connect with subject matter experts and potential customers who match your criteria.",
+            icon: "🎯",
+            highlight: { text: "Step 3" },
+          },
+        ],
+      },
+    },
+    // Use Cases Section
+    {
+      features: {
+        style: "cards",
+        topText: "Versatile Applications",
+        headline: "What Can You Use It For?",
+        subheadline: "Discover the various ways our platform can help your business grow.",
+        grid: {
+          columns: "3",
+          gap: "md",
+        },
+        items: [
+          {
+            name: "Lead Generation & Sales",
+            description: "Find potential customers actively looking to buy products like yours.",
+            icon: "💼",
+            highlight: { text: "High Intent Leads" },
+          },
+          {
+            name: "Talent & Recruitment",
+            description: "Identify skilled professionals ready for new opportunities.",
+            icon: "👥",
+            highlight: { text: "Top Talent" },
+          },
+          {
+            name: "Market Research",
+            description: "Analyze what your target audience really thinks about your industry.",
+            icon: "📊",
+            highlight: { text: "Real Insights" },
+          },
+          {
+            name: "Learning & Development",
+            description: "Find experts willing to share their knowledge and mentor others.",
+            icon: "📚",
+            highlight: { text: "Expert Guidance" },
+          },
+          {
+            name: "Business Development",
+            description: "Connect with potential partners who complement your business.",
+            icon: "🤝",
+            highlight: { text: "Strategic Partners" },
+          },
+          {
+            name: "Content & Marketing",
+            description: "Discover proven creators to amplify your brand's message.",
+            icon: "📢",
+            highlight: { text: "Content Creators" },
+          },
+        ],
+      },
+    },
+    // Statistics Section
+    {
+      features: {
+        style: "cards",
+        topText: "Our Impact",
+        headline: "Our Impact in Numbers",
+        subheadline: "Join thousands of businesses finding their next customers on Reddit",
+        grid: {
+          columns: "4",
+          gap: "md",
+        },
+        items: [
+          {
+            name: "4,500+",
+            description: "Expert Profiles",
+            icon: "👥",
+            highlight: { text: "Verified Experts" },
+          },
+          {
+            name: "100k+",
+            description: "Comments Analyzed",
+            icon: "💬",
+            highlight: { text: "Data Points" },
+          },
+          {
+            name: "100+",
+            description: "Active Subreddits",
+            icon: "🎯",
+            highlight: { text: "Communities" },
+          },
+          {
+            name: "20k+",
+            description: "Posts Examined",
+            icon: "📝",
+            highlight: { text: "Content Analyzed" },
+          },
+        ],
+      },
+    },
+    // How We Find Experts Section
+    {
+      features: {
+        style: "cards",
+        topText: "Our Process",
+        headline: "How We Find Reddit Experts",
+        subheadline: "Our algorithm analyzes public Reddit data to identify and validate genuine experts.",
+        grid: {
+          columns: "2",
+          gap: "md",
+        },
+        items: [
+          {
+            name: "Comments & Posts",
+            description: "We analyze comments and posts on content and quality to identify top contributors.",
+            icon: "📝",
+          },
+          {
+            name: "Karma Tracking",
+            description: "Track user karma to validate expertise and community recognition.",
+            icon: "⭐",
+          },
+          {
+            name: "Consistency Check",
+            description: "Monitor long-term Reddit Activity patterns.",
+            icon: "📈",
+          },
+          {
+            name: "Profile Analysis",
+            description: "Deep scan of user history to identify expertise areas and knowledge patterns.",
+            icon: "🔍",
           },
         ],
       },
