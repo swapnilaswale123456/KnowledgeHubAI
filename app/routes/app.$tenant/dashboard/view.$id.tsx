@@ -3,17 +3,122 @@ import { useLoaderData, useNavigate, useParams, useSubmit, useActionData } from 
 import { requireAuth } from "~/utils/loaders.middleware";
 import { useState, useEffect } from "react";
 import RequestForm from "~/components/research/RequestForm";
-import { ResearchRequestsService, ResearchRequest } from "~/services/research/researchRequests.server";
 import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 import { createMetrics } from "~/modules/metrics/services/.server/MetricTracker";
 import { serverTimingHeaders } from "~/modules/metrics/utils/defaultHeaders.server";
 import ResearchResults from "~/components/research/ResearchResults";
 
+// Client-side type for ResearchRequest
+type ResearchRequest = {
+  id: string;
+  name: string;
+  purpose?: string;
+  description?: string;
+  subreddits: string[];
+  keywords: string[];
+  duration?: 'day' | 'week' | 'month';
+  schedule_type?: 'daily' | 'weekly' | 'monthly';
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  schedule?: {
+    frequency: 'daily' | 'weekly' | 'monthly';
+    lastRun: string;
+    nextRun: string;
+  };
+  min_score?: number;
+  min_comments?: number;
+  time_filter?: string;
+  sort?: string;
+  limit?: number;
+  comments_limit?: number;
+  createdAt: string;
+  results?: {
+    postsAnalyzed: number;
+    relevantPosts: number;
+    sentimentBreakdown: {
+      positive: number;
+      neutral: number;
+      negative: number;
+    };
+    downloadUrl?: string;
+  };
+};
+
+// Type for the loader data
+type LoaderData = {
+  request: ResearchRequest;
+  results: any[]; // You might want to type this more specifically
+};
+
+// Type for request status
+type RequestStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
+
+// Type for ResearchRequestsService
+type ResearchRequestsServiceType = {
+  getInstance: () => {
+    getRequestStatus: (id: string, tenantId: string) => Promise<{
+      success: boolean;
+      status: 'pending' | 'running' | 'completed' | 'failed';
+      message?: string;
+      requestInfo?: {
+        requestId: string;
+        tenantId: string;
+        lastRunAt?: string;
+        nextRunAt?: string;
+        createdAt: string;
+        updatedAt: string;
+      };
+      results?: any;
+    }>;
+    handleRefresh: (id: string, tenantId: string) => Promise<{
+      success: boolean;
+      message?: string;
+      shouldUpdate: boolean;
+      status?: string;
+      requestInfo?: {
+        requestId: string;
+        tenantId: string;
+        lastRunAt?: string;
+        nextRunAt?: string;
+        createdAt: string;
+        updatedAt: string;
+      };
+      results?: any;
+    }>;
+    deleteRequest: (id: string) => Promise<boolean>;
+    updateRequest: (id: string, data: Partial<{
+      tenant_id: string;
+      name: string;
+      description: string;
+      subreddits: string[];
+      keywords: string[];
+      schedule_type: 'daily' | 'weekly' | 'monthly';
+      min_score: number;
+      min_comments: number;
+      time_filter: string;
+      sort: string;
+      limit: number;
+      comments_limit: number;
+    }>) => Promise<ResearchRequest | null>;
+    executeRequest: (id: string, tenantId: string, forceRefresh?: boolean) => Promise<{ success: boolean; message?: string; data?: any }>;
+    scheduleRequest: (requestId: string, scheduleType: string) => Promise<boolean>;
+    cancelSchedule: (requestId: string) => Promise<boolean>;
+    getRequestById: (id: string, tenantId: string) => Promise<ResearchRequest | null>;
+    getRequestResults: (requestId: string, tenantId: string, fromDate?: string, toDate?: string) => Promise<any[]>;
+  };
+};
+
 export { serverTimingHeaders as headers };
+
+// Import server-only code only in server-side functions
+const getServerImports = async () => {
+  const { ResearchRequestsService } = await import("~/services/research/researchRequests.server") as { ResearchRequestsService: ResearchRequestsServiceType };
+  return { ResearchRequestsService };
+};
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   await requireAuth({ request, params });
   const { time, getServerTimingHeader } = await createMetrics({ request, params }, "app.$tenant.dashboard.view.action");
+  const { ResearchRequestsService } = await getServerImports();
   const tenantId = await time(getTenantIdFromUrl(params), "getTenantIdFromUrl");
   const formData = await request.formData();
   const action = formData.get("_action") as string;
@@ -149,6 +254,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 export const loader = async ({ request: req, params }: LoaderFunctionArgs) => {
   await requireAuth({ request: req, params });
   const { time, getServerTimingHeader } = await createMetrics({ request: req, params }, "app.$tenant.dashboard.view.loader");
+  const { ResearchRequestsService } = await getServerImports();
   
   if (!params.id) {
     throw new Response("Request ID is required", { status: 400 });
@@ -181,7 +287,7 @@ export const loader = async ({ request: req, params }: LoaderFunctionArgs) => {
     }
     
     console.log(`[view.$id.loader] Successfully fetched research request with ID: ${params.id}`);
-    return json({ request, results }, { headers: getServerTimingHeader() });
+    return json<LoaderData>({ request, results }, { headers: getServerTimingHeader() });
   } catch (error) {
     console.error(`[view.$id.loader] Error fetching research request: ${error instanceof Error ? error.message : 'Unknown error'}`);
     throw error;
@@ -206,7 +312,7 @@ export default function ViewRequest() {
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
-  const [requestStatus, setRequestStatus] = useState(request.status);
+  const [requestStatus, setRequestStatus] = useState<RequestStatus>(request.status);
   const [requestInfo, setRequestInfo] = useState<{
     lastRunAt?: string;
     nextRunAt?: string;
@@ -248,11 +354,31 @@ export default function ViewRequest() {
   // Auto-refresh for in-progress requests
   useEffect(() => {
     let refreshInterval: NodeJS.Timeout | null = null;
-    
+
     if (requestStatus === 'in_progress') {
-      refreshInterval = setInterval(() => {
-        handleRefresh();
-      }, 60000); // Refresh every 60 seconds for in-progress requests
+      refreshInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`/app/${params.tenant}/dashboard/view/${request.id}/status`);
+          if (!response.ok) throw new Error('Failed to fetch status');
+          
+          const data = await response.json();
+          if (data.success) {
+            // Map the server status to our client status type
+            const mappedStatus: RequestStatus = data.status === 'running' ? 'in_progress' : data.status as RequestStatus;
+            setRequestStatus(mappedStatus);
+            if (data.requestInfo) {
+              setRequestInfo(data.requestInfo);
+            }
+            if (mappedStatus !== 'in_progress') {
+              if (refreshInterval) {
+                clearInterval(refreshInterval);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error refreshing request status:', error);
+        }
+      }, 5000);
     }
 
     return () => {
@@ -260,126 +386,45 @@ export default function ViewRequest() {
         clearInterval(refreshInterval);
       }
     };
-  }, [requestStatus]);
+  }, [requestStatus, request.id, params.tenant]);
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this research request?")) {
-      const formData = new FormData();
-      formData.append("_action", "delete");
-      submit(formData, { method: "post" });
+    if (window.confirm('Are you sure you want to delete this research request?')) {
+      submit({ _action: 'delete' }, { method: 'post' });
     }
   };
 
   const handleExecute = () => {
-    const formData = new FormData();
-    formData.append("_action", "execute");
-    submit(formData, { method: "post" });
     setExecutionStarted(true);
+    submit({ _action: 'execute' }, { method: 'post' });
   };
 
   const handleSchedule = () => {
-    const formData = new FormData();
-    formData.append("_action", "schedule");
-    formData.append("schedule_type", scheduleType);
-    submit(formData, { method: "post" });
-    setShowScheduleOptions(false);
+    submit({ _action: 'schedule', schedule_type: scheduleType }, { method: 'post' });
+  };
+
+  const handleCancelSchedule = () => {
+    submit({ _action: 'cancel_schedule' }, { method: 'post' });
   };
 
   const handleRefresh = async () => {
-    if (refreshing) return; // Prevent multiple simultaneous refreshes
-    
     setRefreshing(true);
-    
     try {
-      // First, fetch the current status
-      const statusResponse = await fetch(
-        `/app/${params.tenant}/dashboard/view/${request.id}/status`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!statusResponse.ok) {
-        throw new Error('Failed to refresh status');
-      }
-
-      const statusData = await statusResponse.json();
+      const response = await fetch(`/app/${params.tenant}/dashboard/view/${request.id}/refresh`);
+      if (!response.ok) throw new Error('Failed to refresh');
       
-      if (statusData.success) {
-        // Update status and request info
-        setRequestStatus(statusData.status);
-        setRequestInfo({
-          lastRunAt: statusData.requestInfo?.lastRunAt,
-          nextRunAt: statusData.requestInfo?.nextRunAt,
-          updatedAt: statusData.requestInfo?.updatedAt
-        });
-
-        // Show notification based on status
-        let message = '';
-        switch (statusData.status) {
-          case 'completed':
-            message = 'Research request completed successfully!';
-            break;
-          case 'failed':
-            message = 'Research request failed. Please try again.';
-            break;
-          case 'in_progress':
-            message = 'Research request is currently in progress.';
-            break;
-          case 'pending':
-            message = 'Research request is pending execution.';
-            break;
-          default:
-            message = statusData.message || `Request status: ${statusData.status}`;
+      const data = await response.json();
+      if (data.success) {
+        // Map the server status to our client status type
+        const mappedStatus: RequestStatus = data.status === 'running' ? 'in_progress' : data.status as RequestStatus;
+        setRequestStatus(mappedStatus);
+        if (data.requestInfo) {
+          setRequestInfo(data.requestInfo);
         }
-
-        setNotification({
-          message,
-          type: statusData.status === 'failed' ? 'error' : 'success'
-        });
-
-        // Always fetch new results after status update, regardless of status
-        try {
-          // Fetch new results using the research service
-          const researchService = ResearchRequestsService.getInstance();
-          const newResults = await researchService.getRequestResults(
-            request.id,
-            params.tenant || '',
-            fromDate,
-            toDate
-          );
-          
-          // Update the results state
-          setResearchResults(newResults);
-          
-          // Show success notification if we got results
-          if (newResults && newResults.length > 0) {
-            setNotification({
-              message: 'Research results refreshed successfully!',
-              type: 'success'
-            });
-          }
-        } catch (resultsError) {
-          console.error('Error fetching new results:', resultsError);
-          setNotification({
-            message: 'Status updated, but failed to fetch new results',
-            type: 'error'
-          });
-        }
-      } else {
-        throw new Error(statusData.message || 'Failed to refresh status');
+        setLastRefreshTime(new Date());
       }
-
-      setLastRefreshTime(new Date());
     } catch (error) {
-      console.error('Error refreshing status:', error);
-      setNotification({
-        message: error instanceof Error ? error.message : 'Failed to refresh status',
-        type: 'error'
-      });
+      console.error('Error refreshing request:', error);
     } finally {
       setRefreshing(false);
     }
@@ -388,15 +433,11 @@ export default function ViewRequest() {
   const handleDateRangeChange = async (fromDate: string, toDate: string) => {
     setIsLoadingResults(true);
     try {
-      const researchService = ResearchRequestsService.getInstance();
-      const results = await researchService.getRequestResults(
-        request.id,
-        params.tenant || '',
-        fromDate,
-        toDate
-      );
+      const response = await fetch(`/app/${params.tenant}/dashboard/view/${request.id}/results?fromDate=${fromDate}&toDate=${toDate}`);
+      if (!response.ok) throw new Error('Failed to fetch results');
       
-      setResearchResults(results);
+      const data = await response.json();
+      setResearchResults(data.results);
       setNotification({
         message: 'Results filtered successfully',
         type: 'success'
