@@ -6,6 +6,7 @@ import GridBlockUtils from "../../shared/grid/GridBlockUtils";
 import ButtonEvent from "~/components/ui/buttons/ButtonEvent";
 import clsx from "clsx";
 import { ExternalLinkIcon } from "lucide-react";
+import "./FeatureCard.css";
 
 export default function FeaturesVariantCards({ item }: { item: FeaturesBlockDto }) {
   const { t } = useTranslation();
@@ -69,13 +70,20 @@ export default function FeaturesVariantCards({ item }: { item: FeaturesBlockDto 
                     <ButtonEvent
                       to={feature.link.href}
                       target={feature.link.target}
-                      className="bg-background border-border hover:bg-secondary hover:text-secondary-foreground flex h-full flex-col rounded-lg border-2 p-6"
+                      className={clsx(
+                        "feature-card",
+                        feature.theme || "gradient-orange",
+                        "hover:transform hover:transition-all hover:duration-300"
+                      )}
                       event={{ action: "click", category: "features", label: t(feature.name), value: feature.link.href }}
                     >
                       <FeatureCard feature={feature} />
                     </ButtonEvent>
                   ) : (
-                    <div className="bg-background border-border flex h-full flex-col rounded-lg border-2 p-6">
+                    <div className={clsx(
+                      "feature-card",
+                      feature.theme || "gradient-orange"
+                    )}>
                       <FeatureCard feature={feature} />
                     </div>
                   )}
@@ -93,28 +101,51 @@ function FeatureCard({ feature }: { feature: FeatureDto }) {
   const { t } = useTranslation();
   return (
     <>
-      <div className="mb-1 flex items-center justify-between space-x-2">
+      <div className="mb-4 flex items-center justify-between space-x-2">
+        {feature.highlight && (
+          <span className="feature-card-highlight">
+            {t(feature.highlight.text)}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center justify-between space-x-2 mb-4">
         <div className="flex items-center truncate">
-          <div className="text-primary mr-3 inline-flex flex-shrink-0 items-center justify-center">
+          <div className="feature-card-icon mr-3 inline-flex flex-shrink-0 items-center justify-center">
             {feature.icon ? (
               <>
                 {feature.icon.startsWith("<svg") ? (
-                  <div dangerouslySetInnerHTML={{ __html: feature.icon.replace("<svg", `<svg class='${" h-5 w-5"}'`) ?? "" }} />
+                  <div dangerouslySetInnerHTML={{ __html: feature.icon.replace("<svg", `<svg class='${" h-6 w-6"}'`) ?? "" }} />
                 ) : feature.icon.startsWith("http") ? (
-                  <img className=" h-5 w-5" src={feature.icon} alt={feature.name} />
+                  <img className="h-6 w-6" src={feature.icon} alt={feature.name} />
                 ) : (
-                  feature.icon
+                  <span className="text-2xl">{feature.icon}</span>
                 )}
               </>
             ) : (
-              <CheckIcon className=" h-5 w-5" aria-hidden="true" />
+              <CheckIcon className="h-6 w-6" aria-hidden="true" />
             )}
           </div>
-          <h2 className="title-font truncate text-lg font-bold">{t(feature.name)}</h2>
+          <h2 className="feature-card-title">{t(feature.name)}</h2>
         </div>
       </div>
       <div className="flex-grow">
-        <p className="text-sm leading-relaxed">{t(feature.description)}</p>
+        <p className="feature-card-description">{t(feature.description)}</p>
+        {feature.subFeatures && feature.subFeatures.length > 0 && (
+          <ul className="mt-4 space-y-2">
+            {feature.subFeatures.map((subFeature, idx) => (
+              <li key={idx} className="flex items-center text-sm">
+                <CheckIcon className="mr-2 h-4 w-4 text-green-500" />
+                {t(subFeature.name)}
+              </li>
+            ))}
+          </ul>
+        )}
+        {feature.link && (
+          <a href={feature.link.href} className="feature-card-link">
+            {t(feature.link.text)}
+            <ExternalLinkIcon className="ml-1 h-4 w-4" />
+          </a>
+        )}
       </div>
     </>
   );

@@ -1,0 +1,124 @@
+.feature-card {
+  @apply p-6 rounded-xl transition-all duration-300;
+}
+
+/* Gradient Themes */
+.feature-card.gradient-orange {
+  @apply bg-gradient-to-br from-orange-50 to-white border border-orange-100 hover:shadow-lg hover:shadow-orange-100/50;
+}
+
+.feature-card.gradient-blue {
+  @apply bg-gradient-to-br from-blue-50 to-white border border-blue-100 hover:shadow-lg hover:shadow-blue-100/50;
+}
+
+.feature-card.gradient-purple {
+  @apply bg-gradient-to-br from-purple-50 to-white border border-purple-100 hover:shadow-lg hover:shadow-purple-100/50;
+}
+
+/* Glass Effect Theme */
+.feature-card.glass-effect {
+  @apply bg-white/80 backdrop-blur-lg border border-gray-200/50 hover:shadow-lg hover:shadow-gray-100/50;
+}
+
+/* Border Accent Theme */
+.feature-card.border-accent {
+  @apply bg-white border-l-4 border border-orange-500 hover:shadow-lg hover:shadow-orange-100/50;
+}
+
+/* Minimal Dark Theme */
+.feature-card.minimal-dark {
+  @apply bg-gray-900 text-white hover:shadow-lg hover:shadow-gray-900/50;
+}
+
+/* Floating Shadow Theme */
+.feature-card.floating-shadow {
+  @apply bg-white border border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1;
+}
+
+/* Common Hover Effects */
+.feature-card:hover {
+  @apply transform transition-all duration-300;
+}
+
+/* Card Content Styles */
+.feature-card-title {
+  @apply text-lg font-semibold mb-2;
+}
+
+.feature-card-description {
+  @apply text-sm text-gray-600;
+}
+
+.feature-card.minimal-dark .feature-card-description {
+  @apply text-gray-300;
+}
+
+.feature-card-icon {
+  @apply text-2xl mb-4;
+}
+
+.feature-card-highlight {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-3;
+}
+
+.feature-card-link {
+  @apply mt-4 inline-flex items-center text-sm font-medium;
+}
+
+/* Theme-specific Highlight Colors */
+.gradient-orange .feature-card-highlight {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.gradient-blue .feature-card-highlight {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.gradient-purple .feature-card-highlight {
+  @apply bg-purple-100 text-purple-800;
+}
+
+.glass-effect .feature-card-highlight {
+  @apply bg-gray-100 text-gray-800;
+}
+
+.border-accent .feature-card-highlight {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.minimal-dark .feature-card-highlight {
+  @apply bg-gray-800 text-gray-100;
+}
+
+.floating-shadow .feature-card-highlight {
+  @apply bg-gray-100 text-gray-800;
+}
+
+/* Theme-specific Link Colors */
+.gradient-orange .feature-card-link {
+  @apply text-orange-600 hover:text-orange-700;
+}
+
+.gradient-blue .feature-card-link {
+  @apply text-blue-600 hover:text-blue-700;
+}
+
+.gradient-purple .feature-card-link {
+  @apply text-purple-600 hover:text-purple-700;
+}
+
+.glass-effect .feature-card-link {
+  @apply text-gray-600 hover:text-gray-700;
+}
+
+.border-accent .feature-card-link {
+  @apply text-orange-600 hover:text-orange-700;
+}
+
+.minimal-dark .feature-card-link {
+  @apply text-gray-300 hover:text-white;
+}
+
+.floating-shadow .feature-card-link {
+  @apply text-gray-600 hover:text-gray-700;
+} 

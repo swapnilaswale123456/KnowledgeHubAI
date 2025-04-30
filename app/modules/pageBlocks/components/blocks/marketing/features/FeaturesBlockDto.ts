@@ -48,4 +48,5 @@ export interface FeatureDto {
     }[];
   };
   disabled?: boolean;
+  theme?: "gradient-orange" | "gradient-blue" | "gradient-purple" | "glass-effect" | "border-accent" | "minimal-dark" | "floating-shadow";
 } 
