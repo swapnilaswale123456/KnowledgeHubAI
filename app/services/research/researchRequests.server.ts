@@ -197,7 +197,7 @@ export class ResearchRequestsService {
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = process.env.PYTHON_API_ENDPOINT || 'http://localhost:5000/api/v1';
+    this.baseUrl = 'https://reddit-researcher-1aaa93b8186d.herokuapp.com/api/v1';
   }
   
   public static getInstance(): ResearchRequestsService {
