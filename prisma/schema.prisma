@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-js" 
 }
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres.ccicpknjiyoxtrrlypfs:vp1qCdVTHQAknIg7@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+  url      = env("DATABASE_URL")
 }
 
 model AppConfiguration {
