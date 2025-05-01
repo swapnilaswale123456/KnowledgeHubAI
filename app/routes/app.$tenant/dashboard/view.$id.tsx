@@ -84,7 +84,7 @@ type ResearchRequestsServiceType = {
       };
       results?: any;
     }>;
-    deleteRequest: (id: string) => Promise<boolean>;
+    deleteRequest: (id: string, tenantId: string) => Promise<{ success: boolean; message?: string }>;
     updateRequest: (id: string, data: Partial<{
       tenant_id: string;
       name: string;
@@ -132,15 +132,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   
   if (action === "delete") {
     const success = await time(
-      researchService.deleteRequest(requestId),
+      researchService.deleteRequest(requestId, tenantId),
       "deleteResearchRequest"
     );
     
-    if (success) {
+    if (success.success) {
       return redirect(`/app/${params.tenant}/dashboard`);
     } else {
       return json(
-        { error: "Failed to delete research request" },
+        { error: success.message || "Failed to delete research request" },
         { status: 500, headers: getServerTimingHeader() }
       );
     }
@@ -154,12 +154,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       subreddits: JSON.parse(formData.get("subreddits") as string) as string[],
       keywords: JSON.parse(formData.get("keywords") as string) as string[],
       schedule_type: formData.get("schedule_type") as "daily" | "weekly" | "monthly",
-      min_score: parseInt(formData.get("min_score") as string) || 10,
+      min_score: parseInt(formData.get("min_score") as string) || 20,
       min_comments: parseInt(formData.get("min_comments") as string) || 5,
-      time_filter: formData.get("time_filter") as string || "all",
-      sort: formData.get("sort") as string || "relevance",
-      limit: parseInt(formData.get("limit") as string) || 100,
-      comments_limit: parseInt(formData.get("comments_limit") as string) || 50
+      time_filter: formData.get("time_filter") as string || "day",
+      sort: formData.get("sort") as string || "new",
+      limit: parseInt(formData.get("limit") as string) || 5,
+      comments_limit: parseInt(formData.get("comments_limit") as string) || 5
     };
 
     console.log("Updating research request with data:", updateData);
@@ -502,7 +502,10 @@ export default function ViewRequest() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate(`/app/${params.tenant}/dashboard`)}
+                onClick={() => {
+                  navigate(`/app/${params.tenant}/dashboard`, { replace: true });
+                  window.location.reload();
+                }}
                 className="text-gray-600 hover:text-gray-900"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

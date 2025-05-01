@@ -197,9 +197,9 @@ export class ResearchRequestsService {
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = 'https://reddit-researcher-1aaa93b8186d.herokuapp.com/api/v1';
+    this.baseUrl = 'http://localhost:5000/api/v1';
   }
-
+  
   public static getInstance(): ResearchRequestsService {
     if (!ResearchRequestsService.instance) {
       ResearchRequestsService.instance = new ResearchRequestsService();
@@ -497,10 +497,15 @@ export class ResearchRequestsService {
     }
   }
 
-  async deleteRequest(id: string): Promise<boolean> {
+  async deleteRequest(id: string, tenantId: string): Promise<{ success: boolean; message?: string }> {
     try {
+      // Validate tenant_id
+      if (!tenantId || !tenantId.trim()) {
+        throw new Error("tenant_id is required and cannot be empty");
+      }
+
       const response = await fetch(
-        `${this.baseUrl}/research/requests/${id}`,
+        `${this.baseUrl}/research/requests/${id}?tenant_id=${tenantId}`,
         {
           method: 'DELETE',
           headers: {
@@ -510,14 +515,32 @@ export class ResearchRequestsService {
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 404) {
+        throw new Error(`Research request ${id} not found for tenant ${tenantId}`);
       }
 
-      return true;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Failed to delete research request: ${response.status} ${JSON.stringify(errorData)}`);
+      }
+
+      return {
+        success: true,
+        message: `Research request ${id} deleted successfully`
+      };
     } catch (error) {
-      console.error(`Error deleting research request with id ${id}:`, error);
-      return false;
+      console.error(`[ResearchRequestsService] Error deleting research request with id ${id}:`, 
+        error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : error
+      );
+      
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
     }
   }
 
