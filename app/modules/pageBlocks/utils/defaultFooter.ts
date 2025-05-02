@@ -16,7 +16,7 @@ export function defaultFooter({ t }: { t: TFunction }): FooterBlockDto {
           { name: "Market Research", href: "/features/market-research" },
           { name: "Product Feedback", href: "/features/product-feedback" },
           { name: "Brand Monitoring", href: "/features/brand-monitoring" },
-          { name: "Research Templates", href: "/templates" },
+          { name: "Research Templates", href: "/features/research-template" },
           { name: "Pricing", href: "/pricing" },
         ],
       },

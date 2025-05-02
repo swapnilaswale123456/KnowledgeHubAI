@@ -11,7 +11,7 @@ export function defaultHeader({ t }: { t: TFunction }): HeaderBlockDto {
     withThemeSelector: true,
     links: [
       { path: "/features", title: "Research Features" },
-      { path: "/templates", title: "Research Templates" },
+      { path: "/features/research-template", title: "Research Templates" },
       { path: "/pricing", title: t("front.navbar.pricing") },
       {
         title: "Resources",

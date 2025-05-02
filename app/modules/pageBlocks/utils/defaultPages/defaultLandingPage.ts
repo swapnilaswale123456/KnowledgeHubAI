@@ -353,7 +353,6 @@ export function defaultLandingPage({ t }: { t: TFunction }) {
               { name: "Industry Trends" },
               { name: "User Pain Points" }
             ],
-            theme: "gradient-purple",
             link: { text: "Use Template", href: "/templates/market-research" }
           },
           {

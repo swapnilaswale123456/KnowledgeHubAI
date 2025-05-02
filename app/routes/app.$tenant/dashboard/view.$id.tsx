@@ -574,6 +574,28 @@ export default function ViewRequest() {
               <div>
                 <h2 className="text-sm font-bold text-gray-900">Execute Request</h2>
                 <p className="text-xs text-gray-600 mt-0.5">Run analysis to find potential contacts</p>
+                <div className="mt-2 p-3 bg-[#FF4500]/5 rounded-lg border border-[#FF4500]/10">
+                  <div className="flex items-start space-x-2">
+                    <svg className="w-4 h-4 mt-0.5 text-[#FF4500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-gray-700 font-medium">What's happening behind the scenes?</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        We're analyzing thousands of Reddit posts and comments to find valuable insights and potential leads. This process includes:
+                      </p>
+                      <ul className="text-xs text-gray-600 mt-1 space-y-1 list-disc list-inside">
+                        <li>Scanning multiple subreddits for relevant discussions</li>
+                        <li>Analyzing post engagement and sentiment</li>
+                        <li>Identifying key decision-makers and influencers</li>
+                        <li>Generating detailed reports and lead information</li>
+                      </ul>
+                      <p className="text-xs text-[#FF4500] mt-2 font-medium">
+                        Get ready to discover valuable insights and potential leads! 🎯
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 {lastRefreshTime && (
                   <p className="text-xs text-gray-500 mt-1">
                     Last refreshed: {lastRefreshTime.toLocaleTimeString()}
