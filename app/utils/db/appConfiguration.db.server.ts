@@ -157,7 +157,7 @@ export async function getAppConfiguration({ request }: { request: Request }): Pr
       plausibleAnalytics: false,
     },
     subscription: {
-      required: false,
+      required: true,
       allowSubscribeBeforeSignUp: true,
       allowSignUpBeforeSubscribe: true,
       multiple: true,

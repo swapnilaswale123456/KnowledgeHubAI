@@ -29,13 +29,13 @@
     <rect x="6" y="6" width="2" height="10" fill="#FF4500" opacity="0.8"/>
   </g>
 
-  <!-- Text "Reddit Research" -->
-  <text x="65" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold" fill="#1A1A1B">
-    Reddit Research
+  <!-- Text "Insightdit" -->
+  <text x="70" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="25" font-weight="bold" fill="#1A1A1B">
+    Insightdit
   </text>
 
   <!-- Tagline -->
-  <text x="65" y="42" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="#666666">
-    AI-Powered Insights
+  <text x="70" y="48" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#666666">
+    AI-Powered Insights of Reddit
   </text>
 </svg> 
