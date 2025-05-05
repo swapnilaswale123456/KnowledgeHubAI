@@ -430,14 +430,14 @@ export function defaultLandingPage({ t }: { t: TFunction }) {
             text: "Get Started",
             href: "/pricing",
           },
-          {
-            text: "Join Discord",
-            href: "https://discord.gg/KMkjU2BFn9",
-          },
-          {
-            text: "Follow Updates",
-            href: "https://www.youtube.com/@saasrock",
-          },
+          //{
+          //  text: "Join Discord",
+          //  href: "https://discord.gg/KMkjU2BFn9",
+          //},
+          //{
+          //  text: "Follow Updates",
+          //  href: "https://www.youtube.com/@saasrock",
+          //},
         ],
       },
     },

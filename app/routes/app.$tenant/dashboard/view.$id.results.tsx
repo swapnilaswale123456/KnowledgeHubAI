@@ -28,7 +28,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const response = await time(
     researchService.getRequestResults(params.id, tenantId, startDate || undefined, endDate || undefined),
     "getRequestResults"
-  );
-
+    );
+    
   return json(response, { headers: getServerTimingHeader() });
 }; 
