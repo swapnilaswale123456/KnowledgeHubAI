@@ -6,10 +6,16 @@ import { getTenantIdFromUrl } from "~/utils/services/.server/urlService";
 import { ResearchRequestsService, CreateResearchRequestData } from "~/services/research/researchRequests.server";
 import { ResearchSuggestions } from "~/services/ai/researchSuggestions.server";
 import { getUserInfo } from "~/utils/session.server";
+import { DefaultFeatures } from "~/application/dtos/shared/DefaultFeatures";
+import { getPlanFeaturesUsage } from "~/utils/services/.server/subscriptionService";
+import { SubscriptionFeatureLimitType } from "~/application/enums/subscriptions/SubscriptionFeatureLimitType";
+import CheckResearchRequestLimit from "~/components/core/settings/subscription/CheckResearchRequestLimit";
 
 type LoaderData = {
   description: string;
   suggestions: ResearchSuggestions;
+  researchRequestFeature: any;
+  currentRequestsCount: number;
 };
 
 type SuggestionsResponse = {
@@ -25,6 +31,18 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   
   if (!userInfo.userId || !tenantId) {
     return json({ error: "Unauthorized" }, { status: 401 });
+  }
+  
+  // Check subscription plan limits
+  const planFeatures = await getPlanFeaturesUsage(tenantId);
+  const researchRequestFeature = planFeatures.find(f => f.name === DefaultFeatures.ResearchRequests);
+
+  if (!researchRequestFeature?.enabled) {
+    return json({ 
+      error: "Subscription plan limit reached", 
+      message: researchRequestFeature?.message || "You've reached your plan's limit for research requests",
+      requiresUpgrade: true 
+    }, { status: 403 });
   }
   
   // Process form data for the request
@@ -79,7 +97,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   return redirect(`/app/${params.tenant}/dashboard/view/${newRequest.id}`);
 };
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   await requireAuth({ request, params });
   const url = new URL(request.url);
   const description = url.searchParams.get("description");
@@ -103,14 +121,32 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     }
   }
 
-  return json<LoaderData>({ description, suggestions });
-}
+  const tenantId = await getTenantIdFromUrl(params);
+  
+  // Get the user's subscription plan features
+  const planFeatures = await getPlanFeaturesUsage(tenantId);
+  const researchRequestFeature = planFeatures.find(f => f.name === DefaultFeatures.ResearchRequests);
+  
+  // Get current research requests count
+  const researchService = ResearchRequestsService.getInstance();
+  const currentRequests = await researchService.getRequests(tenantId);
+  
+  return json({
+    description,
+    suggestions,
+    researchRequestFeature,
+    currentRequestsCount: currentRequests.data.length
+  });
+};
 
 export default function CreateResearchRequestForm() {
-  const { description, suggestions } = useLoaderData<typeof loader>();
+  const { description, suggestions, researchRequestFeature } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const params = useParams();
   const suggestionsFetcher = useFetcher<SuggestionsResponse>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [subreddits, setSubreddits] = useState<string[]>(suggestions.subreddits);
   const [keywords, setKeywords] = useState<string[]>(suggestions.keywords);
@@ -176,240 +212,285 @@ export default function CreateResearchRequestForm() {
     return date.toISOString().split('T')[0];
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        body: new FormData(e.target as HTMLFormElement),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.requiresUpgrade) {
+          setShowUpgradeModal(true);
+        } else {
+          setError(data.error || 'Failed to create research request');
+        }
+        return;
+      }
+
+      // Redirect will happen automatically
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Show upgrade modal if feature is not enabled
+  useEffect(() => {
+    if (researchRequestFeature && !researchRequestFeature.enabled) {
+      setShowUpgradeModal(true);
+    }
+  }, [researchRequestFeature]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-4xl mx-auto pt-12 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Create Research Request</h2>
-            <button
-              type="button"
-              onClick={() => navigate(`/app/${params.tenant}/dashboard`)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancel
-            </button>
-          </div>
-
-          {isLoadingSuggestions ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-              <span className="ml-3 text-sm text-gray-600">Analyzing your request...</span>
+        <CheckResearchRequestLimit feature={researchRequestFeature}>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Create Research Request</h2>
+              <button
+                type="button"
+                onClick={() => navigate(`/app/${params.tenant}/dashboard`)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Cancel
+              </button>
             </div>
-          ) : (
-            <Form method="post" className="space-y-6">
-              {/* Description from previous step */}
-              <input type="hidden" name="description" value={description} />
 
-              {/* Request Name */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Request Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  required
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Suggested name based on your description. Feel free to modify it.
-                </p>
+            {isLoadingSuggestions ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                <span className="ml-3 text-sm text-gray-600">Analyzing your request...</span>
               </div>
+            ) : (
+              <Form method="post" onSubmit={handleSubmit} className="space-y-6">
+                {/* Description from previous step */}
+                <input type="hidden" name="description" value={description} />
 
-              {/* Subreddits */}
-              <div>
-                <label htmlFor="subreddits" className="block text-sm font-medium text-gray-700">
-                  Subreddits
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    value={newSubreddit}
-                    onChange={(e) => setNewSubreddit(e.target.value)}
-                    onKeyDown={handleSubredditKeyDown}
-                    placeholder="Add subreddit name (without r/). Press Enter to add it."
-                    className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  />
-                  <input type="hidden" name="subreddits" value={JSON.stringify(subreddits)} />
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {subreddits.map((subreddit, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-2.5 py-1.5 rounded-md text-sm font-medium bg-purple-50 text-purple-800"
-                      >
-                        r/{subreddit}
-                        <button
-                          type="button"
-                          onClick={() => removeSubreddit(index)}
-                          className="ml-1.5 text-purple-600 hover:text-purple-800"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Keywords */}
-              <div>
-                <label htmlFor="keywords" className="block text-sm font-medium text-gray-700">
-                  Keywords
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    value={newKeyword}
-                    onChange={(e) => setNewKeyword(e.target.value)}
-                    onKeyDown={handleKeywordKeyDown}
-                    placeholder="Add search keywords. Press Enter to add each one."
-                    className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                  />
-                  <input type="hidden" name="keywords" value={JSON.stringify(keywords)} />
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {keywords.map((keyword, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-2.5 py-1.5 rounded-md text-sm font-medium bg-gray-50 text-gray-800"
-                      >
-                        {keyword}
-                        <button
-                          type="button"
-                          onClick={() => removeKeyword(index)}
-                          className="ml-1.5 text-gray-500 hover:text-gray-700"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Schedule Type */}
-              <div>
-                <label htmlFor="schedule_type" className="block text-sm font-medium text-gray-700">
-                  Schedule Type
-                </label>
-                <select
-                  id="schedule_type"
-                  name="schedule_type"
-                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </div>
-
-              {/* Min Score and Min Comments */}
-              <div className="grid grid-cols-2 gap-4">
+                {/* Request Name */}
                 <div>
-                  <label htmlFor="min_score" className="block text-sm font-medium text-gray-700">
-                    Minimum Score
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Request Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Suggested name based on your description. Feel free to modify it.
+                  </p>
+                </div>
+
+                {/* Subreddits */}
+                <div>
+                  <label htmlFor="subreddits" className="block text-sm font-medium text-gray-700">
+                    Subreddits
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      type="text"
+                      value={newSubreddit}
+                      onChange={(e) => setNewSubreddit(e.target.value)}
+                      onKeyDown={handleSubredditKeyDown}
+                      placeholder="Add subreddit name (without r/). Press Enter to add it."
+                      className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                    />
+                    <input type="hidden" name="subreddits" value={JSON.stringify(subreddits)} />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {subreddits.map((subreddit, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2.5 py-1.5 rounded-md text-sm font-medium bg-purple-50 text-purple-800"
+                        >
+                          r/{subreddit}
+                          <button
+                            type="button"
+                            onClick={() => removeSubreddit(index)}
+                            className="ml-1.5 text-purple-600 hover:text-purple-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Keywords */}
+                <div>
+                  <label htmlFor="keywords" className="block text-sm font-medium text-gray-700">
+                    Keywords
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      type="text"
+                      value={newKeyword}
+                      onChange={(e) => setNewKeyword(e.target.value)}
+                      onKeyDown={handleKeywordKeyDown}
+                      placeholder="Add search keywords. Press Enter to add each one."
+                      className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                    />
+                    <input type="hidden" name="keywords" value={JSON.stringify(keywords)} />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {keywords.map((keyword, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2.5 py-1.5 rounded-md text-sm font-medium bg-gray-50 text-gray-800"
+                        >
+                          {keyword}
+                          <button
+                            type="button"
+                            onClick={() => removeKeyword(index)}
+                            className="ml-1.5 text-gray-500 hover:text-gray-700"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Schedule Type */}
+                <div>
+                  <label htmlFor="schedule_type" className="block text-sm font-medium text-gray-700">
+                    Schedule Type
+                  </label>
+                  <select
+                    id="schedule_type"
+                    name="schedule_type"
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+
+                {/* Min Score and Min Comments */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="min_score" className="block text-sm font-medium text-gray-700">
+                      Minimum Score
+                    </label>
+                    <input
+                      type="number"
+                      name="min_score"
+                      id="min_score"
+                      value={minScore}
+                      disabled
+                      className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="min_comments" className="block text-sm font-medium text-gray-700">
+                      Minimum Comments
+                    </label>
+                    <input
+                      type="number"
+                      name="min_comments"
+                      id="min_comments"
+                      value={minComments}
+                      disabled
+                      className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Time Filter */}
+                <div>
+                  <label htmlFor="time_filter" className="block text-sm font-medium text-gray-700">
+                    Time Filter
+                  </label>
+                  <select
+                    id="time_filter"
+                    name="time_filter"
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                  >
+                   
+                    <option value="day">Past 24 Hours</option>
+                    <option value="week">Past Week</option>
+                    <option value="month">Past Month</option>
+                   
+                  </select>
+                </div>
+
+                {/* Sort Method */}
+                <div>
+                  <label htmlFor="sort" className="block text-sm font-medium text-gray-700">
+                    Sort Method
+                  </label>
+                  <select
+                    id="sort"
+                    name="sort"
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                  >
+                    <option value="relevance">Relevance</option>
+                    <option value="hot">Hot</option>
+                    <option value="top">Top</option>
+                    <option value="new">New</option>
+                    <option value="comments">Most Comments</option>
+                  </select>
+                </div>
+
+                {/* Post Limit */}
+                <div>
+                  <label htmlFor="limit" className="block text-sm font-medium text-gray-700">
+                    Maximum Posts
                   </label>
                   <input
                     type="number"
-                    name="min_score"
-                    id="min_score"
-                    value={minScore}
+                    name="limit"
+                    id="limit"
+                    value={limit}
                     disabled
                     className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
                   />
                 </div>
-                <div>
-                  <label htmlFor="min_comments" className="block text-sm font-medium text-gray-700">
-                    Minimum Comments
-                  </label>
-                  <input
-                    type="number"
-                    name="min_comments"
-                    id="min_comments"
-                    value={minComments}
-                    disabled
-                    className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
-                  />
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/app/${params.tenant}/dashboard/create`)}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Back to Description
+                  </button>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Create Request
+                  </button>
                 </div>
-              </div>
+              </Form>
+            )}
 
-              {/* Time Filter */}
-              <div>
-                <label htmlFor="time_filter" className="block text-sm font-medium text-gray-700">
-                  Time Filter
-                </label>
-                <select
-                  id="time_filter"
-                  name="time_filter"
-                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                >
-                 
-                  <option value="day">Past 24 Hours</option>
-                  <option value="week">Past Week</option>
-                  <option value="month">Past Month</option>
-                 
-                </select>
+            {error && (
+              <div className="mb-4 p-4 rounded-md bg-red-50 border border-red-200">
+                <p className="text-sm text-red-700">{error}</p>
               </div>
-
-              {/* Sort Method */}
-              <div>
-                <label htmlFor="sort" className="block text-sm font-medium text-gray-700">
-                  Sort Method
-                </label>
-                <select
-                  id="sort"
-                  name="sort"
-                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
-                >
-                  <option value="relevance">Relevance</option>
-                  <option value="hot">Hot</option>
-                  <option value="top">Top</option>
-                  <option value="new">New</option>
-                  <option value="comments">Most Comments</option>
-                </select>
-              </div>
-
-              {/* Post Limit */}
-              <div>
-                <label htmlFor="limit" className="block text-sm font-medium text-gray-700">
-                  Maximum Posts
-                </label>
-                <input
-                  type="number"
-                  name="limit"
-                  id="limit"
-                  value={limit}
-                  disabled
-                  className="mt-1 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-gray-500 text-sm"
-                />
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex justify-end space-x-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/app/${params.tenant}/dashboard/create`)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Back to Description
-                </button>
-                <button
-                  type="submit"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Create Request
-                </button>
-              </div>
-            </Form>
-          )}
-        </div>
+            )}
+          </div>
+        </CheckResearchRequestLimit>
       </div>
     </div>
   );

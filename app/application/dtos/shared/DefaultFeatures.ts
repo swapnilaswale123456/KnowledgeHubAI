@@ -6,4 +6,5 @@ export enum DefaultFeatures {
   BlogPosts = "blog-posts",
   Credits = "credits",
   PrivateGenerations = "private-generations",
+  ResearchRequests = "research-requests",
 }

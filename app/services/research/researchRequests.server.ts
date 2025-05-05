@@ -1,3 +1,7 @@
+import { DefaultFeatures } from "~/application/dtos/shared/DefaultFeatures";
+import { getPlanFeaturesUsage } from "~/utils/services/.server/subscriptionService";
+import { SubscriptionFeatureLimitType } from "~/application/enums/subscriptions/SubscriptionFeatureLimitType";
+
 export interface ResearchRequest {
   id: string;
   name: string;
@@ -197,7 +201,7 @@ export class ResearchRequestsService {
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = 'https://reddit-researcher-1aaa93b8186d.herokuapp.com/api/v1';
+    this.baseUrl = "https://reddit-researcher-1aaa93b8186d.herokuapp.com/api/v1";
   }
   
   public static getInstance(): ResearchRequestsService {
@@ -375,49 +379,69 @@ export class ResearchRequestsService {
   
   async createRequest(requestData: CreateResearchRequestData): Promise<ResearchRequest | null> {
     try {
-      console.log(`[ResearchRequestsService] Creating new research request:`, JSON.stringify(requestData, null, 2));
-      const response = await fetch(
-        `${this.baseUrl}/research/requests`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-                    },
-          body: JSON.stringify(requestData)
-        }
-      );
+      // Check subscription plan limits
+      const planFeatures = await getPlanFeaturesUsage(requestData.tenant_id);
+      const researchRequestFeature = planFeatures.find(f => f.name === DefaultFeatures.ResearchRequests);
+
+      if (!researchRequestFeature?.enabled) {
+        throw new Error(researchRequestFeature?.message || "You've reached your plan's limit for research requests");
+      }
+
+      // Get current research requests count
+      const currentRequests = await this.getRequests(requestData.tenant_id);
+      const currentCount = currentRequests.data.length;
+
+      // Check if creating a new request would exceed the limit
+      if (researchRequestFeature.type === SubscriptionFeatureLimitType.MAX && 
+          currentCount >= researchRequestFeature.value) {
+        throw new Error(`You've reached your plan's limit of ${researchRequestFeature.value} research requests`);
+      }
+
+      console.log(`[ResearchRequestsService] Creating research request with data:`, requestData);
+      const response = await fetch(`${this.baseUrl}/research/requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.PYTHON_API_KEY || ""}`
+        },
+        body: JSON.stringify(requestData)
+      });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(`[ResearchRequestsService] Failed to create request:`, {
-          status: response.status,
-          statusText: response.statusText,
-          errorData
-        });
-        throw new Error(`Failed to create research request: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`[ResearchRequestsService] HTTP error creating request: Status ${response.status}, Response: ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}, Response: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log(`[ResearchRequestsService] Create request response:`, JSON.stringify(data, null, 2));
+      console.log(`[ResearchRequestsService] Successfully created research request:`, data);
 
-      // Handle both direct object response and data property response
-      const request = data.data || data;
-      
-      if (!request?.id) {
-        console.error(`[ResearchRequestsService] Invalid response format:`, data);
-        throw new Error('Invalid response format: missing ID');
-      }
+      // Map the response to match our ResearchRequest interface
+      const mappedRequest: ResearchRequest = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        subreddits: data.subreddits || [],
+        keywords: data.keywords || [],
+        status: data.status || "pending",
+        schedule: data.next_run_at ? {
+          frequency: data.schedule_type || "daily",
+          nextRun: data.next_run_at,
+          lastRun: data.last_run_at || ""
+        } : undefined,
+        min_score: data.min_score,
+        min_comments: data.min_comments,
+        time_filter: data.time_filter,
+        sort: data.sort,
+        limit: data.limit,
+        comments_limit: data.comments_limit,
+        createdAt: data.created_at
+      };
 
-      return request;
+      return mappedRequest;
     } catch (error) {
-      console.error(`[ResearchRequestsService] Error creating research request:`, 
-        error instanceof Error ? {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        } : error
-      );
-      throw error; // Propagate the error instead of returning null
+      console.error(`[ResearchRequestsService] Error creating research request:`, error);
+      throw error;
     }
   }
 

@@ -16,7 +16,7 @@ export function defaultHeader({ t }: { t: TFunction }): HeaderBlockDto {
       {
         title: "Resources",
         items: [
-          { path: "/docs", title: "Documentation" },
+          
           { path: "/blog", title: "Research Blog" },
           { path: "/contact", title: "Contact Support" },
         ],

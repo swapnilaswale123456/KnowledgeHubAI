@@ -23,7 +23,7 @@ export function defaultFooter({ t }: { t: TFunction }): FooterBlockDto {
       {
         name: "Resources",
         items: [
-          { name: "Documentation", href: "/docs" },
+        
           { name: "Research Blog", href: "/blog" },
           { name: "Contact Support", href: "/contact" },
           { name: "Terms & Conditions", href: "/terms-and-conditions" },
