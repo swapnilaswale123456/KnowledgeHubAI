@@ -34,15 +34,7 @@ export function defaultFaq({ t }: { t: TFunction }): FaqItemDto[] {
     {
       question: t("front.faq.questions.q8"),
       answer: t("front.faq.questions.a8"),
-    },
-    {
-      question: t("front.faq.questions.q9"),
-      answer: t("front.faq.questions.a9"),
-    },
-    {
-      question: t("front.faq.questions.q10"),
-      answer: t("front.faq.questions.a10"),
-    },
+    }
   ];
   return items;
 }
