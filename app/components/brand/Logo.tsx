@@ -1,29 +1,24 @@
 import { Link } from "@remix-run/react";
-import LogoLight from "~/assets/img/logo-light.svg";
-import LogoDark from "~/assets/img/logo-dark.svg";
+import LogoLight from "~/assets/img/logo-light.png";
+import LogoDark from "~/assets/img/logo-dark.png";
 import clsx from "clsx";
 
 interface Props {
   className?: string;
-  size?: "sm" | "md" | "lg";
+  size?: string;
+  to?: string;
 }
 
-export default function Logo({ className = "", size = "md" }: Props) {
-  const sizes = {
-    sm: "h-8",
-    md: "h-10",
-    lg: "h-12",
-  };
-
+export default function Logo({ className = "", size = "h-10", to }: Props) {
   return (
-    <Link to="/" className={clsx(className, "flex")}>
+    <Link to={to ?? "/"} className={clsx(className, "flex")}>
       <img 
-        className={clsx(sizes[size], "hidden w-auto dark:block")} 
+        className={clsx(size, "hidden w-auto dark:block")} 
         src={LogoDark} 
         alt="Reddit Research Logo" 
       />
       <img 
-        className={clsx(sizes[size], "w-auto dark:hidden")} 
+        className={clsx(size, "w-auto dark:hidden")} 
         src={LogoLight} 
         alt="Reddit Research Logo" 
       />

@@ -29,8 +29,8 @@ import { useAppData } from "~/utils/data/useAppData";
 import { useAdminData } from "~/utils/data/useAdminData";
 import { useTranslation } from "react-i18next";
 import NewTenantSelector from "./selectors/NewTenantSelector";
-import LogoDark from "~/assets/img/logo-dark.svg";
-import LogoLight from "~/assets/img/logo-light.svg";
+import LogoDark from "~/assets/img/logo-dark.png";
+import LogoLight from "~/assets/img/logo-light.png";
 import { Inbox } from "@novu/react";
 import NotificationsButton from "./buttons/NotificationsButton";
 
@@ -221,10 +221,8 @@ export default function NewSidebarMenu({ layout, children, onOpenCommandPalette,
               {/* Sidebar component, swap this element with another sidebar if you like */}
               <div className="bg-background flex grow flex-col gap-y-5 overflow-y-auto px-6 pb-4 ring-1 ring-white/10">
                 <div className="flex h-16 shrink-0 items-center">
-                  {/* <img alt="Your Company" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500" className="h-8 w-auto" /> */}
-
                   <Link to={"/"}>
-                    <Logo size="h-8 p-1 w-auto" />
+                    <Logo size="h-8 p-1" />
                   </Link>
                 </div>
                 <nav className="flex flex-1 flex-col">
@@ -328,17 +326,7 @@ export default function NewSidebarMenu({ layout, children, onOpenCommandPalette,
           <div className="bg-background border-border flex grow flex-col overflow-y-auto border-r px-6 pb-4 shadow-sm dark:border-r-0">
             <div className="flex h-16 shrink-0 items-center justify-center border-b border-transparent">
               <Link to={"/"}>
-                {/* <Logo size="h-8 p-1 w-auto" /> */}
-                <img
-                  className={"mx-auto hidden h-10 w-auto p-1 dark:flex"}
-                  src={appConfiguration.branding.logoDarkMode || appConfiguration.branding.logo || LogoDark}
-                  alt="Logo"
-                />
-                <img
-                  className={"mx-auto h-10 w-auto p-1 dark:hidden"}
-                  src={appConfiguration.branding.logoDarkMode || appConfiguration.branding.logo || LogoLight}
-                  alt="Logo"
-                />
+                <Logo size="h-8 p-1" />
               </Link>
             </div>
             <nav className="flex flex-1 flex-col">
