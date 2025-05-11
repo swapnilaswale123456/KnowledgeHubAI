@@ -222,7 +222,7 @@ export default function NewSidebarMenu({ layout, children, onOpenCommandPalette,
               <div className="bg-background flex grow flex-col gap-y-5 overflow-y-auto px-6 pb-4 ring-1 ring-white/10">
                 <div className="flex h-16 shrink-0 items-center">
                   <Link to={"/"}>
-                    <Logo size="h-8 p-1" />
+                    <Logo size="h-10 p-1" />
                   </Link>
                 </div>
                 <nav className="flex flex-1 flex-col">
@@ -326,7 +326,7 @@ export default function NewSidebarMenu({ layout, children, onOpenCommandPalette,
           <div className="bg-background border-border flex grow flex-col overflow-y-auto border-r px-6 pb-4 shadow-sm dark:border-r-0">
             <div className="flex h-16 shrink-0 items-center justify-center border-b border-transparent">
               <Link to={"/"}>
-                <Logo size="h-8 p-1" />
+                <Logo size="h-10 p-1" />
               </Link>
             </div>
             <nav className="flex flex-1 flex-col">

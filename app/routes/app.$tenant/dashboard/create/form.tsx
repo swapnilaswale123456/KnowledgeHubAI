@@ -23,78 +23,81 @@ type SuggestionsResponse = {
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
-  await requireAuth({ request, params });
-  
-  // Get the tenant ID and user ID
-  const userInfo = await getUserInfo(request);
-  const tenantId = await getTenantIdFromUrl(params);
-  
-  if (!userInfo.userId || !tenantId) {
-    return json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    await requireAuth({ request, params });
+    
+    // Get the tenant ID and user ID
+    const userInfo = await getUserInfo(request);
+    const tenantId = await getTenantIdFromUrl(params);
+    
+    if (!userInfo.userId || !tenantId) {
+      return json({ error: "Unauthorized" }, { status: 401 });
+    }
+    
+    // Check subscription plan limits
+    const planFeatures = await getPlanFeaturesUsage(tenantId);
+    const researchRequestFeature = planFeatures.find(f => f.name === DefaultFeatures.ResearchRequests);
+    console.log(`[CreateResearchRequestForm] Research request feature:`, researchRequestFeature);
+    
+    // Process form data for the request
+    const formData = await request.formData();
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const subredditsJson = formData.get("subreddits") as string;
+    const keywordsJson = formData.get("keywords") as string;
+    const scheduleType = formData.get("schedule_type") as "daily" | "weekly" | "monthly";
+    const minScore = parseInt(formData.get("min_score") as string) || 20;
+    const minComments = parseInt(formData.get("min_comments") as string) || 5;
+    const timeFilter = formData.get("time_filter") as string || "day";
+    const sort = formData.get("sort") as string || "new";
+    const limit = parseInt(formData.get("limit") as string) || 5;
+    const commentsLimit = parseInt(formData.get("comments_limit") as string) || 5;
+    
+    try {
+      const subreddits = JSON.parse(subredditsJson) as string[];
+      const keywords = JSON.parse(keywordsJson) as string[];
+      
+      // Add validation logic if needed
+      if (!name || !description || !subreddits.length || !keywords.length) {
+        return json({ error: "All fields are required" }, { status: 400 });
+      }
+      
+      // Create the request data
+      const requestData: CreateResearchRequestData = {
+        tenant_id: tenantId,
+        created_by: userInfo.userId,
+        name,
+        description,
+        schedule_type: scheduleType,
+        subreddits,
+        keywords,
+        min_score: minScore,
+        min_comments: minComments,
+        time_filter: timeFilter,
+        sort: sort,
+        limit: limit,
+        comments_limit: commentsLimit
+      };
+      
+      console.log("Creating research request:", requestData);
+      
+      // Create the request
+      const researchService = ResearchRequestsService.getInstance();
+      const newRequest = await researchService.createRequest(requestData);
+      
+      if (!newRequest?.id) {
+        return json({ error: "Failed to create research request" }, { status: 500 });
+      }
+      
+      return redirect(`/app/${params.tenant}/dashboard/view/${newRequest.id}`);
+    } catch (parseError) {
+      console.error('Error parsing form data:', parseError);
+      return json({ error: "Invalid form data format" }, { status: 400 });
+    }
+  } catch (error) {
+    console.error('Error in action:', error);
+    return json({ error: "An unexpected error occurred" }, { status: 500 });
   }
-  
-  // Check subscription plan limits
-  const planFeatures = await getPlanFeaturesUsage(tenantId);
-  const researchRequestFeature = planFeatures.find(f => f.name === DefaultFeatures.ResearchRequests);
-
-  if (!researchRequestFeature?.enabled) {
-    return json({ 
-      error: "Subscription plan limit reached", 
-      message: researchRequestFeature?.message || "You've reached your plan's limit for research requests",
-      requiresUpgrade: true 
-    }, { status: 403 });
-  }
-  
-  // Process form data for the request
-  const formData = await request.formData();
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
-  const subredditsJson = formData.get("subreddits") as string;
-  const keywordsJson = formData.get("keywords") as string;
-  const scheduleType = formData.get("schedule_type") as "daily" | "weekly" | "monthly";
-  const minScore = parseInt(formData.get("min_score") as string) || 20;
-  const minComments = parseInt(formData.get("min_comments") as string) || 5;
-  const timeFilter = formData.get("time_filter") as string || "day";
-  const sort = formData.get("sort") as string || "new";
-  const limit = parseInt(formData.get("limit") as string) || 5;
-  const commentsLimit = parseInt(formData.get("comments_limit") as string) || 5;
-  
-  const subreddits = JSON.parse(subredditsJson) as string[];
-  const keywords = JSON.parse(keywordsJson) as string[];
-  
-  // Add validation logic if needed
-  if (!name || !description || !subreddits.length || !keywords.length) {
-    return json({ error: "All fields are required" }, { status: 400 });
-  }
-  
-  // Create the request data
-  const requestData: CreateResearchRequestData = {
-    tenant_id: tenantId,
-    created_by: userInfo.userId,
-    name,
-    description,
-    schedule_type: scheduleType,
-    subreddits,
-    keywords,
-    min_score: minScore,
-    min_comments: minComments,
-    time_filter: timeFilter,
-    sort: sort,
-    limit: limit,
-    comments_limit: commentsLimit
-  };
-  
-  console.log("Creating research request:", requestData);
-  
-  // Create the request
-  const researchService = ResearchRequestsService.getInstance();
-  const newRequest = await researchService.createRequest(requestData);
-  
-  if (!newRequest?.id) {
-    return json({ error: "Failed to create research request" }, { status: 500 });
-  }
-  
-  return redirect(`/app/${params.tenant}/dashboard/view/${newRequest.id}`);
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -218,26 +221,41 @@ export default function CreateResearchRequestForm() {
     setError(null);
 
     try {
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        body: new FormData(e.target as HTMLFormElement),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.requiresUpgrade) {
-          setShowUpgradeModal(true);
-        } else {
-          setError(data.error || 'Failed to create research request');
-        }
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
+      
+      // Validate required fields
+      if (!formData.get('name') || !formData.get('description')) {
+        setError('Name and description are required');
+        setIsLoading(false);
         return;
       }
 
-      // Redirect will happen automatically
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error submitting form:', errorText);
+        setError('Failed to create research request. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // If we get here, the request was successful
+      navigate(`/app/${params.tenant}/dashboard`);
     } catch (err) {
-      setError('An unexpected error occurred');
-    } finally {
+      console.error('Error submitting form:', err);
+      if (err instanceof Error) {
+        setError(`Error: ${err.message}`);
+      } else {
+        setError('An unexpected error occurred while creating the research request. Please try again.');
+      }
       setIsLoading(false);
     }
   };
@@ -471,21 +489,30 @@ export default function CreateResearchRequestForm() {
                     type="button"
                     onClick={() => navigate(`/app/${params.tenant}/dashboard/create`)}
                     className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    disabled={isLoading}
                   >
                     Back to Description
                   </button>
                   <button
                     type="submit"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    disabled={isLoading}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Create Request
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Request'
+                    )}
                   </button>
                 </div>
               </Form>
             )}
 
             {error && (
-              <div className="mb-4 p-4 rounded-md bg-red-50 border border-red-200">
+              <div className="mt-4 p-4 rounded-md bg-red-50 border border-red-200">
                 <p className="text-sm text-red-700">{error}</p>
               </div>
             )}

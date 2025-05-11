@@ -201,7 +201,7 @@ export class ResearchRequestsService {
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = "https://reddit-researcher-1aaa93b8186d.herokuapp.com/api/v1";
+    this.baseUrl = "http://localhost:5000/api/v1";
   }
   
   public static getInstance(): ResearchRequestsService {
@@ -383,18 +383,19 @@ export class ResearchRequestsService {
       const planFeatures = await getPlanFeaturesUsage(requestData.tenant_id);
       const researchRequestFeature = planFeatures.find(f => f.name === DefaultFeatures.ResearchRequests);
 
-      if (!researchRequestFeature?.enabled) {
-        throw new Error(researchRequestFeature?.message || "You've reached your plan's limit for research requests");
-      }
+      //if (!researchRequestFeature?.enabled) {
+      //  throw new Error(researchRequestFeature?.message || "You've reached your plan's limit for research requests");
+      //}
 
       // Get current research requests count
       const currentRequests = await this.getRequests(requestData.tenant_id);
       const currentCount = currentRequests.data.length;
-
+      console.log(`[ResearchRequestsService] Current requests count:`, currentCount);
+      console.log(`[ResearchRequestsService] Research request feature:`, researchRequestFeature?.value);
       // Check if creating a new request would exceed the limit
-      if (researchRequestFeature.type === SubscriptionFeatureLimitType.MAX && 
-          currentCount >= researchRequestFeature.value) {
-        throw new Error(`You've reached your plan's limit of ${researchRequestFeature.value} research requests`);
+      if (researchRequestFeature?.type === SubscriptionFeatureLimitType.MAX && 
+          currentCount >= researchRequestFeature?.value) {
+        throw new Error(`You've reached your plan's limit of ${researchRequestFeature?.value} research requests`);
       }
 
       console.log(`[ResearchRequestsService] Creating research request with data:`, requestData);

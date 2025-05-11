@@ -162,7 +162,9 @@ export default function DashboardRoute() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-4">
               <div className="flex items-center space-x-6">
-                <Logo size="lg" />
+                    <Link to={"/"}>
+                    <Logo size="h-10 p-1" />
+                  </Link>
                 <div className="h-6 w-px bg-gray-200"></div>
                 <div className="flex items-center space-x-3">
                   <span className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-full flex items-center">
